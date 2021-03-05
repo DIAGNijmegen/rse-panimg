@@ -46,5 +46,5 @@ We would like
 ```python
 import panimg
 
-panimg.convert(*, files: Set[Path], strategies: Iterable[PanimgStrategy]) -> ImporterResult
+panimg.convert(*, files: Set[Path], strategies: Optional[Iterable[PanimgStrategy]], prefix: str = "") -> PanimgResult
 ```
