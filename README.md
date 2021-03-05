@@ -1,1 +1,1 @@
-# rse-panimg
+# panimg
