@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 79
-target-version = ['py38']
+target-version = ['py37']
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -8,7 +8,26 @@ testpaths = [
     "tests",
 ]
 python_files = "tests.py test_*.py *_tests.py"
-addopts = "--strict-markers --showlocals -n auto --dist loadscope --cov=."
+addopts = "--strict-markers --showlocals -n auto --dist loadscope --cov=tests/ --cov=panimg/"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = True
+envlist = py37, py38, py39
+
+[gh-actions]
+python =
+    3.7: py37
+    3.8: py38
+    3.9: py39
+
+[testenv]
+whitelist_externals = poetry
+commands =
+    poetry install -v
+    poetry run pytest
+"""
 
 [tool.poetry]
 name = "panimg"
@@ -20,7 +39,7 @@ readme = "README.md"
 repository = "https://github.com/DIAGNijmegen/rse-panimg"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 pydantic = "*"
 numpy = "*"
 SimpleITK = "*"
@@ -35,6 +54,7 @@ pytest = "*"
 pytest-xdist = "*"
 pytest-randomly = "*"
 pytest-cov = "*"
+tox = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -11,7 +11,6 @@ from panimg.models import ColorSpace, PanImg
 from tests import RESOURCE_PATH
 
 
-
 @pytest.mark.parametrize(
     "image",
     (
