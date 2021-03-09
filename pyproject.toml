@@ -1,3 +1,7 @@
+[tool.black]
+line-length = 79
+target-version = ['py38']
+
 [tool.poetry]
 name = "panimg"
 version = "0.0.1"
