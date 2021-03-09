@@ -10,7 +10,7 @@ from panimg.image_builders.fallback import (
     image_builder_fallback,
 )
 from panimg.models import ColorSpace
-from tests.cases_tests import RESOURCE_PATH
+from tests import RESOURCE_PATH
 
 
 @pytest.mark.parametrize(

@@ -8,22 +8,8 @@ from pytest import approx
 from panimg.image_builders.metaio_utils import load_sitk_image
 from panimg.image_builders.utils import convert_itk_to_internal
 from panimg.models import ColorSpace, PanImg
-from tests.cases_tests import RESOURCE_PATH
+from tests import RESOURCE_PATH
 
-
-def assert_sitk_img_equivalence(
-    img: SimpleITK.Image, img_ref: SimpleITK.Image
-):
-    assert img.GetDimension() == img_ref.GetDimension()
-    assert img.GetSize() == img_ref.GetSize()
-    assert img.GetOrigin() == img_ref.GetOrigin()
-    assert img.GetSpacing() == img_ref.GetSpacing()
-    assert (
-        img.GetNumberOfComponentsPerPixel()
-        == img_ref.GetNumberOfComponentsPerPixel()
-    )
-    assert img.GetPixelIDValue() == img_ref.GetPixelIDValue()
-    assert img.GetPixelIDTypeAsString() == img_ref.GetPixelIDTypeAsString()
 
 
 @pytest.mark.parametrize(

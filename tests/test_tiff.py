@@ -24,7 +24,7 @@ from panimg.image_builders.tiff import (
     image_builder_tiff,
 )
 from panimg.models import ColorSpace
-from tests.cases_tests import RESOURCE_PATH
+from tests import RESOURCE_PATH
 
 
 @pytest.mark.parametrize(
@@ -230,7 +230,6 @@ def test_dzi_creation(
         assert not error_message
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "resource, expected_error_message, voxel_size",
     [(RESOURCE_PATH / "valid_tiff.tif", "", [1, 1, None])],
@@ -275,7 +274,6 @@ def test_tiff_image_entry_creation(
 
 
 # Integration test of all features being accessed through the image builder
-@pytest.mark.django_db
 def test_image_builder_tiff(tmpdir_factory,):
     # Copy resource files to writable temp folder
     temp_dir = Path(tmpdir_factory.mktemp("temp") / "resources")

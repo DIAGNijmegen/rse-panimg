@@ -2,9 +2,17 @@
 line-length = 79
 target-version = ['py38']
 
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "tests",
+]
+python_files = "tests.py test_*.py *_tests.py"
+addopts = "--strict-markers --showlocals -n auto --dist loadscope --cov=."
+
 [tool.poetry]
 name = "panimg"
-version = "0.0.1"
+version = "0.1.0"
 description = ""
 license = "Apache-2.0"
 authors = ["James Meakin <12661555+jmsmkn@users.noreply.github.com>"]
@@ -13,9 +21,20 @@ repository = "https://github.com/DIAGNijmegen/rse-panimg"
 
 [tool.poetry.dependencies]
 python = "^3.8"
+pydantic = "*"
+numpy = "*"
+SimpleITK = "*"
+pydicom = "*"
+Pillow = "*"
+openslide-python = "*"
+pyvips = "*"
+tifffile = "2019.1.4"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "*"
+pytest-xdist = "*"
+pytest-randomly = "*"
+pytest-cov = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

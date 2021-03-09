@@ -1,16 +1,11 @@
 import os
-from dataclasses import asdict
 from pathlib import Path
 from unittest import mock
 
 import numpy as np
 import pydicom
 import pytest
-from pydicom.pixel_data_handlers.gdcm_handler import (
-    is_available as gdcm_is_available,
-)
 
-from grandchallenge.cases.models import Image
 from panimg.image_builders.dicom import (
     _get_headers_by_study,
     _validate_dicom_files,
@@ -18,13 +13,9 @@ from panimg.image_builders.dicom import (
     image_builder_dicom,
 )
 from panimg.image_builders.metaio_utils import parse_mh_header
-from tests.cases_tests import RESOURCE_PATH
+from tests import RESOURCE_PATH
 
 DICOM_DIR = RESOURCE_PATH / "dicom"
-
-
-def test_gdcm_is_available():
-    assert gdcm_is_available() is True
 
 
 def test_get_headers_by_study():
@@ -75,8 +66,13 @@ def test_image_builder_dicom_4dct(tmpdir):
     }
 
     assert len(result.new_images) == 1
-    image = Image(**asdict(result.new_images.pop()))
-    assert image.shape == [19, 4, 2, 3]
+
+    image = result.new_images.pop()
+    assert image.timepoints == 19
+    assert image.depth == 4
+    assert image.height == 2
+    assert image.width == 3
+
     assert len(result.new_image_files) == 1
     mha_file_obj = [
         x for x in result.new_image_files if x.file.suffix == ".mha"

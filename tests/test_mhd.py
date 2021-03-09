@@ -11,7 +11,7 @@ from panimg.image_builders.metaio_utils import (
     load_sitk_image_with_nd_support,
     parse_mh_header,
 )
-from tests.cases_tests import RESOURCE_PATH
+from tests import RESOURCE_PATH
 
 
 def test_parse_header_valid_4d_mhd():
