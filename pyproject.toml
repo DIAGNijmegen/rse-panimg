@@ -32,11 +32,17 @@ commands =
 [tool.poetry]
 name = "panimg"
 version = "0.1.0"
-description = ""
+description = "Conversion of medical images to MHA and TIFF."
 license = "Apache-2.0"
 authors = ["James Meakin <12661555+jmsmkn@users.noreply.github.com>"]
 readme = "README.md"
 repository = "https://github.com/DIAGNijmegen/rse-panimg"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Healthcare Industry",
+    "Operating System :: POSIX",
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"
