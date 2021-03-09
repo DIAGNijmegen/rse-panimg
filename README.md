@@ -5,9 +5,20 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/panimg)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
+**NOT FOR CLINICAL USE**
+
 Conversion of medical images to MHA and TIFF. 
 Requires Python 3.7, 3.8 or 3.9.
 `libvips-dev` and `libopenslide-dev` must be installed on your system.
+For compressed DICOM support ensure that `gdcm` is installed.
+
+Under the hood we use:
+
+* `SimpleITK`
+* `pydicom`
+* `Pillow`
+* `openslide-python`
+* `pyvips`
 
 ## Usage
 
@@ -26,3 +37,25 @@ result = convert(
     output_directory=Path("/where/files/will/go/"),
 )
 ```
+
+### Supported Formats
+
+| Input                               | Output           | Strategy   | Notes                      |
+| ----------------------------------- | ---------------- | ---------- | -------------------------- |
+| `.mha`                              | `.mha`           | `metaio`   |                            |
+| `.mhd` with `.raw` or `.zraw`       | `.mha`           | `metaio`   |                            |
+| `.dcm`                              | `.mha`           | `dicom`    | <sup>[1](#footnote1)</sup> |
+| `.nii`                              | `.mha`           | `nifty`    |                            |
+| `.nii.gz`                           | `.mha`           | `nifty`    |                            |
+| `.png`                              | `.mha`           | `fallback` | <sup>[2](#footnote2)</sup> |
+| `.jpeg`                             | `.mha`           | `fallback` | <sup>[2](#footnote2)</sup> |
+| `.tiff`                             | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
+| `.svs` (Aperio)                     | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
+| `.vms`, `.vmu`, `.ndpi` (Hamamatsu) | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
+| `.scn` (Leica)                      | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
+| `.mrxs` (MIRAX)                     | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
+| `.biff` (Ventana)                   | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
+
+<a name="footnote1">1</a>: Compressed DICOM requires `gdcm`
+<a name="footnote2">2</a>: 2D only, unitary dimensions
+<a name="footnote3">3</a>: DZI only created if possible
