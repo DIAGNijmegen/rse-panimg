@@ -50,7 +50,7 @@ jobs:
           tox
 
   deploy:
-    if: ${{ github.event_name == 'release' && github.ref == 'refs/heads/main' }}
+    if: github.event_name == 'release'
     needs: [precommit, build]
     runs-on: ubuntu-latest
     steps:
