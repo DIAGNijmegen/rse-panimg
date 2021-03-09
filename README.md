@@ -1,8 +1,8 @@
 # panimg
 
 [![CI](https://github.com/DIAGNijmegen/rse-panimg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DIAGNijmegen/rse-panimg/actions/workflows/ci.yml?query=branch%3Amain)
-![PyPI](https://img.shields.io/pypi/v/panimg)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/panimg)
+[![PyPI](https://img.shields.io/pypi/v/panimg)](https://pypi.org/project/panimg/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/panimg)](https://pypi.org/project/panimg/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 **NOT FOR CLINICAL USE**
