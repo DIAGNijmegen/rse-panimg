@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install vips and openslide
-        run: sudo apt-get update && sudo apt-get install -yq libvips-dev=8.9.1-2 libopenslide-dev=3.4.1+dfsg-4
+        run: sudo apt-get update && sudo apt-get install -yq libvips-dev libopenslide-dev
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
