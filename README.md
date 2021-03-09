@@ -57,5 +57,7 @@ result = convert(
 | `.biff` (Ventana)                   | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
 
 <a name="footnote1">1</a>: Compressed DICOM requires `gdcm`
+
 <a name="footnote2">2</a>: 2D only, unitary dimensions
+
 <a name="footnote3">3</a>: DZI only created if possible
