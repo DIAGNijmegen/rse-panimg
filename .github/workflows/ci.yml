@@ -8,7 +8,7 @@ on:
       - published
 
 env:
-  MINIMUM_PYTHON_VERSION: '3.7'
+  MINIMUM_PYTHON_VERSION: '3.8'
 
 jobs:
 
