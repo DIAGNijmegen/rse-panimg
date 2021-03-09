@@ -14,18 +14,16 @@ def convert(
     builders: Optional[Iterable[Callable]] = None,
     created_image_prefix: str = "",
 ) -> PanimgResult:
-    new_images = set()
-    new_image_files = set()
-    new_folders = set()
-    consumed_files = set()
-    file_errors = defaultdict(list)
-
-    builders = builders if builders is not None else DEFAULT_IMAGE_BUILDERS
+    new_images: Set[PanImg] = set()
+    new_image_files: Set[PanImgFile] = set()
+    new_folders: Set[PanImgFolder] = set()
+    consumed_files: Set[Path] = set()
+    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
     _convert_directory(
         input_directory=input_directory,
         output_directory=output_directory,
-        builders=builders,
+        builders=builders if builders is not None else DEFAULT_IMAGE_BUILDERS,
         consumed_files=consumed_files,
         new_images=new_images,
         new_image_files=new_image_files,

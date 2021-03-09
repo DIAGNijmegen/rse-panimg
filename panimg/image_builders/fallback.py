@@ -8,6 +8,7 @@ from PIL.Image import DecompressionBombError
 
 from panimg.exceptions import ValidationError
 from panimg.image_builders.utils import convert_itk_to_internal
+from panimg.models import PanImgFile
 from panimg.types import ImageBuilderResult
 
 
@@ -37,7 +38,7 @@ def image_builder_fallback(
     """
     errors = {}
     new_images = set()
-    new_image_files = set()
+    new_image_files: Set[PanImgFile] = set()
     consumed_files = set()
     for file in files:
         try:

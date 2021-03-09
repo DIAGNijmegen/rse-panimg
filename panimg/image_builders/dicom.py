@@ -1,7 +1,7 @@
 from collections import namedtuple
 from math import isclose
 from pathlib import Path
-from typing import Set
+from typing import Dict, List, Set, Union
 
 import SimpleITK
 import numpy as np
@@ -334,7 +334,11 @@ def _create_itk_from_dcm(
 
 
 def image_builder_dicom(
-    *, files: Set[Path], output_directory: Path, created_image_prefix: str = ""
+    *,
+    files: Set[Path],
+    output_directory: Path,
+    created_image_prefix: str = "",
+    **_,
 ) -> ImageBuilderResult:
     """
     Constructs image objects by inspecting files in a directory.

@@ -5,7 +5,7 @@ See: https://itk.org/Wiki/MetaIO/Documentation
 """
 
 from pathlib import Path
-from typing import Mapping, Sequence, Set, Tuple, Union
+from typing import Dict, Mapping, Sequence, Set, Tuple, Union
 
 from panimg.image_builders.metaio_utils import (
     load_sitk_image,
@@ -37,13 +37,17 @@ def image_builder_mhd(  # noqa: C901
     """
     element_data_file_key = "ElementDataFile"
 
-    def detect_mhd_file(
-        headers: Mapping[str, Union[str, None]], path: Path
-    ) -> bool:
-        data_file = headers.get(element_data_file_key, None)
-        if data_file in [None, "LOCAL"]:
+    def detect_mhd_file(headers: Dict[str, str], path: Path) -> bool:
+        try:
+            data_file = headers[element_data_file_key]
+        except KeyError:
             return False
+
+        if data_file == "LOCAL":
+            return False
+
         data_file_path = (path / Path(data_file)).resolve(strict=False)
+
         if path not in data_file_path.parents:
             raise ValueError(
                 f"{element_data_file_key} references a file which is not in "
@@ -75,7 +79,7 @@ def image_builder_mhd(  # noqa: C901
         return f"Mhd image builder: {message}"
 
     new_images = set()
-    new_image_files = set()
+    new_image_files: Set[PanImgFile] = set()
     consumed_files = set()
     invalid_file_errors = {}
     for file in files:

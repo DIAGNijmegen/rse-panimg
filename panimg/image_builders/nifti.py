@@ -4,6 +4,7 @@ from typing import Set
 import SimpleITK
 
 from panimg.image_builders.utils import convert_itk_to_internal
+from panimg.models import PanImg, PanImgFile
 from panimg.types import ImageBuilderResult
 
 
@@ -31,8 +32,8 @@ def image_builder_nifti(
      - path->error message map describing what is wrong with a given file
     """
     errors = {}
-    new_images = set()
-    new_image_files = set()
+    new_images: Set[PanImg] = set()
+    new_image_files: Set[PanImgFile] = set()
     consumed_files = set()
     for file in files:
         if not (file.name.endswith(".nii") or file.name.endswith(".nii.gz")):
