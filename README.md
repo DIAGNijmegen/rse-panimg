@@ -13,12 +13,11 @@ For each subdirectory of files it will try several strategies for loading the co
 It will return a structure containing information about what images were produced, what images were used to form the new images, image metadata, and any errors from any of the strategies.
 
 ```python
+from pathlib import Path
 from panimg import convert
 
-
-convert(
+result = convert(
     input_directory=Path("/path/to/files/"),
     output_directory=Path("/where/files/will/go/"),
 )
 ```
-
