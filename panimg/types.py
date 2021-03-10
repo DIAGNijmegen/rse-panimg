@@ -1,5 +1,7 @@
 from pathlib import Path
-from typing import Protocol, Set
+from typing import Set
+
+from typing_extensions import Protocol  # for py37 support
 
 from panimg.models import PanImgResult
 
