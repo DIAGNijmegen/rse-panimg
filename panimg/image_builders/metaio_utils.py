@@ -1,7 +1,7 @@
 import re
 import zlib
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Pattern, Tuple, Union
+from typing import Any, Dict, List, Mapping, Pattern, Tuple, Union
 
 import SimpleITK
 import SimpleITK._SimpleITK as _SimpleITK

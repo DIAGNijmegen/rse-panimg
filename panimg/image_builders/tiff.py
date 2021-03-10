@@ -3,7 +3,7 @@ import re
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Callable, Dict, List, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
 import openslide
@@ -57,6 +57,10 @@ class GrandChallengeTiffFile:
             raise ValidationError(
                 "Not a valid tif: Voxel height could not be determined"
             )
+        if not self.color_space:
+            raise ValidationError(
+                "Not a valid tif: Color space could not be determined"
+            )
 
 
 def _get_tag_value(tags, tag):
@@ -109,7 +113,7 @@ def _get_voxel_spacing_mm(tags, tag):
 
 
 def _extract_openslide_properties(
-    *, gc_file: GrandChallengeTiffFile, image: any
+    *, gc_file: GrandChallengeTiffFile, image
 ) -> GrandChallengeTiffFile:
     if not gc_file.voxel_width_mm and "openslide.mpp-x" in image.properties:
         gc_file.voxel_width_mm = (
@@ -194,7 +198,6 @@ def _get_color_space(*, color_space_string) -> Optional[ColorSpace]:
 def _create_image_file(
     *, path: Path, image: PanImg, output_directory: Path
 ) -> PanImgFile:
-
     output_file = output_directory / f"{image.pk}{path.suffix}"
 
     if path.suffix.lower() == ".dzi":
@@ -219,7 +222,7 @@ def _load_with_tiff(
 
 def _load_with_openslide(
     *, gc_file: GrandChallengeTiffFile
-) -> (str, GrandChallengeTiffFile):
+) -> GrandChallengeTiffFile:
     open_slide_file = openslide.open_slide(str(gc_file.path.absolute()))
     gc_file = _extract_openslide_properties(
         gc_file=gc_file, image=open_slide_file
@@ -250,7 +253,7 @@ def _new_image_files(
 
 
 def _new_folder_uploads(
-    *, dzi_output: Path, image: PanImg,
+    *, dzi_output: Optional[Path], image: PanImg,
 ) -> Set[PanImgFolder]:
     new_folder_upload = set()
 
@@ -306,8 +309,8 @@ def _get_vms_files(vms_file: Path):
 
 
 def _convert(
-    files: List[Path], associated_files_getter: Optional[callable], converter
-) -> (List[GrandChallengeTiffFile], Dict):
+    files: List[Path], associated_files_getter: Optional[Callable], converter
+) -> Tuple[List[GrandChallengeTiffFile], Dict]:
     compiled_files: List[GrandChallengeTiffFile] = []
     associated_files: List[Path] = []
     errors = {}
@@ -356,8 +359,8 @@ def _convert_to_tiff(*, path: Path, pk: UUID, converter) -> Path:
 
 def _load_gc_files(
     *, files: Set[Path], converter
-) -> (List[GrandChallengeTiffFile], Dict):
-    loaded_files = []
+) -> Tuple[List[GrandChallengeTiffFile], Dict]:
+    loaded_files: List[GrandChallengeTiffFile] = []
     errors = {}
     complex_file_handlers = {
         ".mrxs": _get_mrxs_files,
@@ -393,10 +396,10 @@ def image_builder_tiff(  # noqa: C901
     *, files: Set[Path], output_directory: Path, **_
 ) -> ImageBuilderResult:
     new_images = set()
-    new_image_files = set()
-    consumed_files = set()
+    new_image_files: Set[PanImgFile] = set()
+    consumed_files: Set[Path] = set()
     invalid_file_errors = {}
-    new_folders = set()
+    new_folders: Set[PanImgFolder] = set()
 
     def format_error(message):
         return f"Tiff image builder: {message}"
@@ -462,6 +465,11 @@ def image_builder_tiff(  # noqa: C901
 
 def _create_tiff_image_entry(*, tiff_file: GrandChallengeTiffFile) -> PanImg:
     # Builds a new Image model item
+
+    if tiff_file.color_space is None:
+        # TODO This needs to be solved properly with a refactoring of GrandChallengeTiffFile
+        raise RuntimeError("Color space not found")
+
     return PanImg(
         pk=tiff_file.pk,
         name=tiff_file.path.name,
@@ -481,7 +489,7 @@ def _create_tiff_image_entry(*, tiff_file: GrandChallengeTiffFile) -> PanImg:
 
 def _create_dzi_images(
     *, gc_file: GrandChallengeTiffFile, output_directory: Path
-) -> (Path, GrandChallengeTiffFile):
+) -> Tuple[Path, GrandChallengeTiffFile]:
     # Creates a dzi file(out.dzi) and corresponding tiles in folder {pk}_files
     dzi_output = output_directory / str(gc_file.pk)
     try:

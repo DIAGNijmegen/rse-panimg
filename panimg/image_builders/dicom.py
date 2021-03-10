@@ -1,13 +1,14 @@
 from collections import namedtuple
 from math import isclose
 from pathlib import Path
-from typing import Dict, List, Set, Union
+from typing import Set
 
 import SimpleITK
 import numpy as np
 import pydicom
 
 from panimg.image_builders.utils import convert_itk_to_internal
+from panimg.models import PanImgFile
 from panimg.types import ImageBuilderResult
 
 NUMPY_IMAGE_TYPES = {
@@ -46,7 +47,7 @@ def pixel_data_reached(tag, vr, length):
     return pydicom.datadict.keyword_for_tag(tag) == "PixelData"
 
 
-def _get_headers_by_study(files: Set[Path]):
+def _get_headers_by_study(files):
     """
     Gets all headers from dicom files found in path.
 
@@ -359,8 +360,8 @@ def image_builder_dicom(
     """
     studies, file_errors = _validate_dicom_files(files)
     new_images = set()
-    new_image_files = set()
-    consumed_files = set()
+    new_image_files: Set[PanImgFile] = set()
+    consumed_files: Set[Path] = set()
     for dicom_ds in studies:
         try:
             n_image, n_image_files = _process_dicom_file(
