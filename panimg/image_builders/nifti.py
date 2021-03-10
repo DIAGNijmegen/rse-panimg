@@ -8,7 +8,7 @@ from panimg.image_builders.utils import convert_itk_to_internal
 from panimg.models import PanImg, PanImgFile, PanImgResult
 
 
-def format_error(message):
+def format_error(message: str) -> str:
     return f"NifTI image builder: {message}"
 
 
@@ -58,7 +58,7 @@ def image_builder_nifti(
             new_image_files |= set(n_image_files)
             consumed_files.add(file)
         except ValueError as e:
-            errors[file].append(format_error(e))
+            errors[file].append(format_error(str(e)))
 
     return PanImgResult(
         consumed_files=consumed_files,

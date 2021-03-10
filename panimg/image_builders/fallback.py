@@ -12,7 +12,7 @@ from panimg.image_builders.utils import convert_itk_to_internal
 from panimg.models import PanImgFile, PanImgResult
 
 
-def format_error(message):
+def format_error(message: str) -> str:
     return f"Fallback image builder: {message}"
 
 

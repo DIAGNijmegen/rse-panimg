@@ -74,7 +74,7 @@ def image_builder_mhd(  # noqa: C901
             output_directory=output_dir,
         )
 
-    def format_error(message):
+    def format_error(message: str) -> str:
         return f"Mhd image builder: {message}"
 
     new_images = set()
@@ -93,7 +93,7 @@ def image_builder_mhd(  # noqa: C901
                 parsed_headers, file.parent
             ) or detect_mha_file(parsed_headers)
         except ValueError as e:
-            invalid_file_errors[file].append(format_error(e))
+            invalid_file_errors[file].append(format_error(str(e)))
             continue
 
         if is_hd_or_mha:

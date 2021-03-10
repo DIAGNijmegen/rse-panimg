@@ -37,7 +37,7 @@ class GrandChallengeTiffFile:
     source_files: List = field(default_factory=list)
     associated_files: List = field(default_factory=list)
 
-    def validate(self):
+    def validate(self) -> None:
         if not self.image_width:
             raise ValidationError(
                 "Not a valid tif: Image width could not be determined"
@@ -402,7 +402,7 @@ def image_builder_tiff(  # noqa: C901
     invalid_file_errors: Dict[Path, List[str]] = defaultdict(list)
     new_folders: Set[PanImgFolder] = set()
 
-    def format_error(message):
+    def format_error(message: str) -> str:
         return f"Tiff image builder: {message}"
 
     loaded_files, errors = _load_gc_files(files=files, converter=pyvips)

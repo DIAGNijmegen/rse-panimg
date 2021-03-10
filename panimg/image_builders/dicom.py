@@ -91,7 +91,7 @@ def _get_headers_by_study(files):
                 studies[key]["index"] = index
                 studies[key]["headers"] = headers
             except Exception as e:
-                errors[file].append(format_error(e))
+                errors[file].append(format_error(str(e)))
 
     for key in studies:
         studies[key]["headers"].sort(
@@ -100,7 +100,7 @@ def _get_headers_by_study(files):
     return studies, errors
 
 
-def format_error(message):
+def format_error(message: str) -> str:
     return f"Dicom image builder: {message}"
 
 
@@ -149,8 +149,8 @@ def _validate_dicom_files(files: Set[Path]):
             continue
         if len(headers) % n_time > 0:
             for d in headers:
-                errors[d["file"]] = format_error(
-                    "Number of slices per time point differs"
+                errors[d["file"]].append(
+                    format_error("Number of slices per time point differs")
                 )
             continue
         n_slices = n_slices // n_time
@@ -373,7 +373,7 @@ def image_builder_dicom(
             consumed_files |= {d["file"] for d in dicom_ds.headers}
         except Exception as e:
             for d in dicom_ds.headers:
-                file_errors[d["file"]] = format_error(e)
+                file_errors[d["file"]].append(format_error(str(e)))
 
     return PanImgResult(
         consumed_files=consumed_files,
