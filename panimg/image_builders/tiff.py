@@ -34,8 +34,8 @@ class GrandChallengeTiffFile:
     voxel_width_mm: float = 0
     voxel_height_mm: float = 0
     voxel_depth_mm: Optional[float] = None
-    source_files: List = field(default_factory=list)
-    associated_files: List = field(default_factory=list)
+    source_files: List[Path] = field(default_factory=list)
+    associated_files: List[Path] = field(default_factory=list)
 
     def validate(self) -> None:
         if not self.image_width:
@@ -310,11 +310,13 @@ def _get_vms_files(vms_file: Path):
 
 
 def _convert(
-    files: List[Path], associated_files_getter: Optional[Callable], converter
-) -> Tuple[List[GrandChallengeTiffFile], Dict]:
+    files: List[Path],
+    associated_files_getter: Optional[Callable[[Path], List[Path]]],
+    converter,
+) -> Tuple[List[GrandChallengeTiffFile], Dict[Path, List[str]]]:
     compiled_files: List[GrandChallengeTiffFile] = []
     associated_files: List[Path] = []
-    errors = {}
+    errors: Dict[Path, List[str]] = defaultdict(list)
     for file in files:
         try:
             gc_file = GrandChallengeTiffFile(file)
@@ -324,7 +326,7 @@ def _convert(
                 path=file, pk=gc_file.pk, converter=converter
             )
         except Exception as e:
-            errors[file] = str(e)
+            errors[file].append(str(e))
             continue
         else:
             gc_file.path = tiff_file
@@ -360,7 +362,7 @@ def _convert_to_tiff(*, path: Path, pk: UUID, converter) -> Path:
 
 def _load_gc_files(
     *, files: Set[Path], converter
-) -> Tuple[List[GrandChallengeTiffFile], Dict]:
+) -> Tuple[List[GrandChallengeTiffFile], Dict[Path, List[str]]]:
     loaded_files: List[GrandChallengeTiffFile] = []
     errors = {}
     complex_file_handlers = {
@@ -408,7 +410,7 @@ def image_builder_tiff(  # noqa: C901
     loaded_files, errors = _load_gc_files(files=files, converter=pyvips)
     for gc_file in loaded_files:
         dzi_output = None
-        error = ""
+        error = []
         if gc_file.path in errors:
             error = errors[gc_file.path]
 
@@ -416,20 +418,22 @@ def image_builder_tiff(  # noqa: C901
         try:
             gc_file = _load_with_tiff(gc_file=gc_file)
         except Exception as e:
-            error += f"TIFF load error: {e}. "
+            error.append(f"TIFF load error: {e}.")
 
         # try and load image with open slide
         try:
             gc_file = _load_with_openslide(gc_file=gc_file)
         except Exception as e:
-            error += f"OpenSlide load error: {e}. "
+            error.append(f"OpenSlide load error: {e}.")
 
         # validate
         try:
             gc_file.validate()
         except ValidationError as e:
-            error += f"Validation error: {e}. "
-            invalid_file_errors[gc_file.path].append(format_error(error))
+            error.append(f"Validation error: {e}.")
+            invalid_file_errors[gc_file.path].append(
+                format_error(" ".join(error))
+            )
             continue
 
         image_out_dir = output_directory / str(gc_file.pk)

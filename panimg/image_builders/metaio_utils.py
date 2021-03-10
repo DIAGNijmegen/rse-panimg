@@ -1,7 +1,7 @@
 import re
 import zlib
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Pattern, Tuple, Union
+from typing import Any, Dict, List, Mapping, Tuple, Union
 
 import SimpleITK
 import SimpleITK._SimpleITK as _SimpleITK
@@ -38,23 +38,21 @@ METAIO_IMAGE_TYPES = {
     "MET_OTHER": None,
 }
 
-FLOAT_MATCH_REGEXP: Pattern = re.compile(
-    r"^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$"
-)
-FLOAT_LIST_MATCH_REGEXP: Pattern = re.compile(
+FLOAT_MATCH_REGEXP = re.compile(r"^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$")
+FLOAT_LIST_MATCH_REGEXP = re.compile(
     r"^([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)"
     r"(\s[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)*$"
 )
-CONTENT_TIMES_LIST_MATCH_REGEXP: Pattern = re.compile(
+CONTENT_TIMES_LIST_MATCH_REGEXP = re.compile(
     r"^((2[0-3]|[0-1]\d)[0-5]\d[0-5]\d(\.\d\d\d)?)"
     r"(\s(2[0-3]|[0-1]\d)[0-5]\d[0-5]\d(\.\d\d\d)?)*$"
 )
 
-LENGTH_LIMIT_MATCH_REGEXP: Pattern = re.compile(r"^.{0,128}$")
+LENGTH_LIMIT_MATCH_REGEXP = re.compile(r"^.{0,128}$")
 
-STUDYDATE_MATCH_REGEXP: Pattern = re.compile(r"^\d{4}\d{1,2}\d{1,2}$")
+STUDYDATE_MATCH_REGEXP = re.compile(r"^\d{4}\d{1,2}\d{1,2}$")
 
-ADDITIONAL_HEADERS: Dict[str, Pattern] = {
+ADDITIONAL_HEADERS = {
     "Laterality": LENGTH_LIMIT_MATCH_REGEXP,
     "PatientID": LENGTH_LIMIT_MATCH_REGEXP,
     "PatientName": LENGTH_LIMIT_MATCH_REGEXP,

@@ -1,16 +1,17 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, DefaultDict, Iterable, List, Optional, Set
+from typing import DefaultDict, Iterable, List, Optional, Set
 
 from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
 from panimg.models import PanImg, PanImgFile, PanImgFolder, PanImgResult
+from panimg.types import ImageBuilder
 
 
 def convert(
     *,
     input_directory: Path,
     output_directory: Path,
-    builders: Optional[Iterable[Callable]] = None,
+    builders: Optional[Iterable[ImageBuilder]] = None,
     created_image_prefix: str = "",
 ) -> PanImgResult:
     new_images: Set[PanImg] = set()
@@ -44,7 +45,7 @@ def _convert_directory(
     *,
     input_directory: Path,
     output_directory: Path,
-    builders: Iterable[Callable],
+    builders: Iterable[ImageBuilder],
     consumed_files: Set[Path],
     new_images: Set[PanImg],
     new_image_files: Set[PanImgFile],
