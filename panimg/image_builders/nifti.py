@@ -1,11 +1,11 @@
+from collections import defaultdict
 from pathlib import Path
-from typing import Set
+from typing import Dict, List, Set
 
 import SimpleITK
 
 from panimg.image_builders.utils import convert_itk_to_internal
-from panimg.models import PanImg, PanImgFile
-from panimg.types import ImageBuilderResult
+from panimg.models import PanImg, PanImgFile, PanImgResult
 
 
 def format_error(message):
@@ -14,7 +14,7 @@ def format_error(message):
 
 def image_builder_nifti(
     *, files: Set[Path], output_directory: Path, **_
-) -> ImageBuilderResult:
+) -> PanImgResult:
     """
     Constructs image objects from files in NifTI format (nii/nii.gz)
 
@@ -31,7 +31,7 @@ def image_builder_nifti(
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
-    errors = {}
+    errors: Dict[Path, List[str]] = defaultdict(list)
     new_images: Set[PanImg] = set()
     new_image_files: Set[PanImgFile] = set()
     consumed_files = set()
@@ -45,7 +45,7 @@ def image_builder_nifti(
             reader.SetFileName(str(file.absolute()))
             img: SimpleITK.Image = reader.Execute()
         except RuntimeError:
-            errors[file] = format_error("Not a valid NifTI image file")
+            errors[file].append(format_error("Not a valid NifTI image file"))
             continue
 
         try:
@@ -58,9 +58,9 @@ def image_builder_nifti(
             new_image_files |= set(n_image_files)
             consumed_files.add(file)
         except ValueError as e:
-            errors[file] = format_error(e)
+            errors[file].append(format_error(e))
 
-    return ImageBuilderResult(
+    return PanImgResult(
         consumed_files=consumed_files,
         file_errors=errors,
         new_images=new_images,

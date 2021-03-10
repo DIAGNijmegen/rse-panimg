@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set, Tuple
@@ -17,9 +18,9 @@ from panimg.models import (
     PanImg,
     PanImgFile,
     PanImgFolder,
+    PanImgResult,
 )
 from panimg.settings import DZI_TILE_SIZE
-from panimg.types import ImageBuilderResult
 
 
 @dataclass
@@ -394,11 +395,11 @@ def _load_gc_files(
 
 def image_builder_tiff(  # noqa: C901
     *, files: Set[Path], output_directory: Path, **_
-) -> ImageBuilderResult:
+) -> PanImgResult:
     new_images = set()
     new_image_files: Set[PanImgFile] = set()
     consumed_files: Set[Path] = set()
-    invalid_file_errors = {}
+    invalid_file_errors: Dict[Path, List[str]] = defaultdict(list)
     new_folders: Set[PanImgFolder] = set()
 
     def format_error(message):
@@ -428,7 +429,7 @@ def image_builder_tiff(  # noqa: C901
             gc_file.validate()
         except ValidationError as e:
             error += f"Validation error: {e}. "
-            invalid_file_errors[gc_file.path] = format_error(error)
+            invalid_file_errors[gc_file.path].append(format_error(error))
             continue
 
         image_out_dir = output_directory / str(gc_file.pk)
@@ -454,7 +455,7 @@ def image_builder_tiff(  # noqa: C901
         else:
             consumed_files.add(gc_file.path)
 
-    return ImageBuilderResult(
+    return PanImgResult(
         consumed_files=consumed_files,
         file_errors=invalid_file_errors,
         new_images=new_images,

@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from math import isclose
 from pathlib import Path
 from typing import Set
@@ -8,8 +8,7 @@ import numpy as np
 import pydicom
 
 from panimg.image_builders.utils import convert_itk_to_internal
-from panimg.models import PanImgFile
-from panimg.types import ImageBuilderResult
+from panimg.models import PanImgFile, PanImgResult
 
 NUMPY_IMAGE_TYPES = {
     "character": SimpleITK.sitkUInt8,
@@ -63,7 +62,7 @@ def _get_headers_by_study(files):
     grouped by study id.
     """
     studies = {}
-    errors = {}
+    errors = defaultdict(list)
     indices = {}
 
     for file in files:
@@ -92,7 +91,7 @@ def _get_headers_by_study(files):
                 studies[key]["index"] = index
                 studies[key]["headers"] = headers
             except Exception as e:
-                errors[file] = format_error(e)
+                errors[file].append(format_error(e))
 
     for key in studies:
         studies[key]["headers"].sort(
@@ -340,7 +339,7 @@ def image_builder_dicom(
     output_directory: Path,
     created_image_prefix: str = "",
     **_,
-) -> ImageBuilderResult:
+) -> PanImgResult:
     """
     Constructs image objects by inspecting files in a directory.
 
@@ -376,7 +375,7 @@ def image_builder_dicom(
             for d in dicom_ds.headers:
                 file_errors[d["file"]] = format_error(e)
 
-    return ImageBuilderResult(
+    return PanImgResult(
         consumed_files=consumed_files,
         file_errors=file_errors,
         new_images=new_images,
