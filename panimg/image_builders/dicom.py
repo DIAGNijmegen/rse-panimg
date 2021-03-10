@@ -259,7 +259,11 @@ def _process_dicom_file(  # noqa: C901
     # Convert the SimpleITK image to our internal representation
     return convert_itk_to_internal(
         simple_itk_image=img,
-        name=f"{created_image_prefix}-{dicom_ds.headers[0]['data'].StudyInstanceUID}-{dicom_ds.index}",
+        name=(
+            f"{created_image_prefix}"
+            f"-{dicom_ds.headers[0]['data'].StudyInstanceUID}"
+            f"-{dicom_ds.index}"
+        ),
         output_directory=output_directory,
     )
 

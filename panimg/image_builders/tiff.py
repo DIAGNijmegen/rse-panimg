@@ -272,7 +272,12 @@ mirax_pattern = r"INDEXFILE\s?=\s?.|FILE_\d+\s?=\s?."
 # vms (and vmu) files contain key value pairs, where the ImageFile keys
 # can have the following format:
 # ImageFile =, ImageFile(x,y) ImageFile(z,x,y)
-vms_pattern = r"ImageFile(\(\d*,\d*(,\d)?\))?\s?=\s?.|MapFile\s?=\s?.|OptimisationFile\s?=\s?.|MacroImage\s?=\s?."
+vms_pattern = (
+    r"ImageFile(\(\d*,\d*(,\d)?\))?\s?=\s?."
+    r"|MapFile\s?=\s?."
+    r"|OptimisationFile\s?=\s?."
+    r"|MacroImage\s?=\s?."
+)
 
 
 def _get_mrxs_files(mrxs_file: Path):
@@ -472,7 +477,7 @@ def _create_tiff_image_entry(*, tiff_file: GrandChallengeTiffFile) -> PanImg:
     # Builds a new Image model item
 
     if tiff_file.color_space is None:
-        # TODO This needs to be solved properly with a refactoring of GrandChallengeTiffFile
+        # TODO This needs to be solved by refactoring of GrandChallengeTiffFile
         raise RuntimeError("Color space not found")
 
     return PanImg(
