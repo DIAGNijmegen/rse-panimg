@@ -12,7 +12,7 @@ def convert_itk_to_internal(
     *,
     simple_itk_image: SimpleITK.Image,
     output_directory: Path,
-    name: str = "",
+    name: str,
     use_spacing: bool = True,
 ) -> Tuple[PanImg, Sequence[PanImgFile]]:
     color_space = simple_itk_image.GetNumberOfComponentsPerPixel()
@@ -25,8 +25,6 @@ def convert_itk_to_internal(
         raise ValueError("Unknown color space for MetaIO image.")
 
     pk = uuid4()
-    if not name:
-        name = str(pk)
 
     work_dir = Path(output_directory) / str(pk)
     work_dir.mkdir()
