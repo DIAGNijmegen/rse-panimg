@@ -53,7 +53,7 @@ pydicom = "*"
 Pillow = "*"
 openslide-python = "*"
 pyvips = "*"
-tifffile = "2019.1.4"
+tifffile = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
