@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional, Set
 from uuid import UUID
 
 from pydantic.dataclasses import dataclass
@@ -47,3 +47,12 @@ class PanImgFile:
 class PanImgFolder:
     image_id: UUID
     folder: Path
+
+
+@dataclass
+class PanImgResult:
+    new_images: Set[PanImg]
+    new_image_files: Set[PanImgFile]
+    new_folders: Set[PanImgFolder]
+    consumed_files: Set[Path]
+    file_errors: Dict[Path, List[str]]

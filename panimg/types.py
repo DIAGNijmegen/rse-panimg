@@ -1,19 +1,17 @@
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Set
 
-from panimg.models import PanImg, PanImgFile, PanImgFolder
+from typing_extensions import Protocol  # for py37 support
 
-
-@dataclass
-class ImageBuilderResult:
-    new_images: Set[PanImg]
-    new_image_files: Set[PanImgFile]
-    new_folders: Set[PanImgFolder]
-    consumed_files: Set[Path]
-    file_errors: Dict[Path, str]
+from panimg.models import PanImgResult
 
 
-@dataclass
-class PanimgResult(ImageBuilderResult):
-    file_errors: Dict[Path, List[str]]
+class ImageBuilder(Protocol):
+    def __call__(
+        self,
+        *,
+        files: Set[Path],
+        output_directory: Path,
+        created_image_prefix: str,
+    ) -> PanImgResult:
+        ...

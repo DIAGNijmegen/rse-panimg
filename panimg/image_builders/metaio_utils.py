@@ -1,7 +1,7 @@
 import re
 import zlib
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Pattern, Tuple, Union
+from typing import Any, Dict, List, Mapping, Tuple, Union
 
 import SimpleITK
 import SimpleITK._SimpleITK as _SimpleITK
@@ -38,23 +38,21 @@ METAIO_IMAGE_TYPES = {
     "MET_OTHER": None,
 }
 
-FLOAT_MATCH_REGEXP: Pattern = re.compile(
-    r"^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$"
-)
-FLOAT_LIST_MATCH_REGEXP: Pattern = re.compile(
+FLOAT_MATCH_REGEXP = re.compile(r"^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$")
+FLOAT_LIST_MATCH_REGEXP = re.compile(
     r"^([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)"
     r"(\s[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)*$"
 )
-CONTENT_TIMES_LIST_MATCH_REGEXP: Pattern = re.compile(
+CONTENT_TIMES_LIST_MATCH_REGEXP = re.compile(
     r"^((2[0-3]|[0-1]\d)[0-5]\d[0-5]\d(\.\d\d\d)?)"
     r"(\s(2[0-3]|[0-1]\d)[0-5]\d[0-5]\d(\.\d\d\d)?)*$"
 )
 
-LENGTH_LIMIT_MATCH_REGEXP: Pattern = re.compile(r"^.{0,128}$")
+LENGTH_LIMIT_MATCH_REGEXP = re.compile(r"^.{0,128}$")
 
-STUDYDATE_MATCH_REGEXP: Pattern = re.compile(r"^\d{4}\d{1,2}\d{1,2}$")
+STUDYDATE_MATCH_REGEXP = re.compile(r"^\d{4}\d{1,2}\d{1,2}$")
 
-ADDITIONAL_HEADERS: Dict[str, Pattern] = {
+ADDITIONAL_HEADERS = {
     "Laterality": LENGTH_LIMIT_MATCH_REGEXP,
     "PatientID": LENGTH_LIMIT_MATCH_REGEXP,
     "PatientName": LENGTH_LIMIT_MATCH_REGEXP,
@@ -95,7 +93,7 @@ EXPECTED_HEADERS: List[str] = [
 ]
 
 
-def parse_mh_header(file: Path) -> Mapping[str, Union[str, None]]:
+def parse_mh_header(file: Path) -> Dict[str, str]:
     """
     Attempts to parse the headers of an mhd file.
 
@@ -120,18 +118,20 @@ def parse_mh_header(file: Path) -> Mapping[str, Union[str, None]]:
     # attempt to limit number of read headers to prevent overflow attacks
     read_line_limit = 10000
 
-    result = {}
+    result: Dict[str, str] = {}
     with file.open("rb") as f:
-        bin_line = True
-        while bin_line is not None:
+        lines = True
+        while lines:
             read_line_limit -= 1
             if read_line_limit < 0:
                 raise ValueError("Files contains too many header lines")
 
             bin_line = f.readline(10000)
+
             if not bin_line:
-                bin_line = None
+                lines = False
                 continue
+
             if len(bin_line) >= 10000:
                 raise ValueError("Line length is too long")
 
@@ -140,24 +140,25 @@ def parse_mh_header(file: Path) -> Mapping[str, Union[str, None]]:
             except UnicodeDecodeError:
                 raise ValueError("Header contains invalid UTF-8")
             else:
-                extract_key_value_pairs(line, result)
+                result.update(extract_key_value_pairs(line))
+
             if "ElementDataFile" in result:
                 break  # last parsed header...
+
     return result
 
 
-def extract_key_value_pairs(line: str, result: Dict[str, str]):
+def extract_key_value_pairs(line: str) -> Dict[str, str]:
     line = line.rstrip("\n\r")
-    if line.strip():
-        if "=" in line:
-            key, value = line.split("=", 1)
-            result[key.strip()] = value.strip()
-        else:
-            result[line.strip()] = None
+    if line.strip() and "=" in line:
+        key, value = line.split("=", 1)
+        return {key.strip(): value.strip()}
+    else:
+        return {}
 
 
 def extract_header_listing(
-    property: str, headers: Mapping[str, Union[str, None]], dtype: type = float
+    property: str, headers: Dict[str, str], dtype: type = float
 ) -> List[Any]:
     return [dtype(e) for e in headers[property].strip().split(" ")]
 
@@ -187,7 +188,7 @@ def load_sitk_image_with_nd_support(mhd_file: Path,) -> SimpleITK.Image:
 
 
 def determine_mh_components_and_dtype(
-    headers: Mapping[str, Union[str, None]]
+    headers: Dict[str, str]
 ) -> Tuple[int, int]:
     num_components = 1
     if "ElementNumberOfChannels" in headers:
@@ -204,7 +205,7 @@ def determine_mh_components_and_dtype(
 
 
 def resolve_mh_data_file_path(
-    headers: Mapping[str, Union[str, None]], is_mha: bool, mhd_file: Path
+    headers: Dict[str, str], is_mha: bool, mhd_file: Path
 ) -> Path:
     if is_mha:
         data_file_path = mhd_file
@@ -228,7 +229,7 @@ def create_sitk_img_from_mh_data(
     is_compressed = headers["CompressedData"] == "True"
     with open(str(data_file_path), "rb") as f:
         if is_mha:
-            line = ""
+            line = b""
             while "ElementDataFile = LOCAL" not in str(line):
                 line = f.readline()
         if not is_compressed:
@@ -241,8 +242,8 @@ def create_sitk_img_from_mh_data(
 
 
 def validate_and_clean_additional_mh_headers(
-    headers: Mapping[str, Union[str, None]]
-) -> Mapping[str, Union[str, None]]:
+    headers: Dict[str, str]
+) -> Dict[str, str]:
     cleaned_headers = {}
     for key, value in headers.items():
         if key in EXPECTED_HEADERS:
@@ -265,7 +266,7 @@ def validate_and_clean_additional_mh_headers(
 
 
 def validate_list_data_matches_num_timepoints(
-    headers: Mapping[str, Union[str, None]], key: str, value: str
+    headers: Dict[str, str], key: str, value: str
 ):
     num_timepoints = len(value.split(" "))
     expected_timepoints = (
@@ -281,7 +282,7 @@ def validate_list_data_matches_num_timepoints(
 
 
 def add_additional_mh_headers_to_sitk_image(
-    sitk_image: SimpleITK.Image, headers: Mapping[str, Union[str, None]]
+    sitk_image: SimpleITK.Image, headers: Dict[str, str]
 ):
     cleaned_headers = validate_and_clean_additional_mh_headers(headers)
     for header in ADDITIONAL_HEADERS:

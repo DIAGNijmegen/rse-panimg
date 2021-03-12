@@ -1,31 +1,29 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, DefaultDict, Iterable, List, Optional, Set
+from typing import DefaultDict, Iterable, List, Optional, Set
 
 from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
-from panimg.models import PanImg, PanImgFile, PanImgFolder
-from panimg.types import ImageBuilderResult, PanimgResult
+from panimg.models import PanImg, PanImgFile, PanImgFolder, PanImgResult
+from panimg.types import ImageBuilder
 
 
 def convert(
     *,
     input_directory: Path,
     output_directory: Path,
-    builders: Optional[Iterable[Callable]] = None,
+    builders: Optional[Iterable[ImageBuilder]] = None,
     created_image_prefix: str = "",
-) -> PanimgResult:
-    new_images = set()
-    new_image_files = set()
-    new_folders = set()
-    consumed_files = set()
-    file_errors = defaultdict(list)
-
-    builders = builders if builders is not None else DEFAULT_IMAGE_BUILDERS
+) -> PanImgResult:
+    new_images: Set[PanImg] = set()
+    new_image_files: Set[PanImgFile] = set()
+    new_folders: Set[PanImgFolder] = set()
+    consumed_files: Set[Path] = set()
+    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
     _convert_directory(
         input_directory=input_directory,
         output_directory=output_directory,
-        builders=builders,
+        builders=builders if builders is not None else DEFAULT_IMAGE_BUILDERS,
         consumed_files=consumed_files,
         new_images=new_images,
         new_image_files=new_image_files,
@@ -34,7 +32,7 @@ def convert(
         created_image_prefix=created_image_prefix,
     )
 
-    return PanimgResult(
+    return PanImgResult(
         new_images=new_images,
         new_image_files=new_image_files,
         new_folders=new_folders,
@@ -47,7 +45,7 @@ def _convert_directory(
     *,
     input_directory: Path,
     output_directory: Path,
-    builders: Iterable[Callable],
+    builders: Iterable[ImageBuilder],
     consumed_files: Set[Path],
     new_images: Set[PanImg],
     new_image_files: Set[PanImgFile],
@@ -78,7 +76,7 @@ def _convert_directory(
             files.add(o)
 
     for builder in builders:
-        builder_result: ImageBuilderResult = builder(
+        builder_result = builder(
             files=files - consumed_files,
             output_directory=output_directory,
             created_image_prefix=created_image_prefix,
@@ -89,5 +87,5 @@ def _convert_directory(
         new_folders |= builder_result.new_folders
         consumed_files |= builder_result.consumed_files
 
-        for filepath, msg in builder_result.file_errors.items():
-            file_errors[filepath].append(msg)
+        for filepath, errors in builder_result.file_errors.items():
+            file_errors[filepath].extend(errors)

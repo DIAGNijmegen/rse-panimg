@@ -59,6 +59,8 @@ def test_convert_itk_to_internal(image: Path):
     img_ref = load_sitk_image(image)
     with TemporaryDirectory() as output:
         internal_image = convert_itk_to_internal(
-            simple_itk_image=img_ref, output_directory=output
+            simple_itk_image=img_ref,
+            output_directory=Path(output),
+            name=image.name,
         )
     assert_img_properties(img_ref, internal_image[0])

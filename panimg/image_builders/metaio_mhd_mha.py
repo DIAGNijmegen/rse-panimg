@@ -3,22 +3,21 @@ Image builder for MetaIO mhd/mha files.
 
 See: https://itk.org/Wiki/MetaIO/Documentation
 """
-
+from collections import defaultdict
 from pathlib import Path
-from typing import Mapping, Sequence, Set, Tuple, Union
+from typing import Dict, List, Mapping, Sequence, Set, Tuple, Union
 
 from panimg.image_builders.metaio_utils import (
     load_sitk_image,
     parse_mh_header,
 )
 from panimg.image_builders.utils import convert_itk_to_internal
-from panimg.models import PanImg, PanImgFile
-from panimg.types import ImageBuilderResult
+from panimg.models import PanImg, PanImgFile, PanImgResult
 
 
 def image_builder_mhd(  # noqa: C901
     *, files: Set[Path], output_directory: Path, **_
-) -> ImageBuilderResult:
+) -> PanImgResult:
     """
     Constructs image objects by inspecting files in a directory.
 
@@ -37,13 +36,17 @@ def image_builder_mhd(  # noqa: C901
     """
     element_data_file_key = "ElementDataFile"
 
-    def detect_mhd_file(
-        headers: Mapping[str, Union[str, None]], path: Path
-    ) -> bool:
-        data_file = headers.get(element_data_file_key, None)
-        if data_file in [None, "LOCAL"]:
+    def detect_mhd_file(headers: Dict[str, str], path: Path) -> bool:
+        try:
+            data_file = headers[element_data_file_key]
+        except KeyError:
             return False
+
+        if data_file == "LOCAL":
+            return False
+
         data_file_path = (path / Path(data_file)).resolve(strict=False)
+
         if path not in data_file_path.parents:
             raise ValueError(
                 f"{element_data_file_key} references a file which is not in "
@@ -71,13 +74,13 @@ def image_builder_mhd(  # noqa: C901
             output_directory=output_dir,
         )
 
-    def format_error(message):
+    def format_error(message: str) -> str:
         return f"Mhd image builder: {message}"
 
     new_images = set()
-    new_image_files = set()
+    new_image_files: Set[PanImgFile] = set()
     consumed_files = set()
-    invalid_file_errors = {}
+    invalid_file_errors: Dict[Path, List[str]] = defaultdict(list)
     for file in files:
         try:
             parsed_headers = parse_mh_header(file)
@@ -90,7 +93,7 @@ def image_builder_mhd(  # noqa: C901
                 parsed_headers, file.parent
             ) or detect_mha_file(parsed_headers)
         except ValueError as e:
-            invalid_file_errors[file] = format_error(e)
+            invalid_file_errors[file].append(format_error(str(e)))
             continue
 
         if is_hd_or_mha:
@@ -100,8 +103,8 @@ def image_builder_mhd(  # noqa: C901
                     file.parent / parsed_headers[element_data_file_key]
                 )
                 if not file_dependency.is_file():
-                    invalid_file_errors[file] = format_error(
-                        "Cannot find data file"
+                    invalid_file_errors[file].append(
+                        format_error("Cannot find data file")
                     )
                     continue
 
@@ -115,7 +118,7 @@ def image_builder_mhd(  # noqa: C901
             if file_dependency is not None:
                 consumed_files.add(file_dependency)
 
-    return ImageBuilderResult(
+    return PanImgResult(
         consumed_files=consumed_files,
         file_errors=invalid_file_errors,
         new_images=new_images,

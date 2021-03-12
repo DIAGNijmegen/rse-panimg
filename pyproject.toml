@@ -8,7 +8,7 @@ testpaths = [
     "tests",
 ]
 python_files = "tests.py test_*.py *_tests.py"
-addopts = "--strict-markers --showlocals -n auto --dist loadscope --cov=tests/ --cov=panimg/"
+addopts = "--strict-markers --showlocals -n auto --dist loadscope"
 
 [tool.tox]
 legacy_tox_ini = """
@@ -26,7 +26,7 @@ python =
 whitelist_externals = poetry
 commands =
     poetry install -v
-    poetry run pytest
+    poetry run pytest --cov=tests/ --cov=panimg/
 """
 
 [tool.poetry]

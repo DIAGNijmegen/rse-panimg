@@ -48,6 +48,6 @@ def test_image_builder_fallback_corrupt_file(tmpdir):
         result = image_builder_fallback(files=files, output_directory=output)
 
     assert result.file_errors == {
-        dest: format_error("Not a valid image file"),
+        dest: [format_error("Not a valid image file")],
     }
     assert result.consumed_files == set()

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import AnyStr, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 from uuid import uuid4
 
 import SimpleITK
@@ -12,8 +12,8 @@ def convert_itk_to_internal(
     *,
     simple_itk_image: SimpleITK.Image,
     output_directory: Path,
-    name: Optional[AnyStr] = None,
-    use_spacing: Optional[bool] = True,
+    name: str,
+    use_spacing: bool = True,
 ) -> Tuple[PanImg, Sequence[PanImgFile]]:
     color_space = simple_itk_image.GetNumberOfComponentsPerPixel()
     color_space = {
@@ -25,8 +25,6 @@ def convert_itk_to_internal(
         raise ValueError("Unknown color space for MetaIO image.")
 
     pk = uuid4()
-    if not name:
-        name = str(pk)
 
     work_dir = Path(output_directory) / str(pk)
     work_dir.mkdir()
@@ -44,11 +42,16 @@ def convert_itk_to_internal(
     depth = simple_itk_image.GetDepth()
 
     try:
-        window_center = float(simple_itk_image.GetMetaData("WindowCenter"))
+        window_center: Optional[float] = float(
+            simple_itk_image.GetMetaData("WindowCenter")
+        )
     except (RuntimeError, ValueError):
         window_center = None
+
     try:
-        window_width = float(simple_itk_image.GetMetaData("WindowWidth"))
+        window_width: Optional[float] = float(
+            simple_itk_image.GetMetaData("WindowWidth")
+        )
     except (RuntimeError, ValueError):
         window_width = None
 

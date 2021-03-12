@@ -45,8 +45,8 @@ result = convert(
 | `.mha`                              | `.mha`           | `metaio`   |                            |
 | `.mhd` with `.raw` or `.zraw`       | `.mha`           | `metaio`   |                            |
 | `.dcm`                              | `.mha`           | `dicom`    | <sup>[1](#footnote1)</sup> |
-| `.nii`                              | `.mha`           | `nifty`    |                            |
-| `.nii.gz`                           | `.mha`           | `nifty`    |                            |
+| `.nii`                              | `.mha`           | `nifti`    |                            |
+| `.nii.gz`                           | `.mha`           | `nifti`    |                            |
 | `.png`                              | `.mha`           | `fallback` | <sup>[2](#footnote2)</sup> |
 | `.jpeg`                             | `.mha`           | `fallback` | <sup>[2](#footnote2)</sup> |
 | `.tiff`                             | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |

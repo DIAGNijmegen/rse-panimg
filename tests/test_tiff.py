@@ -51,7 +51,16 @@ def test_get_color_space(color_space_string, expected):
 
 
 @pytest.mark.parametrize(
-    "path, color_space, resolution_levels, image_height, image_width, voxel_height_mm, voxel_width_mm, expected_error_message",
+    (
+        "path,"
+        "color_space,"
+        "resolution_levels,"
+        "image_height,"
+        "image_width,"
+        "voxel_height_mm,"
+        "voxel_width_mm,"
+        "expected_error_message"
+    ),
     [
         ("dummy.tiff", 1, 1, 10, 10, 0.1, 0.1, ""),
         (

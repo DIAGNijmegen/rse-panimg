@@ -1,9 +1,10 @@
 import os
 import re
 import shutil
+from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Callable, Dict, List, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
 import openslide
@@ -17,9 +18,9 @@ from panimg.models import (
     PanImg,
     PanImgFile,
     PanImgFolder,
+    PanImgResult,
 )
 from panimg.settings import DZI_TILE_SIZE
-from panimg.types import ImageBuilderResult
 
 
 @dataclass
@@ -33,10 +34,10 @@ class GrandChallengeTiffFile:
     voxel_width_mm: float = 0
     voxel_height_mm: float = 0
     voxel_depth_mm: Optional[float] = None
-    source_files: List = field(default_factory=list)
-    associated_files: List = field(default_factory=list)
+    source_files: List[Path] = field(default_factory=list)
+    associated_files: List[Path] = field(default_factory=list)
 
-    def validate(self):
+    def validate(self) -> None:
         if not self.image_width:
             raise ValidationError(
                 "Not a valid tif: Image width could not be determined"
@@ -56,6 +57,10 @@ class GrandChallengeTiffFile:
         if not self.voxel_height_mm:
             raise ValidationError(
                 "Not a valid tif: Voxel height could not be determined"
+            )
+        if not self.color_space:
+            raise ValidationError(
+                "Not a valid tif: Color space could not be determined"
             )
 
 
@@ -109,7 +114,7 @@ def _get_voxel_spacing_mm(tags, tag):
 
 
 def _extract_openslide_properties(
-    *, gc_file: GrandChallengeTiffFile, image: any
+    *, gc_file: GrandChallengeTiffFile, image
 ) -> GrandChallengeTiffFile:
     if not gc_file.voxel_width_mm and "openslide.mpp-x" in image.properties:
         gc_file.voxel_width_mm = (
@@ -194,7 +199,6 @@ def _get_color_space(*, color_space_string) -> Optional[ColorSpace]:
 def _create_image_file(
     *, path: Path, image: PanImg, output_directory: Path
 ) -> PanImgFile:
-
     output_file = output_directory / f"{image.pk}{path.suffix}"
 
     if path.suffix.lower() == ".dzi":
@@ -219,7 +223,7 @@ def _load_with_tiff(
 
 def _load_with_openslide(
     *, gc_file: GrandChallengeTiffFile
-) -> (str, GrandChallengeTiffFile):
+) -> GrandChallengeTiffFile:
     open_slide_file = openslide.open_slide(str(gc_file.path.absolute()))
     gc_file = _extract_openslide_properties(
         gc_file=gc_file, image=open_slide_file
@@ -250,7 +254,7 @@ def _new_image_files(
 
 
 def _new_folder_uploads(
-    *, dzi_output: Path, image: PanImg,
+    *, dzi_output: Optional[Path], image: PanImg,
 ) -> Set[PanImgFolder]:
     new_folder_upload = set()
 
@@ -268,7 +272,12 @@ mirax_pattern = r"INDEXFILE\s?=\s?.|FILE_\d+\s?=\s?."
 # vms (and vmu) files contain key value pairs, where the ImageFile keys
 # can have the following format:
 # ImageFile =, ImageFile(x,y) ImageFile(z,x,y)
-vms_pattern = r"ImageFile(\(\d*,\d*(,\d)?\))?\s?=\s?.|MapFile\s?=\s?.|OptimisationFile\s?=\s?.|MacroImage\s?=\s?."
+vms_pattern = (
+    r"ImageFile(\(\d*,\d*(,\d)?\))?\s?=\s?."
+    r"|MapFile\s?=\s?."
+    r"|OptimisationFile\s?=\s?."
+    r"|MacroImage\s?=\s?."
+)
 
 
 def _get_mrxs_files(mrxs_file: Path):
@@ -306,11 +315,13 @@ def _get_vms_files(vms_file: Path):
 
 
 def _convert(
-    files: List[Path], associated_files_getter: Optional[callable], converter
-) -> (List[GrandChallengeTiffFile], Dict):
+    files: List[Path],
+    associated_files_getter: Optional[Callable[[Path], List[Path]]],
+    converter,
+) -> Tuple[List[GrandChallengeTiffFile], Dict[Path, List[str]]]:
     compiled_files: List[GrandChallengeTiffFile] = []
     associated_files: List[Path] = []
-    errors = {}
+    errors: Dict[Path, List[str]] = defaultdict(list)
     for file in files:
         try:
             gc_file = GrandChallengeTiffFile(file)
@@ -320,7 +331,7 @@ def _convert(
                 path=file, pk=gc_file.pk, converter=converter
             )
         except Exception as e:
-            errors[file] = str(e)
+            errors[file].append(str(e))
             continue
         else:
             gc_file.path = tiff_file
@@ -356,8 +367,8 @@ def _convert_to_tiff(*, path: Path, pk: UUID, converter) -> Path:
 
 def _load_gc_files(
     *, files: Set[Path], converter
-) -> (List[GrandChallengeTiffFile], Dict):
-    loaded_files = []
+) -> Tuple[List[GrandChallengeTiffFile], Dict[Path, List[str]]]:
+    loaded_files: List[GrandChallengeTiffFile] = []
     errors = {}
     complex_file_handlers = {
         ".mrxs": _get_mrxs_files,
@@ -391,20 +402,20 @@ def _load_gc_files(
 
 def image_builder_tiff(  # noqa: C901
     *, files: Set[Path], output_directory: Path, **_
-) -> ImageBuilderResult:
+) -> PanImgResult:
     new_images = set()
-    new_image_files = set()
-    consumed_files = set()
-    invalid_file_errors = {}
-    new_folders = set()
+    new_image_files: Set[PanImgFile] = set()
+    consumed_files: Set[Path] = set()
+    invalid_file_errors: Dict[Path, List[str]] = defaultdict(list)
+    new_folders: Set[PanImgFolder] = set()
 
-    def format_error(message):
+    def format_error(message: str) -> str:
         return f"Tiff image builder: {message}"
 
     loaded_files, errors = _load_gc_files(files=files, converter=pyvips)
     for gc_file in loaded_files:
         dzi_output = None
-        error = ""
+        error = []
         if gc_file.path in errors:
             error = errors[gc_file.path]
 
@@ -412,20 +423,22 @@ def image_builder_tiff(  # noqa: C901
         try:
             gc_file = _load_with_tiff(gc_file=gc_file)
         except Exception as e:
-            error += f"TIFF load error: {e}. "
+            error.append(f"TIFF load error: {e}.")
 
         # try and load image with open slide
         try:
             gc_file = _load_with_openslide(gc_file=gc_file)
         except Exception as e:
-            error += f"OpenSlide load error: {e}. "
+            error.append(f"OpenSlide load error: {e}.")
 
         # validate
         try:
             gc_file.validate()
         except ValidationError as e:
-            error += f"Validation error: {e}. "
-            invalid_file_errors[gc_file.path] = format_error(error)
+            error.append(f"Validation error: {e}.")
+            invalid_file_errors[gc_file.path].append(
+                format_error(" ".join(error))
+            )
             continue
 
         image_out_dir = output_directory / str(gc_file.pk)
@@ -451,7 +464,7 @@ def image_builder_tiff(  # noqa: C901
         else:
             consumed_files.add(gc_file.path)
 
-    return ImageBuilderResult(
+    return PanImgResult(
         consumed_files=consumed_files,
         file_errors=invalid_file_errors,
         new_images=new_images,
@@ -462,6 +475,11 @@ def image_builder_tiff(  # noqa: C901
 
 def _create_tiff_image_entry(*, tiff_file: GrandChallengeTiffFile) -> PanImg:
     # Builds a new Image model item
+
+    if tiff_file.color_space is None:
+        # TODO This needs to be solved by refactoring of GrandChallengeTiffFile
+        raise RuntimeError("Color space not found")
+
     return PanImg(
         pk=tiff_file.pk,
         name=tiff_file.path.name,
@@ -481,7 +499,7 @@ def _create_tiff_image_entry(*, tiff_file: GrandChallengeTiffFile) -> PanImg:
 
 def _create_dzi_images(
     *, gc_file: GrandChallengeTiffFile, output_directory: Path
-) -> (Path, GrandChallengeTiffFile):
+) -> Tuple[Path, GrandChallengeTiffFile]:
     # Creates a dzi file(out.dzi) and corresponding tiles in folder {pk}_files
     dzi_output = output_directory / str(gc_file.pk)
     try:

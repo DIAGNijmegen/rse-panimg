@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 from pathlib import Path
 from unittest import mock
 
@@ -47,15 +48,15 @@ def test_validate_dicom_files():
         "panimg.image_builders.dicom._get_headers_by_study",
         return_value=(
             {"foo": {"headers": headers[1:], "file": "bar", "index": 1}},
-            {},
+            defaultdict(list),
         ),
     ):
         studies, errors = _validate_dicom_files(files)
         assert len(studies) == 0
         for header in headers[1:]:
-            assert errors[header["file"]] == format_error(
-                "Number of slices per time point differs"
-            )
+            assert errors[header["file"]] == [
+                format_error("Number of slices per time point differs")
+            ]
 
 
 def test_image_builder_dicom_4dct(tmpdir):
