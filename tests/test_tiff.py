@@ -226,10 +226,14 @@ def test_dzi_creation(
     temp_file = Path(tmpdir_factory.mktemp("temp") / filename)
     shutil.copy(source_dir / filename, temp_file)
     gc_file = GrandChallengeTiffFile(temp_file)
+    
+    output_dir = Path(tmpdir_factory.mktemp("output")) 
+    (output_dir / filename).mkdir()
+
     try:
         _create_dzi_images(
             gc_file=gc_file,
-            output_directory=Path(tmpdir_factory.mktemp("output")),
+            output_directory=output_dir,
         )
     except ValidationError as e:
         error_message = str(e)
