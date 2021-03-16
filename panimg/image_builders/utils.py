@@ -26,7 +26,7 @@ def convert_itk_to_internal(
 
     pk = uuid4()
 
-    work_dir = Path(output_directory) / str(pk)
+    work_dir = Path(output_directory) / name
     work_dir.mkdir()
 
     SimpleITK.WriteImage(
