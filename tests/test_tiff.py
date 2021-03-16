@@ -193,11 +193,15 @@ def test_load_with_open_slide(
     temp_file = Path(tmpdir_factory.mktemp("temp") / filename)
     shutil.copy(source_dir / filename, temp_file)
     gc_file = GrandChallengeTiffFile(temp_file)
+
+    output_dir = Path(tmpdir_factory.mktemp("output"))
+    (output_dir / filename).mkdir()
+
     try:
         gc_file = _load_with_tiff(gc_file=gc_file)
         _create_dzi_images(
             gc_file=gc_file,
-            output_directory=Path(tmpdir_factory.mktemp("output")),
+            output_directory=output_dir,
         )
     except Exception as e:
         error_message = str(e)
