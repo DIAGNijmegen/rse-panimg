@@ -469,7 +469,7 @@ def image_builder_tiff(  # noqa: C901
 
         try:
             dzi_output, gc_file = _create_dzi_images(
-                gc_file=gc_file, output_directory=gc_file.path.parent
+                gc_file=gc_file, output_directory=output_directory
             )
         except ValidationError as e:
             file_errors[gc_file.path].append(f"DZI error: {e}.")
@@ -519,7 +519,7 @@ def _create_dzi_images(
     *, gc_file: GrandChallengeTiffFile, output_directory: Path
 ) -> Tuple[Path, GrandChallengeTiffFile]:
     # Creates a dzi file(out.dzi) and corresponding tiles in folder {pk}_files
-    dzi_output = output_directory / str(gc_file.pk)
+    dzi_output = output_directory / str(gc_file.path.name) / str(gc_file.pk)
     try:
         image = pyvips.Image.new_from_file(
             str(gc_file.path.absolute()), access="sequential"
