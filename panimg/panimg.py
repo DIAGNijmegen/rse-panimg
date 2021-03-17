@@ -4,7 +4,7 @@ from typing import DefaultDict, Iterable, List, Optional, Set
 
 from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
 from panimg.models import PanImg, PanImgFile, PanImgFolder, PanImgResult
-from panimg.types import ImageBuilder
+from panimg.types import ImageBuilder, PostProcessor
 
 
 def convert(
@@ -12,6 +12,7 @@ def convert(
     input_directory: Path,
     output_directory: Path,
     builders: Optional[Iterable[ImageBuilder]] = None,
+    post_processors: Optional[Iterable[PostProcessor]] = None,
     created_image_prefix: str = "",
 ) -> PanImgResult:
     new_images: Set[PanImg] = set()
@@ -31,6 +32,11 @@ def convert(
         file_errors=file_errors,
         created_image_prefix=created_image_prefix,
     )
+
+    if post_processors is not None:
+        new_image_files |= _post_process(
+            image_files=new_image_files, post_processors=post_processors
+        )
 
     return PanImgResult(
         new_images=new_images,
@@ -89,3 +95,14 @@ def _convert_directory(
 
         for filepath, errors in builder_result.file_errors.items():
             file_errors[filepath].extend(errors)
+
+
+def _post_process(
+    *, image_files: Set[PanImgFile], post_processors: Iterable[PostProcessor]
+) -> Set[PanImgFile]:
+    new_image_files: Set[PanImgFile] = set()
+
+    for processor in post_processors:
+        new_image_files |= processor(image_files=image_files)
+
+    return new_image_files
