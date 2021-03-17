@@ -291,7 +291,7 @@ def _get_mrxs_files(mrxs_file: Path):
             for f in slide_dat.parent.iterdir()
             if f.name.lower() == slide_dat.name.lower()
         ][0]
-    with open(slide_dat, "r") as f:
+    with open(slide_dat) as f:
         lines = [
             line for line in f.readlines() if re.match(mirax_pattern, line)
         ]
@@ -305,7 +305,7 @@ def _get_mrxs_files(mrxs_file: Path):
 
 def _get_vms_files(vms_file: Path):
     file_matched = []
-    with open(str(vms_file.absolute()), "r") as f:
+    with open(str(vms_file.absolute())) as f:
         lines = [line for line in f.readlines() if re.match(vms_pattern, line)]
         for line in lines:
             original_name = line.split("=")[1].strip()

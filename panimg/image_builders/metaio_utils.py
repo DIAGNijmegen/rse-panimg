@@ -214,7 +214,7 @@ def resolve_mh_data_file_path(
             mhd_file.resolve().parent / Path(headers["ElementDataFile"]).name
         )
     if not data_file_path.exists():
-        raise IOError("cannot find data file")
+        raise OSError("cannot find data file")
     return data_file_path
 
 

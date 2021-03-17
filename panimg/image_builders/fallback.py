@@ -61,7 +61,7 @@ def image_builder_fallback(
             new_images.add(n_image)
             new_image_files |= set(n_image_files)
             consumed_files.add(file)
-        except (IOError, ValidationError, DecompressionBombError):
+        except (OSError, ValidationError, DecompressionBombError):
             errors[file].append(format_error("Not a valid image file"))
 
     return PanImgResult(
