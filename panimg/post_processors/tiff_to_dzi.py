@@ -18,12 +18,12 @@ def tiff_to_dzi(*, image_files: Set[PanImgFile]) -> PostProcessorResult:
     new_image_files: Set[PanImgFile] = set()
     new_folders: Set[PanImgFolder] = set()
 
-    for tiff_file in image_files:
-        if tiff_file.image_type == ImageType.TIFF:
+    for file in image_files:
+        if file.image_type == ImageType.TIFF:
             try:
-                result = _create_dzi_image(tiff_file=tiff_file)
+                result = _create_dzi_image(tiff_file=file)
             except Exception as e:
-                logger.warning(f"Could not create DZI for {tiff_file}: {e}")
+                logger.warning(f"Could not create DZI for {file}: {e}")
                 continue
 
             new_image_files |= result.new_image_files
@@ -47,12 +47,12 @@ def _create_dzi_image(*, tiff_file: PanImgFile) -> PostProcessorResult:
     new_file = PanImgFile(
         image_id=tiff_file.image_id,
         image_type=ImageType.DZI,
-        file=dzi_output.parent / f"{dzi_output.name}.dzi",
+        file=(dzi_output.parent / f"{dzi_output.name}.dzi").absolute(),
     )
 
     new_folder = PanImgFolder(
         image_id=tiff_file.image_id,
-        folder=dzi_output.parent / f"{dzi_output.name}_files",
+        folder=(dzi_output.parent / f"{dzi_output.name}_files").absolute(),
     )
 
     return PostProcessorResult(

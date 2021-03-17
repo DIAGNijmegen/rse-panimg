@@ -431,9 +431,9 @@ def image_builder_tiff(  # noqa: C901
         )
 
         if gc_file.associated_files:
-            consumed_files |= {f for f in gc_file.associated_files}
+            consumed_files |= {f.absolute() for f in gc_file.associated_files}
         else:
-            consumed_files.add(gc_file.path)
+            consumed_files.add(gc_file.path.absolute())
 
     return PanImgResult(
         consumed_files=consumed_files,

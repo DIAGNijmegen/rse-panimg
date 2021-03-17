@@ -10,6 +10,7 @@ from panimg.models import (
     PanImgResult,
     PostProcessorResult,
 )
+from panimg.post_processors import DEFAULT_POST_PROCESSORS
 from panimg.types import ImageBuilder, PostProcessor
 
 
@@ -39,12 +40,14 @@ def convert(
         created_image_prefix=created_image_prefix,
     )
 
-    if post_processors is not None:
-        result = _post_process(
-            image_files=new_image_files, post_processors=post_processors
-        )
-        new_image_files |= result.new_image_files
-        new_folders |= result.new_folders
+    result = _post_process(
+        image_files=new_image_files,
+        post_processors=post_processors
+        if post_processors is not None
+        else DEFAULT_POST_PROCESSORS,
+    )
+    new_image_files |= result.new_image_files
+    new_folders |= result.new_folders
 
     return PanImgResult(
         new_images=new_images,
