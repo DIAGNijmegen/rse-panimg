@@ -3,7 +3,13 @@ from pathlib import Path
 from typing import DefaultDict, Iterable, List, Optional, Set
 
 from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
-from panimg.models import PanImg, PanImgFile, PanImgFolder, PanImgResult
+from panimg.models import (
+    PanImg,
+    PanImgFile,
+    PanImgFolder,
+    PanImgResult,
+    PostProcessorResult,
+)
 from panimg.types import ImageBuilder, PostProcessor
 
 
@@ -34,9 +40,11 @@ def convert(
     )
 
     if post_processors is not None:
-        new_image_files |= _post_process(
+        result = _post_process(
             image_files=new_image_files, post_processors=post_processors
         )
+        new_image_files |= result.new_image_files
+        new_folders |= result.new_folders
 
     return PanImgResult(
         new_images=new_images,
@@ -99,10 +107,15 @@ def _convert_directory(
 
 def _post_process(
     *, image_files: Set[PanImgFile], post_processors: Iterable[PostProcessor]
-) -> Set[PanImgFile]:
+) -> PostProcessorResult:
     new_image_files: Set[PanImgFile] = set()
+    new_folders: Set[PanImgFolder] = set()
 
     for processor in post_processors:
-        new_image_files |= processor(image_files=image_files)
+        result = processor(image_files=image_files)
+        new_image_files |= result.new_image_files
+        new_folders |= result.new_folders
 
-    return new_image_files
+    return PostProcessorResult(
+        new_image_files=new_image_files, new_folders=new_folders
+    )
