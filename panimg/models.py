@@ -56,3 +56,9 @@ class PanImgResult:
     new_folders: Set[PanImgFolder]
     consumed_files: Set[Path]
     file_errors: Dict[Path, List[str]]
+
+
+@dataclass
+class PostProcessorResult:
+    new_image_files: Set[PanImgFile]
+    new_folders: Set[PanImgFolder]

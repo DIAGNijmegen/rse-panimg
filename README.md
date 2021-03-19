@@ -40,24 +40,32 @@ result = convert(
 
 ### Supported Formats
 
-| Input                               | Output           | Strategy   | Notes                      |
-| ----------------------------------- | ---------------- | ---------- | -------------------------- |
-| `.mha`                              | `.mha`           | `metaio`   |                            |
-| `.mhd` with `.raw` or `.zraw`       | `.mha`           | `metaio`   |                            |
-| `.dcm`                              | `.mha`           | `dicom`    | <sup>[1](#footnote1)</sup> |
-| `.nii`                              | `.mha`           | `nifti`    |                            |
-| `.nii.gz`                           | `.mha`           | `nifti`    |                            |
-| `.png`                              | `.mha`           | `fallback` | <sup>[2](#footnote2)</sup> |
-| `.jpeg`                             | `.mha`           | `fallback` | <sup>[2](#footnote2)</sup> |
-| `.tiff`                             | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
-| `.svs` (Aperio)                     | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
-| `.vms`, `.vmu`, `.ndpi` (Hamamatsu) | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
-| `.scn` (Leica)                      | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
-| `.mrxs` (MIRAX)                     | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
-| `.biff` (Ventana)                   | `.tiff` & `.dzi` | `tiff`     | <sup>[3](#footnote3)</sup> |
+| Input                               | Output  | Strategy   | Notes                      |
+| ----------------------------------- | --------| ---------- | -------------------------- |
+| `.mha`                              | `.mha`  | `metaio`   |                            |
+| `.mhd` with `.raw` or `.zraw`       | `.mha`  | `metaio`   |                            |
+| `.dcm`                              | `.mha`  | `dicom`    | <sup>[1](#footnote1)</sup> |
+| `.nii`                              | `.mha`  | `nifti`    |                            |
+| `.nii.gz`                           | `.mha`  | `nifti`    |                            |
+| `.png`                              | `.mha`  | `fallback` | <sup>[2](#footnote2)</sup> |
+| `.jpeg`                             | `.mha`  | `fallback` | <sup>[2](#footnote2)</sup> |
+| `.tiff`                             | `.tiff` | `tiff`     |                            |
+| `.svs` (Aperio)                     | `.tiff` | `tiff`     |                            |
+| `.vms`, `.vmu`, `.ndpi` (Hamamatsu) | `.tiff` | `tiff`     |                            |
+| `.scn` (Leica)                      | `.tiff` | `tiff`     |                            |
+| `.mrxs` (MIRAX)                     | `.tiff` | `tiff`     |                            |
+| `.biff` (Ventana)                   | `.tiff` | `tiff`     |                            |
 
 <a name="footnote1">1</a>: Compressed DICOM requires `gdcm`
 
 <a name="footnote2">2</a>: 2D only, unitary dimensions
 
-<a name="footnote3">3</a>: DZI only created if possible
+#### Post Processors
+
+You can also define a set of post processors that will operate on each output file.
+We provide a `dzi_to_tiff` post processor that is enabled by default, which will produce a DZI file if it is able to.
+To customise the post processors that run you can do this with
+
+```python
+result = convert(..., post_processors=[...])
+```
