@@ -72,7 +72,9 @@ def convert_itk_to_internal(
         voxel_height_mm=simple_itk_image.GetSpacing()[1]
         if use_spacing
         else None,
-        voxel_depth_mm=simple_itk_image.GetSpacing()[2] if depth else None,
+        voxel_depth_mm=simple_itk_image.GetSpacing()[2]
+        if depth and use_spacing
+        else None,
     )
 
     db_image_files = set()

@@ -1,8 +1,10 @@
+from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Iterator, List, Set
 
 import SimpleITK
 
+from panimg.exceptions import UnconsumedFilesException
 from panimg.models import FileLoaderResult
 
 
@@ -10,9 +12,7 @@ def format_error(message: str) -> str:
     return f"NifTI image builder: {message}"
 
 
-def image_builder_nifti(
-    *, files: Set[Path], file_errors: DefaultDict[Path, List[str]]
-) -> Iterator[FileLoaderResult]:
+def image_builder_nifti(*, files: Set[Path],) -> Iterator[FileLoaderResult]:
     """
     Constructs image objects from files in NifTI format (nii/nii.gz)
 
@@ -29,8 +29,11 @@ def image_builder_nifti(
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
+    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+
     for file in files:
         if not (file.name.endswith(".nii") or file.name.endswith(".nii.gz")):
+            file_errors[file].append(format_error("Not a NifTI image file"))
             continue
 
         try:
@@ -47,3 +50,6 @@ def image_builder_nifti(
         yield FileLoaderResult(
             image=img, name=file.name, consumed_files={file}, use_spacing=True
         )
+
+    if file_errors:
+        raise UnconsumedFilesException(file_errors=file_errors)

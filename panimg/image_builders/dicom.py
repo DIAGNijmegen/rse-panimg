@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from math import isclose
 from pathlib import Path
 from typing import DefaultDict, Iterator, List, Set
@@ -7,6 +7,7 @@ import SimpleITK
 import numpy as np
 import pydicom
 
+from panimg.exceptions import UnconsumedFilesException
 from panimg.models import FileLoaderResult
 
 NUMPY_IMAGE_TYPES = {
@@ -333,9 +334,7 @@ def _create_itk_from_dcm(
     return img
 
 
-def image_builder_dicom(
-    *, files: Set[Path], file_errors: DefaultDict[Path, List[str]]
-) -> Iterator[FileLoaderResult]:
+def image_builder_dicom(*, files: Set[Path]) -> Iterator[FileLoaderResult]:
     """
     Constructs image objects by inspecting files in a directory.
 
@@ -353,6 +352,8 @@ def image_builder_dicom(
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
+    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+
     studies = _validate_dicom_files(files=files, file_errors=file_errors)
 
     for dicom_ds in studies:
@@ -361,3 +362,6 @@ def image_builder_dicom(
         except Exception as e:
             for d in dicom_ds.headers:
                 file_errors[d["file"]].append(format_error(str(e)))
+
+    if file_errors:
+        raise UnconsumedFilesException(file_errors=file_errors)

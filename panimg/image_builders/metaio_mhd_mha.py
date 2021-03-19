@@ -3,9 +3,11 @@ Image builder for MetaIO mhd/mha files.
 
 See: https://itk.org/Wiki/MetaIO/Documentation
 """
+from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Dict, Iterator, List, Mapping, Set, Union
 
+from panimg.exceptions import UnconsumedFilesException
 from panimg.image_builders.metaio_utils import (
     load_sitk_image,
     parse_mh_header,
@@ -14,7 +16,7 @@ from panimg.models import FileLoaderResult
 
 
 def image_builder_mhd(  # noqa: C901
-    *, files: Set[Path], file_errors: DefaultDict[Path, List[str]],
+    *, files: Set[Path]
 ) -> Iterator[FileLoaderResult]:
     """
     Constructs image objects by inspecting files in a directory.
@@ -32,6 +34,8 @@ def image_builder_mhd(  # noqa: C901
      - files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
+    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+
     element_data_file_key = "ElementDataFile"
 
     def detect_mhd_file(headers: Dict[str, str], path: Path) -> bool:
@@ -65,7 +69,9 @@ def image_builder_mhd(  # noqa: C901
         try:
             parsed_headers = parse_mh_header(file)
         except ValueError:
-            # Maybe add .mhd and .mha files here as "processed" but with errors
+            file_errors[file].append(
+                format_error("Could not parse ITK header")
+            )
             continue
 
         try:
@@ -107,3 +113,9 @@ def image_builder_mhd(  # noqa: C901
                 consumed_files=consumed_files,
                 use_spacing=True,
             )
+        else:
+            file_errors[file].append(format_error("Not an ITK file"))
+            continue
+
+    if file_errors:
+        raise UnconsumedFilesException(file_errors=file_errors)

@@ -1,9 +1,10 @@
 import os
 import re
 import shutil
+from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, mkdtemp
 from typing import Callable, DefaultDict, Dict, Iterator, List, Optional, Set
 from uuid import UUID, uuid4
 
@@ -11,7 +12,7 @@ import openslide
 import pyvips
 import tifffile
 
-from panimg.exceptions import ValidationError
+from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.models import (
     ColorSpace,
     FileLoaderResult,
@@ -382,10 +383,12 @@ def _load_gc_files(
 
 
 def image_builder_tiff(
-    *, files: Set[Path], file_errors: DefaultDict[Path, List[str]]
+    *, files: Set[Path]
 ) -> Iterator[FileLoaderResult]:  # noqa: C901
     # TODO Do we need an output directory?
-    output_directory = Path(TemporaryDirectory().name)
+    output_directory = Path(mkdtemp())
+
+    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
     loaded_files = _load_gc_files(
         files=files,
@@ -398,14 +401,18 @@ def image_builder_tiff(
         # try and load image with tiff file
         try:
             gc_file = _load_with_tiff(gc_file=gc_file)
-        except Exception as e:
-            file_errors[gc_file.path].append(f"TIFF load error: {e}.")
+        except Exception:
+            file_errors[gc_file.path].append(
+                "Could not open file with tifffile."
+            )
 
         # try and load image with open slide
         try:
             gc_file = _load_with_openslide(gc_file=gc_file)
-        except Exception as e:
-            file_errors[gc_file.path].append(f"OpenSlide load error: {e}.")
+        except Exception:
+            file_errors[gc_file.path].append(
+                "Could not open file with OpenSlide."
+            )
 
         # validate
         try:
@@ -426,6 +433,9 @@ def image_builder_tiff(
             consumed_files=consumed_files,
             use_spacing=True,  # TODO?
         )
+
+    if file_errors:
+        raise UnconsumedFilesException(file_errors=file_errors)
 
 
 def _create_tiff_image_entry(*, tiff_file: GrandChallengeTiffFile) -> PanImg:

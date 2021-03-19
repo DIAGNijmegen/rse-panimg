@@ -1,7 +1,8 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, Iterable, List, Optional, Set
+from typing import DefaultDict, Dict, Iterable, List, Optional, Set
 
+from panimg.exceptions import UnconsumedFilesException
 from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
 from panimg.image_builders.utils import convert_itk_to_internal
 from panimg.models import (
@@ -120,24 +121,27 @@ def _build_files(
     new_images = set()
     new_image_files: Set[PanImgFile] = set()
     consumed_files: Set[Path] = set()
-    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+    file_errors: Dict[Path, List[str]] = {}
 
-    for result in builder(files=files, file_errors=file_errors):
-        if created_image_prefix:
-            name = f"{created_image_prefix}-{result.name}"
-        else:
-            name = result.name
+    try:
+        for result in builder(files=files):
+            if created_image_prefix:
+                name = f"{created_image_prefix}-{result.name}"
+            else:
+                name = result.name
 
-        # TODO TIFF support
-        n_image, n_image_files = convert_itk_to_internal(
-            simple_itk_image=result.image,
-            name=name,
-            use_spacing=result.use_spacing,
-            output_directory=output_directory,
-        )
-        new_images.add(n_image)
-        new_image_files |= n_image_files
-        consumed_files |= result.consumed_files
+            # TODO TIFF support
+            n_image, n_image_files = convert_itk_to_internal(
+                simple_itk_image=result.image,
+                name=name,
+                use_spacing=result.use_spacing,
+                output_directory=output_directory,
+            )
+            new_images.add(n_image)
+            new_image_files |= n_image_files
+            consumed_files |= result.consumed_files
+    except UnconsumedFilesException as e:
+        file_errors = e.file_errors
 
     return PanImgResult(
         new_images=new_images,
