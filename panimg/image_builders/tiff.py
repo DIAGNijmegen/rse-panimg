@@ -4,7 +4,8 @@ import shutil
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Set, Tuple
+from tempfile import TemporaryDirectory
+from typing import Callable, Dict, List, Optional, Set
 from uuid import UUID, uuid4
 
 import openslide
@@ -17,10 +18,8 @@ from panimg.models import (
     ImageType,
     PanImg,
     PanImgFile,
-    PanImgFolder,
     PanImgResult,
 )
-from panimg.settings import DZI_TILE_SIZE
 
 
 @dataclass
@@ -34,7 +33,6 @@ class GrandChallengeTiffFile:
     voxel_width_mm: float = 0
     voxel_height_mm: float = 0
     voxel_depth_mm: Optional[float] = None
-    source_files: List[Path] = field(default_factory=list)
     associated_files: List[Path] = field(default_factory=list)
 
     def validate(self) -> None:
@@ -196,23 +194,6 @@ def _get_color_space(*, color_space_string) -> Optional[ColorSpace]:
     return color_space
 
 
-def _create_image_file(
-    *, path: Path, image: PanImg, output_directory: Path
-) -> PanImgFile:
-    output_file = output_directory / f"{image.pk}{path.suffix}"
-
-    if path.suffix.lower() == ".dzi":
-        image_type = ImageType.DZI
-    else:
-        # TODO (jmsmkn): Create the tiff files in the correct location
-        shutil.copy(src=str(path.resolve()), dst=str(output_file.resolve()))
-        image_type = ImageType.TIFF
-
-    return PanImgFile(
-        image_id=image.pk, image_type=image_type, file=output_file
-    )
-
-
 def _load_with_tiff(
     *, gc_file: GrandChallengeTiffFile
 ) -> GrandChallengeTiffFile:
@@ -229,43 +210,6 @@ def _load_with_openslide(
         gc_file=gc_file, image=open_slide_file
     )
     return gc_file
-
-
-def _new_image_files(
-    *, gc_file: GrandChallengeTiffFile, image: PanImg, output_directory: Path
-) -> Set[PanImgFile]:
-    new_image_files = {
-        _create_image_file(
-            path=gc_file.path.absolute(),
-            image=image,
-            output_directory=output_directory,
-        )
-    }
-
-    if gc_file.source_files:
-        for s in gc_file.source_files:
-            new_image_files.add(
-                _create_image_file(
-                    path=s, image=image, output_directory=output_directory
-                )
-            )
-
-    return new_image_files
-
-
-def _new_folder_uploads(
-    *, dzi_output: Optional[Path], image: PanImg,
-) -> Set[PanImgFolder]:
-    new_folder_upload = set()
-
-    if dzi_output:
-        dzi_folder_upload = PanImgFolder(
-            folder=dzi_output.parent / (dzi_output.name + "_files"),
-            image_id=image.pk,
-        )
-        new_folder_upload.add(dzi_folder_upload)
-
-    return new_folder_upload
 
 
 mirax_pattern = r"INDEXFILE\s?=\s?.|FILE_\d+\s?=\s?."
@@ -315,34 +259,46 @@ def _get_vms_files(vms_file: Path):
 
 
 def _convert(
+    *,
     files: List[Path],
     associated_files_getter: Optional[Callable[[Path], List[Path]]],
     converter,
-) -> Tuple[List[GrandChallengeTiffFile], Dict[Path, List[str]]]:
-    compiled_files: List[GrandChallengeTiffFile] = []
+    output_directory: Path,
+    file_errors: Dict[Path, List[str]],
+) -> List[GrandChallengeTiffFile]:
+    converted_files: List[GrandChallengeTiffFile] = []
     associated_files: List[Path] = []
-    errors: Dict[Path, List[str]] = defaultdict(list)
+
     for file in files:
         try:
             gc_file = GrandChallengeTiffFile(file)
+
             if associated_files_getter:
                 associated_files = associated_files_getter(gc_file.path)
+
             tiff_file = _convert_to_tiff(
-                path=file, pk=gc_file.pk, converter=converter
+                path=file,
+                pk=gc_file.pk,
+                converter=converter,
+                output_directory=output_directory,
             )
         except Exception as e:
-            errors[file].append(str(e))
+            file_errors[file].append(str(e))
             continue
         else:
             gc_file.path = tiff_file
             gc_file.associated_files = associated_files
             gc_file.associated_files.append(file)
-            compiled_files.append(gc_file)
-    return compiled_files, errors
+            converted_files.append(gc_file)
+
+    return converted_files
 
 
-def _convert_to_tiff(*, path: Path, pk: UUID, converter) -> Path:
-    new_file_name = path.parent / f"{path.stem}_{str(pk)}.tif"
+def _convert_to_tiff(
+    *, path: Path, pk: UUID, converter, output_directory: Path
+) -> Path:
+    new_file_name = output_directory / path.name / f"{pk}.tif"
+
     image = converter.Image.new_from_file(
         str(path.absolute()), access="sequential"
     )
@@ -354,22 +310,33 @@ def _convert_to_tiff(*, path: Path, pk: UUID, converter) -> Path:
         y_res = 1000.0 / float(image.get("openslide.mpp-y"))
         image = image.copy(xres=x_res, yres=y_res)
 
-    image.write_to_file(
-        str(new_file_name.absolute()),
-        tile=True,
-        pyramid=True,
-        bigtiff=True,
-        compression="jpeg",
-        Q=70,
-    )
+    with TemporaryDirectory() as d:
+        temp_file = Path(d) / new_file_name.name
+
+        image.write_to_file(
+            str(temp_file.absolute()),
+            tile=True,
+            pyramid=True,
+            bigtiff=True,
+            compression="jpeg",
+            Q=70,
+        )
+
+        new_file_name.parent.mkdir()
+        shutil.move(temp_file, new_file_name)
+
     return new_file_name
 
 
 def _load_gc_files(
-    *, files: Set[Path], converter
-) -> Tuple[List[GrandChallengeTiffFile], Dict[Path, List[str]]]:
+    *,
+    files: Set[Path],
+    converter,
+    output_directory: Path,
+    file_errors: Dict[Path, List[str]],
+) -> List[GrandChallengeTiffFile]:
     loaded_files: List[GrandChallengeTiffFile] = []
-    errors = {}
+
     complex_file_handlers = {
         ".mrxs": _get_mrxs_files,
         ".vms": _get_vms_files,
@@ -379,14 +346,18 @@ def _load_gc_files(
         ".scn": None,
         ".bif": None,
     }
+
     for ext, handler in complex_file_handlers.items():
         complex_files = [file for file in files if file.suffix.lower() == ext]
         if len(complex_files) > 0:
-            converted_files, convert_errors = _convert(
-                complex_files, handler, converter
+            converted_files = _convert(
+                files=complex_files,
+                associated_files_getter=handler,
+                converter=converter,
+                output_directory=output_directory,
+                file_errors=file_errors,
             )
             loaded_files += converted_files
-            errors.update(convert_errors)
 
     # don't handle files that are associated files
     for file in files:
@@ -396,8 +367,21 @@ def _load_gc_files(
             if g.associated_files is not None
         ):
             gc_file = GrandChallengeTiffFile(file)
+
+            out_file = (
+                output_directory
+                / str(gc_file.path.name)
+                / f"{gc_file.pk}{gc_file.path.suffix}"
+            )
+            out_file.parent.mkdir()
+
+            shutil.copy(
+                src=str(gc_file.path.resolve()), dst=str(out_file.resolve())
+            )
+
             loaded_files.append(gc_file)
-    return loaded_files, errors
+
+    return loaded_files
 
 
 def image_builder_tiff(  # noqa: C901
@@ -406,70 +390,57 @@ def image_builder_tiff(  # noqa: C901
     new_images = set()
     new_image_files: Set[PanImgFile] = set()
     consumed_files: Set[Path] = set()
-    invalid_file_errors: Dict[Path, List[str]] = defaultdict(list)
-    new_folders: Set[PanImgFolder] = set()
+    file_errors: Dict[Path, List[str]] = defaultdict(list)
 
-    def format_error(message: str) -> str:
-        return f"Tiff image builder: {message}"
+    loaded_files = _load_gc_files(
+        files=files,
+        converter=pyvips,
+        output_directory=output_directory,
+        file_errors=file_errors,
+    )
 
-    loaded_files, errors = _load_gc_files(files=files, converter=pyvips)
     for gc_file in loaded_files:
-        dzi_output = None
-        error = []
-        if gc_file.path in errors:
-            error = errors[gc_file.path]
-
         # try and load image with tiff file
         try:
             gc_file = _load_with_tiff(gc_file=gc_file)
         except Exception as e:
-            error.append(f"TIFF load error: {e}.")
+            file_errors[gc_file.path].append(f"TIFF load error: {e}.")
 
         # try and load image with open slide
         try:
             gc_file = _load_with_openslide(gc_file=gc_file)
         except Exception as e:
-            error.append(f"OpenSlide load error: {e}.")
+            file_errors[gc_file.path].append(f"OpenSlide load error: {e}.")
 
         # validate
         try:
             gc_file.validate()
         except ValidationError as e:
-            error.append(f"Validation error: {e}.")
-            invalid_file_errors[gc_file.path].append(
-                format_error(" ".join(error))
-            )
+            file_errors[gc_file.path].append(f"Validation error: {e}.")
             continue
-
-        image_out_dir = output_directory / str(gc_file.pk)
-        image_out_dir.mkdir()
 
         image = _create_tiff_image_entry(tiff_file=gc_file)
         new_images.add(image)
 
-        try:
-            dzi_output, gc_file = _create_dzi_images(
-                gc_file=gc_file, output_directory=image_out_dir
+        new_image_files.add(
+            PanImgFile(
+                image_id=image.pk,
+                image_type=ImageType.TIFF,
+                file=gc_file.path.absolute(),
             )
-        except ValidationError as e:
-            error += f"DZI error: {e}. "
-
-        new_image_files |= _new_image_files(
-            gc_file=gc_file, image=image, output_directory=image_out_dir
         )
-        new_folders |= _new_folder_uploads(dzi_output=dzi_output, image=image,)
 
         if gc_file.associated_files:
-            consumed_files |= {f for f in gc_file.associated_files}
+            consumed_files |= {f.absolute() for f in gc_file.associated_files}
         else:
-            consumed_files.add(gc_file.path)
+            consumed_files.add(gc_file.path.absolute())
 
     return PanImgResult(
         consumed_files=consumed_files,
-        file_errors=invalid_file_errors,
+        file_errors=file_errors,
         new_images=new_images,
         new_image_files=new_image_files,
-        new_folders=new_folders,
+        new_folders=set(),
     )
 
 
@@ -495,22 +466,3 @@ def _create_tiff_image_entry(*, tiff_file: GrandChallengeTiffFile) -> PanImg:
         window_center=None,
         window_width=None,
     )
-
-
-def _create_dzi_images(
-    *, gc_file: GrandChallengeTiffFile, output_directory: Path
-) -> Tuple[Path, GrandChallengeTiffFile]:
-    # Creates a dzi file(out.dzi) and corresponding tiles in folder {pk}_files
-    dzi_output = output_directory / str(gc_file.pk)
-    try:
-        image = pyvips.Image.new_from_file(
-            str(gc_file.path.absolute()), access="sequential"
-        )
-        pyvips.Image.dzsave(image, str(dzi_output), tile_size=DZI_TILE_SIZE)
-        gc_file.source_files.append(
-            dzi_output.parent / (dzi_output.name + ".dzi")
-        )
-    except Exception as e:
-        raise ValidationError(f"Image can't be converted to dzi: {e}")
-
-    return dzi_output, gc_file

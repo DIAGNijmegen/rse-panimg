@@ -3,7 +3,7 @@ from typing import Set
 
 from typing_extensions import Protocol  # for py37 support
 
-from panimg.models import PanImgResult
+from panimg.models import PanImgFile, PanImgResult, PostProcessorResult
 
 
 class ImageBuilder(Protocol):
@@ -14,4 +14,9 @@ class ImageBuilder(Protocol):
         output_directory: Path,
         created_image_prefix: str,
     ) -> PanImgResult:
+        ...
+
+
+class PostProcessor(Protocol):
+    def __call__(self, *, image_files: Set[PanImgFile]) -> PostProcessorResult:
         ...
