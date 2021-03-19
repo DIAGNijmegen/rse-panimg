@@ -8,7 +8,7 @@ import numpy as np
 import pydicom
 
 from panimg.image_builders.utils import convert_itk_to_internal
-from panimg.models import PanImgFile, PanImgResult
+from panimg.models import FileLoaderResult, PanImgFile, PanImgResult
 
 NUMPY_IMAGE_TYPES = {
     "character": SimpleITK.sitkUInt8,
@@ -177,9 +177,7 @@ def _extract_direction(dicom_ds, direction):
     return direction
 
 
-def _process_dicom_file(  # noqa: C901
-    *, dicom_ds, created_image_prefix, output_directory
-):
+def _process_dicom_file(*, dicom_ds, created_image_prefix):  # noqa: C901
     ref_file = pydicom.dcmread(str(dicom_ds.headers[0]["file"]))
     ref_origin = tuple(
         float(i) for i in getattr(ref_file, "ImagePositionPatient", (0, 0, 0))
@@ -256,15 +254,14 @@ def _process_dicom_file(  # noqa: C901
         if getattr(ref_file, f, False):
             img.SetMetaData(f, str(getattr(ref_file, f)))
 
-    # Convert the SimpleITK image to our internal representation
-    return convert_itk_to_internal(
-        simple_itk_image=img,
+    return FileLoaderResult(
+        image=img,
         name=(
             f"{created_image_prefix}"
             f"-{dicom_ds.headers[0]['data'].StudyInstanceUID}"
             f"-{dicom_ds.index}"
         ),
-        output_directory=output_directory,
+        consumed_files={d["file"] for d in dicom_ds.headers},
     )
 
 
@@ -367,14 +364,18 @@ def image_builder_dicom(
     consumed_files: Set[Path] = set()
     for dicom_ds in studies:
         try:
-            n_image, n_image_files = _process_dicom_file(
-                dicom_ds=dicom_ds,
-                created_image_prefix=created_image_prefix,
+            result = _process_dicom_file(
+                dicom_ds=dicom_ds, created_image_prefix=created_image_prefix,
+            )
+
+            n_image, n_image_files = convert_itk_to_internal(
+                simple_itk_image=result.image,
+                name=result.name,
                 output_directory=output_directory,
             )
             new_images.add(n_image)
             new_image_files |= set(n_image_files)
-            consumed_files |= {d["file"] for d in dicom_ds.headers}
+            consumed_files |= result.consumed_files
         except Exception as e:
             for d in dicom_ds.headers:
                 file_errors[d["file"]].append(format_error(str(e)))

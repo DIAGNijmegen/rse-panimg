@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set
 from uuid import UUID
 
+from SimpleITK import Image
 from pydantic.dataclasses import dataclass
 
 
@@ -62,3 +63,15 @@ class PanImgResult:
 class PostProcessorResult:
     new_image_files: Set[PanImgFile]
     new_folders: Set[PanImgFolder]
+
+
+class FileLoaderResultConfig:
+   arbitrary_types_allowed = True
+
+@dataclass(config=FileLoaderResultConfig)
+class FileLoaderResult:
+    image: Image
+    name: str
+    consumed_files: Set[Path]
+
+
