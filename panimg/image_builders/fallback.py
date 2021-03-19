@@ -1,13 +1,12 @@
-from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Iterator, List, Set
+from typing import DefaultDict, Iterator, List, Set
 
 import SimpleITK
 import numpy as np
 from PIL import Image
 from PIL.Image import DecompressionBombError
 
-from panimg.exceptions import BuilderErrors, ValidationError
+from panimg.exceptions import ValidationError
 from panimg.models import FileLoaderResult
 
 
@@ -15,7 +14,9 @@ def format_error(message: str) -> str:
     return f"Fallback image builder: {message}"
 
 
-def image_builder_fallback(*, files: Set[Path]) -> Iterator[FileLoaderResult]:
+def image_builder_fallback(
+    *, files: Set[Path], file_errors: DefaultDict[Path, List[str]]
+) -> Iterator[FileLoaderResult]:
     """
     Constructs image objects by inspecting files in a directory.
 
@@ -33,8 +34,6 @@ def image_builder_fallback(*, files: Set[Path]) -> Iterator[FileLoaderResult]:
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
-    errors: Dict[Path, List[str]] = defaultdict(list)
-
     for file in files:
         try:
             img = Image.open(file)
@@ -55,7 +54,4 @@ def image_builder_fallback(*, files: Set[Path]) -> Iterator[FileLoaderResult]:
                 use_spacing=False,
             )
         except (OSError, ValidationError, DecompressionBombError):
-            errors[file].append(format_error("Not a valid image file"))
-
-    if errors:
-        raise BuilderErrors(errors=errors)
+            file_errors[file].append(format_error("Not a valid image file"))

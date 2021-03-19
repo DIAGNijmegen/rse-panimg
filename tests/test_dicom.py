@@ -22,7 +22,7 @@ DICOM_DIR = RESOURCE_PATH / "dicom"
 
 def test_get_headers_by_study():
     files = [Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]]
-    studies, _ = _get_headers_by_study(files)
+    studies = _get_headers_by_study(files, defaultdict(list))
     assert len(studies) == 1
     for key in studies:
         assert [str(x["file"]) for x in studies[key]["headers"]] == [
@@ -33,13 +33,13 @@ def test_get_headers_by_study():
         files = [Path(root).joinpath(f) for f in files]
         break
 
-    studies, _ = _get_headers_by_study(files)
+    studies = _get_headers_by_study(files, defaultdict(list))
     assert len(studies) == 0
 
 
 def test_validate_dicom_files():
     files = [Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]]
-    studies, _ = _validate_dicom_files(files)
+    studies = _validate_dicom_files(files, defaultdict(list))
     assert len(studies) == 1
     for study in studies:
         headers = study.headers
@@ -47,12 +47,12 @@ def test_validate_dicom_files():
         assert study.n_slices == 4
     with mock.patch(
         "panimg.image_builders.dicom._get_headers_by_study",
-        return_value=(
-            {"foo": {"headers": headers[1:], "file": "bar", "index": 1}},
-            defaultdict(list),
-        ),
+        return_value={
+            "foo": {"headers": headers[1:], "file": "bar", "index": 1}
+        },
     ):
-        studies, errors = _validate_dicom_files(files)
+        errors = defaultdict(list)
+        studies = _validate_dicom_files(files, errors)
         assert len(studies) == 0
         for header in headers[1:]:
             assert errors[header["file"]] == [

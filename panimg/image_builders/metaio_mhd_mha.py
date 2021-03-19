@@ -3,11 +3,9 @@ Image builder for MetaIO mhd/mha files.
 
 See: https://itk.org/Wiki/MetaIO/Documentation
 """
-from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Iterator, List, Mapping, Set, Union
+from typing import DefaultDict, Dict, Iterator, List, Mapping, Set, Union
 
-from panimg.exceptions import BuilderErrors
 from panimg.image_builders.metaio_utils import (
     load_sitk_image,
     parse_mh_header,
@@ -16,7 +14,7 @@ from panimg.models import FileLoaderResult
 
 
 def image_builder_mhd(  # noqa: C901
-    *, files: Set[Path]
+    *, files: Set[Path], file_errors: DefaultDict[Path, List[str]],
 ) -> Iterator[FileLoaderResult]:
     """
     Constructs image objects by inspecting files in a directory.
@@ -63,8 +61,6 @@ def image_builder_mhd(  # noqa: C901
     def format_error(message: str) -> str:
         return f"Mhd image builder: {message}"
 
-    invalid_file_errors: Dict[Path, List[str]] = defaultdict(list)
-
     for file in files:
         try:
             parsed_headers = parse_mh_header(file)
@@ -77,7 +73,7 @@ def image_builder_mhd(  # noqa: C901
                 parsed_headers, file.parent
             ) or detect_mha_file(parsed_headers)
         except ValueError as e:
-            invalid_file_errors[file].append(format_error(str(e)))
+            file_errors[file].append(format_error(str(e)))
             continue
 
         if is_hd_or_mha:
@@ -88,7 +84,7 @@ def image_builder_mhd(  # noqa: C901
                     file.parent / parsed_headers[element_data_file_key]
                 )
                 if not file_dependency.is_file():
-                    invalid_file_errors[file].append(
+                    file_errors[file].append(
                         format_error("Cannot find data file")
                     )
                     continue
@@ -96,7 +92,7 @@ def image_builder_mhd(  # noqa: C901
             try:
                 simple_itk_image = load_sitk_image(file.absolute())
             except RuntimeError:
-                invalid_file_errors[file].append(
+                file_errors[file].append(
                     format_error("SimpleITK cannot open file")
                 )
                 continue
@@ -111,6 +107,3 @@ def image_builder_mhd(  # noqa: C901
                 consumed_files=consumed_files,
                 use_spacing=True,
             )
-
-    if invalid_file_errors:
-        raise BuilderErrors(errors=invalid_file_errors)

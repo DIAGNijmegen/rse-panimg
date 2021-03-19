@@ -2,7 +2,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Iterable, List, Optional, Set
 
-from panimg.exceptions import BuilderErrors
 from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
 from panimg.image_builders.utils import convert_itk_to_internal
 from panimg.models import (
@@ -120,37 +119,30 @@ def _build_files(
 ) -> PanImgResult:
     new_images = set()
     new_image_files: Set[PanImgFile] = set()
-    new_folders: Set[PanImgFolder] = set()
     consumed_files: Set[Path] = set()
     file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
-    try:
-        for result in builder(files=files):
-            if created_image_prefix:
-                name = f"{created_image_prefix}-{result.name}"
-            else:
-                name = result.name
+    for result in builder(files=files, file_errors=file_errors):
+        if created_image_prefix:
+            name = f"{created_image_prefix}-{result.name}"
+        else:
+            name = result.name
 
-            # Process result
-            n_image, n_image_files = convert_itk_to_internal(
-                simple_itk_image=result.image,
-                name=name,
-                use_spacing=result.use_spacing,
-                output_directory=output_directory,
-            )
-            new_images.add(n_image)
-            new_image_files |= n_image_files
-            consumed_files |= result.consumed_files
-            # TODO new folders, TIFF support
-            # new_folders |= builder_result.new_folders
-    except BuilderErrors as e:
-        for filepath, errors in e.errors.items():
-            file_errors[filepath].extend(errors)
+        # TODO TIFF support
+        n_image, n_image_files = convert_itk_to_internal(
+            simple_itk_image=result.image,
+            name=name,
+            use_spacing=result.use_spacing,
+            output_directory=output_directory,
+        )
+        new_images.add(n_image)
+        new_image_files |= n_image_files
+        consumed_files |= result.consumed_files
 
     return PanImgResult(
         new_images=new_images,
         new_image_files=new_image_files,
-        new_folders=new_folders,
+        new_folders=set(),
         consumed_files=consumed_files,
         file_errors=file_errors,
     )

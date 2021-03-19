@@ -1,18 +1,17 @@
 import os
 import re
 import shutil
-from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Callable, Dict, Iterator, List, Optional, Set
+from typing import Callable, DefaultDict, Dict, Iterator, List, Optional, Set
 from uuid import UUID, uuid4
 
 import openslide
 import pyvips
 import tifffile
 
-from panimg.exceptions import BuilderErrors, ValidationError
+from panimg.exceptions import ValidationError
 from panimg.models import (
     ColorSpace,
     FileLoaderResult,
@@ -383,10 +382,8 @@ def _load_gc_files(
 
 
 def image_builder_tiff(
-    *, files: Set[Path]
+    *, files: Set[Path], file_errors: DefaultDict[Path, List[str]]
 ) -> Iterator[FileLoaderResult]:  # noqa: C901
-    file_errors: Dict[Path, List[str]] = defaultdict(list)
-
     # TODO Do we need an output directory?
     output_directory = Path(TemporaryDirectory().name)
 
@@ -429,9 +426,6 @@ def image_builder_tiff(
             consumed_files=consumed_files,
             use_spacing=True,  # TODO?
         )
-
-    if file_errors:
-        raise BuilderErrors(errors=file_errors)
 
 
 def _create_tiff_image_entry(*, tiff_file: GrandChallengeTiffFile) -> PanImg:
