@@ -66,12 +66,12 @@ class PostProcessorResult:
 
 
 class FileLoaderResultConfig:
-   arbitrary_types_allowed = True
+    arbitrary_types_allowed = True
+
 
 @dataclass(config=FileLoaderResultConfig)
 class FileLoaderResult:
     image: Image
     name: str
     consumed_files: Set[Path]
-
-
+    use_spacing: bool

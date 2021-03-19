@@ -1,14 +1,14 @@
 from collections import defaultdict, namedtuple
 from math import isclose
 from pathlib import Path
-from typing import Set
+from typing import Iterator, Set
 
 import SimpleITK
 import numpy as np
 import pydicom
 
-from panimg.image_builders.utils import convert_itk_to_internal
-from panimg.models import FileLoaderResult, PanImgFile, PanImgResult
+from panimg.exceptions import BuilderErrors
+from panimg.models import FileLoaderResult
 
 NUMPY_IMAGE_TYPES = {
     "character": SimpleITK.sitkUInt8,
@@ -177,7 +177,7 @@ def _extract_direction(dicom_ds, direction):
     return direction
 
 
-def _process_dicom_file(*, dicom_ds, created_image_prefix):  # noqa: C901
+def _process_dicom_file(*, dicom_ds):  # noqa: C901
     ref_file = pydicom.dcmread(str(dicom_ds.headers[0]["file"]))
     ref_origin = tuple(
         float(i) for i in getattr(ref_file, "ImagePositionPatient", (0, 0, 0))
@@ -257,11 +257,10 @@ def _process_dicom_file(*, dicom_ds, created_image_prefix):  # noqa: C901
     return FileLoaderResult(
         image=img,
         name=(
-            f"{created_image_prefix}"
-            f"-{dicom_ds.headers[0]['data'].StudyInstanceUID}"
-            f"-{dicom_ds.index}"
+            f"{dicom_ds.headers[0]['data'].StudyInstanceUID}-{dicom_ds.index}"
         ),
         consumed_files={d["file"] for d in dicom_ds.headers},
+        use_spacing=True,
     )
 
 
@@ -334,13 +333,7 @@ def _create_itk_from_dcm(
     return img
 
 
-def image_builder_dicom(
-    *,
-    files: Set[Path],
-    output_directory: Path,
-    created_image_prefix: str = "",
-    **_,
-) -> PanImgResult:
+def image_builder_dicom(*, files: Set[Path]) -> Iterator[FileLoaderResult]:
     """
     Constructs image objects by inspecting files in a directory.
 
@@ -359,31 +352,13 @@ def image_builder_dicom(
      - path->error message map describing what is wrong with a given file
     """
     studies, file_errors = _validate_dicom_files(files)
-    new_images = set()
-    new_image_files: Set[PanImgFile] = set()
-    consumed_files: Set[Path] = set()
+
     for dicom_ds in studies:
         try:
-            result = _process_dicom_file(
-                dicom_ds=dicom_ds, created_image_prefix=created_image_prefix,
-            )
-
-            n_image, n_image_files = convert_itk_to_internal(
-                simple_itk_image=result.image,
-                name=result.name,
-                output_directory=output_directory,
-            )
-            new_images.add(n_image)
-            new_image_files |= set(n_image_files)
-            consumed_files |= result.consumed_files
+            yield _process_dicom_file(dicom_ds=dicom_ds)
         except Exception as e:
             for d in dicom_ds.headers:
                 file_errors[d["file"]].append(format_error(str(e)))
 
-    return PanImgResult(
-        consumed_files=consumed_files,
-        file_errors=file_errors,
-        new_images=new_images,
-        new_image_files=new_image_files,
-        new_folders=set(),
-    )
+    if file_errors:
+        raise BuilderErrors(errors=file_errors)

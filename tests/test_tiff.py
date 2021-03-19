@@ -23,6 +23,7 @@ from panimg.image_builders.tiff import (
     image_builder_tiff,
 )
 from panimg.models import ColorSpace
+from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
 
@@ -247,8 +248,8 @@ def test_image_builder_tiff(tmpdir_factory,):
     )
     files = [Path(d[0]).joinpath(f) for d in os.walk(temp_dir) for f in d[2]]
 
-    image_builder_result = image_builder_tiff(
-        files=files, output_directory=output_dir
+    image_builder_result = _build_files(
+        builder=image_builder_tiff, files=files, output_directory=output_dir
     )
 
     expected_files = [
@@ -338,8 +339,10 @@ def test_error_handling(tmpdir_factory):
     shutil.copytree(RESOURCE_PATH / "complex_tiff", temp_dir)
     files = {Path(d[0]).joinpath(f) for d in os.walk(temp_dir) for f in d[2]}
 
-    image_builder_result = image_builder_tiff(
-        files=files, output_directory=Path(tmpdir_factory.mktemp("output"))
+    image_builder_result = _build_files(
+        builder=image_builder_tiff,
+        files=files,
+        output_directory=Path(tmpdir_factory.mktemp("output")),
     )
 
     assert len(image_builder_result.file_errors) == 14

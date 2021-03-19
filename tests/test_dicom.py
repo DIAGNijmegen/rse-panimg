@@ -14,6 +14,7 @@ from panimg.image_builders.dicom import (
     image_builder_dicom,
 )
 from panimg.image_builders.metaio_utils import parse_mh_header
+from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
 DICOM_DIR = RESOURCE_PATH / "dicom"
@@ -61,7 +62,9 @@ def test_validate_dicom_files():
 
 def test_image_builder_dicom_4dct(tmpdir):
     files = {Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]}
-    result = image_builder_dicom(files=files, output_directory=tmpdir)
+    result = _build_files(
+        builder=image_builder_dicom, files=files, output_directory=tmpdir
+    )
     assert result.consumed_files == {
         Path(DICOM_DIR).joinpath(f"{x}.dcm") for x in range(1, 77)
     }
@@ -124,7 +127,9 @@ def test_dicom_rescaling(folder, element_type, tmpdir):
         for d in os.walk(RESOURCE_PATH / folder)
         for f in d[2]
     ]
-    result = image_builder_dicom(files=files, output_directory=tmpdir)
+    result = _build_files(
+        builder=image_builder_dicom, files=files, output_directory=tmpdir
+    )
 
     assert len(result.new_image_files) == 1
     mha_file_obj = [
@@ -141,7 +146,9 @@ def test_dicom_window_level(tmpdir):
         for d in os.walk(RESOURCE_PATH / "dicom")
         for f in d[2]
     }
-    result = image_builder_dicom(files=files, output_directory=tmpdir)
+    result = _build_files(
+        builder=image_builder_dicom, files=files, output_directory=tmpdir
+    )
 
     assert len(result.new_image_files) == 1
     mha_file_obj = [

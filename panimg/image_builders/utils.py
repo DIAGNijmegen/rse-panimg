@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Set, Tuple
 from uuid import uuid4
 
 import SimpleITK
@@ -14,7 +14,7 @@ def convert_itk_to_internal(
     output_directory: Path,
     name: str,
     use_spacing: bool = True,
-) -> Tuple[PanImg, Sequence[PanImgFile]]:
+) -> Tuple[PanImg, Set[PanImgFile]]:
     color_space = simple_itk_image.GetNumberOfComponentsPerPixel()
     color_space = {
         1: ColorSpace.GRAY,
@@ -30,9 +30,9 @@ def convert_itk_to_internal(
     work_dir.mkdir()
 
     SimpleITK.WriteImage(
-        simple_itk_image,
-        str(work_dir / f"{pk}.{ITK_INTERNAL_FILE_FORMAT}"),
-        True,
+        image=simple_itk_image,
+        fileName=str(work_dir / f"{pk}.{ITK_INTERNAL_FILE_FORMAT}"),
+        useCompression=True,
     )
 
     if simple_itk_image.GetDimension() == 4:
@@ -75,11 +75,11 @@ def convert_itk_to_internal(
         voxel_depth_mm=simple_itk_image.GetSpacing()[2] if depth else None,
     )
 
-    db_image_files = []
+    db_image_files = set()
     for file in work_dir.iterdir():
         db_image_file = PanImgFile(
             image_id=db_image.pk, image_type=ImageType.MHD, file=file,
         )
-        db_image_files.append(db_image_file)
+        db_image_files.add(db_image_file)
 
     return db_image, db_image_files

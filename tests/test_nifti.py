@@ -7,6 +7,7 @@ import pytest
 
 from panimg.image_builders.nifti import image_builder_nifti
 from panimg.models import ColorSpace
+from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
 
@@ -24,8 +25,10 @@ def test_image_builder_nifti(tmpdir_factory, src: Path):
 
     files = {*dest.glob("*")}
 
-    result = image_builder_nifti(
-        files=files, output_directory=tmpdir_factory.mktemp("output")
+    result = _build_files(
+        builder=image_builder_nifti,
+        files=files,
+        output_directory=tmpdir_factory.mktemp("output"),
     )
 
     assert result.consumed_files == files
@@ -46,6 +49,8 @@ def test_image_builder_with_other_file_extension(tmpdir):
     shutil.copy(RESOURCE_PATH / dest.name, dest)
     files = {Path(d[0]).joinpath(f) for d in os.walk(tmpdir) for f in d[2]}
     with TemporaryDirectory() as output:
-        result = image_builder_nifti(files=files, output_directory=output)
+        result = _build_files(
+            builder=image_builder_nifti, files=files, output_directory=output
+        )
     assert result.consumed_files == set()
     assert len(result.new_images) == 0

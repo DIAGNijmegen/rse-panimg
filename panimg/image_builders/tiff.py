@@ -5,20 +5,18 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Callable, Dict, List, Optional, Set
+from typing import Callable, Dict, Iterator, List, Optional, Set
 from uuid import UUID, uuid4
 
 import openslide
 import pyvips
 import tifffile
 
-from panimg.exceptions import ValidationError
+from panimg.exceptions import BuilderErrors, ValidationError
 from panimg.models import (
     ColorSpace,
-    ImageType,
+    FileLoaderResult,
     PanImg,
-    PanImgFile,
-    PanImgResult,
 )
 
 
@@ -384,13 +382,13 @@ def _load_gc_files(
     return loaded_files
 
 
-def image_builder_tiff(  # noqa: C901
-    *, files: Set[Path], output_directory: Path, **_
-) -> PanImgResult:
-    new_images = set()
-    new_image_files: Set[PanImgFile] = set()
-    consumed_files: Set[Path] = set()
+def image_builder_tiff(
+    *, files: Set[Path]
+) -> Iterator[FileLoaderResult]:  # noqa: C901
     file_errors: Dict[Path, List[str]] = defaultdict(list)
+
+    # TODO Do we need an output directory?
+    output_directory = Path(TemporaryDirectory().name)
 
     loaded_files = _load_gc_files(
         files=files,
@@ -419,29 +417,21 @@ def image_builder_tiff(  # noqa: C901
             file_errors[gc_file.path].append(f"Validation error: {e}.")
             continue
 
-        image = _create_tiff_image_entry(tiff_file=gc_file)
-        new_images.add(image)
+        if gc_file.associated_files:
+            consumed_files = {f.absolute() for f in gc_file.associated_files}
+        else:
+            consumed_files = {gc_file.path.absolute()}
 
-        new_image_files.add(
-            PanImgFile(
-                image_id=image.pk,
-                image_type=ImageType.TIFF,
-                file=gc_file.path.absolute(),
-            )
+        yield FileLoaderResult(
+            # TODO ImageType.TIFF in the PanImgFile
+            image=gc_file.path,  # TODO _create_tiff_image_entry metadata
+            name=gc_file.path.name,
+            consumed_files=consumed_files,
+            use_spacing=True,  # TODO?
         )
 
-        if gc_file.associated_files:
-            consumed_files |= {f.absolute() for f in gc_file.associated_files}
-        else:
-            consumed_files.add(gc_file.path.absolute())
-
-    return PanImgResult(
-        consumed_files=consumed_files,
-        file_errors=file_errors,
-        new_images=new_images,
-        new_image_files=new_image_files,
-        new_folders=set(),
-    )
+    if file_errors:
+        raise BuilderErrors(errors=file_errors)
 
 
 def _create_tiff_image_entry(*, tiff_file: GrandChallengeTiffFile) -> PanImg:
