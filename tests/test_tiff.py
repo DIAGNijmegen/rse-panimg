@@ -18,7 +18,7 @@ from panimg.image_builders.tiff import (
     _extract_tags,
     _get_color_space,
     _get_mrxs_files,
-    _load_with_tiff,
+    _load_with_openslide, _load_with_tiff,
     image_builder_tiff,
 )
 from panimg.models import ColorSpace
@@ -193,7 +193,7 @@ def test_load_with_open_slide(source_dir, filename, tmpdir_factory):
 
 @pytest.mark.parametrize(
     "resource, expected_error_message, voxel_size",
-    [(RESOURCE_PATH / "valid_tiff.tif", "", [1, 1, None])],
+    [(RESOURCE_PATH / "valid_tiff.tif", "", [1, 1])],
 )
 def test_tiff_image_entry_creation(
     resource, expected_error_message, voxel_size
@@ -227,7 +227,6 @@ def test_tiff_image_entry_creation(
         )
         assert gc_file.voxel_width_mm == approx(voxel_size[0])
         assert gc_file.voxel_height_mm == approx(voxel_size[1])
-        assert gc_file.voxel_depth_mm == voxel_size[2]
 
 
 # Integration test of all features being accessed through the image builder

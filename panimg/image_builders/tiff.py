@@ -28,7 +28,6 @@ class GrandChallengeTiffFile:
     color_space: Optional[ColorSpace] = None
     voxel_width_mm: float = 0
     voxel_height_mm: float = 0
-    voxel_depth_mm: Optional[float] = None
     associated_files: List[Path] = field(default_factory=list)
 
     def validate(self) -> None:
@@ -170,8 +169,6 @@ def _extract_tags(
     if "XResolution" in tags:
         gc_file.voxel_width_mm = _get_voxel_spacing_mm(tags, "XResolution")
         gc_file.voxel_height_mm = _get_voxel_spacing_mm(tags, "YResolution")
-
-    gc_file.voxel_depth_mm = None
 
     return gc_file
 
@@ -414,13 +411,6 @@ def image_builder_tiff(  # noqa: C901
             file=gc_file.path,
             name=gc_file.path.name,
             consumed_files=consumed_files,
-            width=gc_file.image_width,
-            height=gc_file.image_height,
-            resolution_levels=gc_file.resolution_levels,
-            color_space=gc_file.color_space,
-            voxel_width_mm=gc_file.voxel_width_mm,
-            voxel_height_mm=gc_file.voxel_height_mm,
-            voxel_depth_mm=gc_file.voxel_depth_mm,
         )
 
     if file_errors:
