@@ -52,7 +52,7 @@ def image_builder_fallback(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
                 image=img,
                 name=file.name,
                 consumed_files={file},
-                use_spacing=False,
+                spacing_valid=False,
             )
         except (OSError, ValidationError, DecompressionBombError):
             file_errors[file].append(format_error("Not a valid image file"))

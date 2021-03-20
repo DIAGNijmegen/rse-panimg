@@ -1,21 +1,15 @@
-import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Dict, Iterable, List, Optional, Set
-from uuid import uuid4
 
 from panimg.exceptions import UnconsumedFilesException
 from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
-from panimg.image_builders.utils import convert_itk_to_internal
 from panimg.models import (
-    ImageType,
     PanImg,
     PanImgFile,
     PanImgFolder,
     PanImgResult,
     PostProcessorResult,
-    SimpleITKImage,
-    TIFFImage,
 )
 from panimg.post_processors import DEFAULT_POST_PROCESSORS
 from panimg.types import ImageBuilder, PostProcessor
@@ -27,7 +21,6 @@ def convert(
     output_directory: Path,
     builders: Optional[Iterable[ImageBuilder]] = None,
     post_processors: Optional[Iterable[PostProcessor]] = None,
-    created_image_prefix: str = "",
 ) -> PanImgResult:
     new_images: Set[PanImg] = set()
     new_image_files: Set[PanImgFile] = set()
@@ -44,7 +37,6 @@ def convert(
         new_image_files=new_image_files,
         new_folders=new_folders,
         file_errors=file_errors,
-        created_image_prefix=created_image_prefix,
     )
 
     result = _post_process(
@@ -75,7 +67,6 @@ def _convert_directory(
     new_image_files: Set[PanImgFile],
     new_folders: Set[PanImgFolder],
     file_errors: DefaultDict[Path, List[str]],
-    created_image_prefix: str = "",
 ):
     input_directory = Path(input_directory).resolve()
     output_directory = Path(output_directory).resolve()
@@ -94,7 +85,6 @@ def _convert_directory(
                 new_image_files=new_image_files,
                 new_folders=new_folders,
                 file_errors=file_errors,
-                created_image_prefix=created_image_prefix,
             )
         elif o.is_file():
             files.add(o)
@@ -103,7 +93,6 @@ def _convert_directory(
         builder_result = _build_files(
             builder=builder,
             files=files - consumed_files,
-            created_image_prefix=created_image_prefix,
             output_directory=output_directory,
         )
 
@@ -117,11 +106,7 @@ def _convert_directory(
 
 
 def _build_files(
-    *,
-    builder: ImageBuilder,
-    files: Set[Path],
-    output_directory: Path,
-    created_image_prefix: str = "",
+    *, builder: ImageBuilder, files: Set[Path], output_directory: Path,
 ) -> PanImgResult:
     new_images = set()
     new_image_files: Set[PanImgFile] = set()
@@ -130,56 +115,9 @@ def _build_files(
 
     try:
         for result in builder(files=files):
-            if created_image_prefix:
-                name = f"{created_image_prefix}-{result.name}"
-            else:
-                name = result.name
-
-            if isinstance(result, SimpleITKImage):
-                n_image, n_image_files = convert_itk_to_internal(
-                    simple_itk_image=result.image,
-                    name=name,
-                    use_spacing=result.use_spacing,
-                    output_directory=output_directory,
-                )
-            elif isinstance(result, TIFFImage):
-                pk = uuid4()
-
-                output_file = (
-                    output_directory
-                    / result.name
-                    / f"{pk}{result.file.suffix}"
-                )
-                output_file.parent.mkdir()
-
-                shutil.copy(src=result.file, dst=output_file)
-
-                n_image = PanImg(
-                    pk=pk,
-                    name=result.name,
-                    width=result.width,
-                    height=result.height,
-                    depth=1,
-                    resolution_levels=result.resolution_levels,
-                    color_space=result.color_space,
-                    voxel_width_mm=result.voxel_width_mm,
-                    voxel_height_mm=result.voxel_height_mm,
-                    voxel_depth_mm=result.voxel_depth_mm,
-                    timepoints=None,
-                    window_center=None,
-                    window_width=None,
-                )
-                n_image_files = {
-                    PanImgFile(
-                        image_id=n_image.pk,
-                        image_type=ImageType.TIFF,
-                        file=output_file.absolute(),
-                    )
-                }
-            else:
-                raise TypeError(
-                    f"Unknown result type {type(result)} from {builder}"
-                )
+            n_image, n_image_files = result.save(
+                output_directory=output_directory
+            )
 
             new_images.add(n_image)
             new_image_files |= n_image_files

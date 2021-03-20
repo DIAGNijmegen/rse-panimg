@@ -261,7 +261,7 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
             f"{dicom_ds.headers[0]['data'].StudyInstanceUID}-{dicom_ds.index}"
         ),
         consumed_files={d["file"] for d in dicom_ds.headers},
-        use_spacing=True,
+        spacing_valid=True,
     )
 
 

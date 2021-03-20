@@ -48,7 +48,10 @@ def image_builder_nifti(*, files: Set[Path],) -> Iterator[SimpleITKImage]:
             continue
 
         yield SimpleITKImage(
-            image=img, name=file.name, consumed_files={file}, use_spacing=True
+            image=img,
+            name=file.name,
+            consumed_files={file},
+            spacing_valid=True,
         )
 
     if file_errors:

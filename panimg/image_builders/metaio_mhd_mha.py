@@ -111,7 +111,7 @@ def image_builder_mhd(  # noqa: C901
                 image=simple_itk_image,
                 name=file.name,
                 consumed_files=consumed_files,
-                use_spacing=True,
+                spacing_valid=True,
             )
         else:
             file_errors[file].append(format_error("Not an ITK file"))
