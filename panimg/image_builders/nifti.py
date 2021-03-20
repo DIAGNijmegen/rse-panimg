@@ -5,14 +5,14 @@ from typing import DefaultDict, Iterator, List, Set
 import SimpleITK
 
 from panimg.exceptions import UnconsumedFilesException
-from panimg.models import FileLoaderResult
+from panimg.models import SimpleITKImage
 
 
 def format_error(message: str) -> str:
     return f"NifTI image builder: {message}"
 
 
-def image_builder_nifti(*, files: Set[Path],) -> Iterator[FileLoaderResult]:
+def image_builder_nifti(*, files: Set[Path],) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects from files in NifTI format (nii/nii.gz)
 
@@ -47,7 +47,7 @@ def image_builder_nifti(*, files: Set[Path],) -> Iterator[FileLoaderResult]:
             )
             continue
 
-        yield FileLoaderResult(
+        yield SimpleITKImage(
             image=img, name=file.name, consumed_files={file}, use_spacing=True
         )
 

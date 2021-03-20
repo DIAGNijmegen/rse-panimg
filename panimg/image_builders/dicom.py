@@ -8,7 +8,7 @@ import numpy as np
 import pydicom
 
 from panimg.exceptions import UnconsumedFilesException
-from panimg.models import FileLoaderResult
+from panimg.models import SimpleITKImage
 
 NUMPY_IMAGE_TYPES = {
     "character": SimpleITK.sitkUInt8,
@@ -255,7 +255,7 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
         if getattr(ref_file, f, False):
             img.SetMetaData(f, str(getattr(ref_file, f)))
 
-    return FileLoaderResult(
+    return SimpleITKImage(
         image=img,
         name=(
             f"{dicom_ds.headers[0]['data'].StudyInstanceUID}-{dicom_ds.index}"
@@ -334,7 +334,7 @@ def _create_itk_from_dcm(
     return img
 
 
-def image_builder_dicom(*, files: Set[Path]) -> Iterator[FileLoaderResult]:
+def image_builder_dicom(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects by inspecting files in a directory.
 

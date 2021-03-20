@@ -8,14 +8,14 @@ from PIL import Image
 from PIL.Image import DecompressionBombError
 
 from panimg.exceptions import UnconsumedFilesException, ValidationError
-from panimg.models import FileLoaderResult
+from panimg.models import SimpleITKImage
 
 
 def format_error(message: str) -> str:
     return f"Fallback image builder: {message}"
 
 
-def image_builder_fallback(*, files: Set[Path]) -> Iterator[FileLoaderResult]:
+def image_builder_fallback(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects by inspecting files in a directory.
 
@@ -48,7 +48,7 @@ def image_builder_fallback(*, files: Set[Path]) -> Iterator[FileLoaderResult]:
             is_vector = img.mode != "L"
             img = SimpleITK.GetImageFromArray(img_array, isVector=is_vector)
 
-            yield FileLoaderResult(
+            yield SimpleITKImage(
                 image=img,
                 name=file.name,
                 consumed_files={file},

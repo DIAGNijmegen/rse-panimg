@@ -12,12 +12,12 @@ from panimg.image_builders.metaio_utils import (
     load_sitk_image,
     parse_mh_header,
 )
-from panimg.models import FileLoaderResult
+from panimg.models import SimpleITKImage
 
 
 def image_builder_mhd(  # noqa: C901
     *, files: Set[Path]
-) -> Iterator[FileLoaderResult]:
+) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects by inspecting files in a directory.
 
@@ -107,7 +107,7 @@ def image_builder_mhd(  # noqa: C901
             if file_dependency is not None:
                 consumed_files.add(file_dependency)
 
-            yield FileLoaderResult(
+            yield SimpleITKImage(
                 image=simple_itk_image,
                 name=file.name,
                 consumed_files=consumed_files,

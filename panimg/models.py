@@ -65,13 +65,27 @@ class PostProcessorResult:
     new_folders: Set[PanImgFolder]
 
 
-class FileLoaderResultConfig:
+class SimpleITKImageConfig:
     arbitrary_types_allowed = True
 
 
-@dataclass(config=FileLoaderResultConfig)
-class FileLoaderResult:
+@dataclass(config=SimpleITKImageConfig)
+class SimpleITKImage:
     image: Image
     name: str
     consumed_files: Set[Path]
     use_spacing: bool
+
+
+@dataclass
+class TIFFImage:
+    file: Path
+    name: str
+    consumed_files: Set[Path]
+    width: int
+    height: int
+    voxel_width_mm: Optional[float]
+    voxel_height_mm: Optional[float]
+    voxel_depth_mm: Optional[float]
+    resolution_levels: Optional[int]
+    color_space: ColorSpace

@@ -1,10 +1,9 @@
 import os
 import re
-import shutil
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from tempfile import TemporaryDirectory, mkdtemp
+from tempfile import mkdtemp
 from typing import Callable, DefaultDict, Dict, Iterator, List, Optional, Set
 from uuid import UUID, uuid4
 
@@ -15,8 +14,7 @@ import tifffile
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.models import (
     ColorSpace,
-    FileLoaderResult,
-    PanImg,
+    TIFFImage,
 )
 
 
@@ -308,20 +306,14 @@ def _convert_to_tiff(
         y_res = 1000.0 / float(image.get("openslide.mpp-y"))
         image = image.copy(xres=x_res, yres=y_res)
 
-    with TemporaryDirectory() as d:
-        temp_file = Path(d) / new_file_name.name
-
-        image.write_to_file(
-            str(temp_file.absolute()),
-            tile=True,
-            pyramid=True,
-            bigtiff=True,
-            compression="jpeg",
-            Q=70,
-        )
-
-        new_file_name.parent.mkdir()
-        shutil.move(temp_file, new_file_name)
+    image.write_to_file(
+        str(new_file_name.absolute()),
+        tile=True,
+        pyramid=True,
+        bigtiff=True,
+        compression="jpeg",
+        Q=70,
+    )
 
     return new_file_name
 
@@ -365,26 +357,14 @@ def _load_gc_files(
             if g.associated_files is not None
         ):
             gc_file = GrandChallengeTiffFile(file)
-
-            out_file = (
-                output_directory
-                / str(gc_file.path.name)
-                / f"{gc_file.pk}{gc_file.path.suffix}"
-            )
-            out_file.parent.mkdir()
-
-            shutil.copy(
-                src=str(gc_file.path.resolve()), dst=str(out_file.resolve())
-            )
-
             loaded_files.append(gc_file)
 
     return loaded_files
 
 
-def image_builder_tiff(
+def image_builder_tiff(  # noqa: C901
     *, files: Set[Path]
-) -> Iterator[FileLoaderResult]:  # noqa: C901
+) -> Iterator[TIFFImage]:
     # TODO Do we need an output directory?
     output_directory = Path(mkdtemp())
 
@@ -417,6 +397,10 @@ def image_builder_tiff(
         # validate
         try:
             gc_file.validate()
+            if gc_file.color_space is None:
+                # TODO This needs to be solved by refactoring of
+                # GrandChallengeTiffFile
+                raise RuntimeError("Color space not found")
         except ValidationError as e:
             file_errors[gc_file.path].append(f"Validation error: {e}.")
             continue
@@ -426,37 +410,18 @@ def image_builder_tiff(
         else:
             consumed_files = {gc_file.path.absolute()}
 
-        yield FileLoaderResult(
-            # TODO ImageType.TIFF in the PanImgFile
-            image=gc_file.path,  # TODO _create_tiff_image_entry metadata
+        yield TIFFImage(
+            file=gc_file.path,
             name=gc_file.path.name,
             consumed_files=consumed_files,
-            use_spacing=True,  # TODO?
+            width=gc_file.image_width,
+            height=gc_file.image_height,
+            resolution_levels=gc_file.resolution_levels,
+            color_space=gc_file.color_space,
+            voxel_width_mm=gc_file.voxel_width_mm,
+            voxel_height_mm=gc_file.voxel_height_mm,
+            voxel_depth_mm=gc_file.voxel_depth_mm,
         )
 
     if file_errors:
         raise UnconsumedFilesException(file_errors=file_errors)
-
-
-def _create_tiff_image_entry(*, tiff_file: GrandChallengeTiffFile) -> PanImg:
-    # Builds a new Image model item
-
-    if tiff_file.color_space is None:
-        # TODO This needs to be solved by refactoring of GrandChallengeTiffFile
-        raise RuntimeError("Color space not found")
-
-    return PanImg(
-        pk=tiff_file.pk,
-        name=tiff_file.path.name,
-        width=tiff_file.image_width,
-        height=tiff_file.image_height,
-        depth=1,
-        resolution_levels=tiff_file.resolution_levels,
-        color_space=tiff_file.color_space,
-        voxel_width_mm=tiff_file.voxel_width_mm,
-        voxel_height_mm=tiff_file.voxel_height_mm,
-        voxel_depth_mm=tiff_file.voxel_depth_mm,
-        timepoints=None,
-        window_center=None,
-        window_width=None,
-    )
