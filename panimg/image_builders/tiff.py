@@ -3,7 +3,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from tempfile import mkdtemp
+from tempfile import TemporaryDirectory
 from typing import Callable, DefaultDict, Dict, Iterator, List, Optional, Set
 from uuid import UUID, uuid4
 
@@ -362,56 +362,63 @@ def _load_gc_files(
 def image_builder_tiff(  # noqa: C901
     *, files: Set[Path]
 ) -> Iterator[TIFFImage]:
-    # TODO Do we need an output directory?
-    output_directory = Path(mkdtemp())
-
     file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
-    loaded_files = _load_gc_files(
-        files=files,
-        converter=pyvips,
-        output_directory=output_directory,
-        file_errors=file_errors,
-    )
+    with TemporaryDirectory() as output_directory:
 
-    for gc_file in loaded_files:
-        # try and load image with tiff file
-        try:
-            gc_file = _load_with_tiff(gc_file=gc_file)
-        except Exception:
-            file_errors[gc_file.path].append(
-                "Could not open file with tifffile."
-            )
-
-        # try and load image with open slide
-        try:
-            gc_file = _load_with_openslide(gc_file=gc_file)
-        except Exception:
-            file_errors[gc_file.path].append(
-                "Could not open file with OpenSlide."
-            )
-
-        # validate
-        try:
-            gc_file.validate()
-            if gc_file.color_space is None:
-                # TODO This needs to be solved by refactoring of
-                # GrandChallengeTiffFile
-                raise RuntimeError("Color space not found")
-        except ValidationError as e:
-            file_errors[gc_file.path].append(f"Validation error: {e}.")
-            continue
-
-        if gc_file.associated_files:
-            consumed_files = {f.absolute() for f in gc_file.associated_files}
-        else:
-            consumed_files = {gc_file.path.absolute()}
-
-        yield TIFFImage(
-            file=gc_file.path,
-            name=gc_file.path.name,
-            consumed_files=consumed_files,
+        loaded_files = _load_gc_files(
+            files=files,
+            converter=pyvips,
+            output_directory=Path(output_directory),
+            file_errors=file_errors,
         )
+
+        for gc_file in loaded_files:
+            # try and load image with tiff file
+            try:
+                gc_file = _load_with_tiff(gc_file=gc_file)
+            except Exception:
+                file_errors[gc_file.path].append(
+                    "Could not open file with tifffile."
+                )
+
+            # try and load image with open slide
+            try:
+                gc_file = _load_with_openslide(gc_file=gc_file)
+            except Exception:
+                file_errors[gc_file.path].append(
+                    "Could not open file with OpenSlide."
+                )
+
+            # validate
+            try:
+                gc_file.validate()
+                if gc_file.color_space is None:
+                    # TODO This needs to be solved by refactoring of
+                    # GrandChallengeTiffFile
+                    raise RuntimeError("Color space not found")
+            except ValidationError as e:
+                file_errors[gc_file.path].append(f"Validation error: {e}.")
+                continue
+
+            if gc_file.associated_files:
+                consumed_files = {
+                    f.absolute() for f in gc_file.associated_files
+                }
+            else:
+                consumed_files = {gc_file.path.absolute()}
+
+            yield TIFFImage(
+                file=gc_file.path,
+                name=gc_file.path.name,
+                consumed_files=consumed_files,
+                width=gc_file.image_width,
+                height=gc_file.image_height,
+                voxel_width_mm=gc_file.voxel_width_mm,
+                voxel_height_mm=gc_file.voxel_height_mm,
+                resolution_levels=gc_file.resolution_levels,
+                color_space=gc_file.color_space,
+            )
 
     if file_errors:
         raise UnconsumedFilesException(file_errors=file_errors)

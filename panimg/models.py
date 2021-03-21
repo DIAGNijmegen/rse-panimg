@@ -6,10 +6,8 @@ from typing import Dict, List, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
 from SimpleITK import Image, WriteImage
-from openslide import open_slide
 from pydantic import BaseModel, validator
 from pydantic.dataclasses import dataclass
-from tifffile.tifffile import TiffFile
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +87,7 @@ class SimpleITKImage(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+        allow_mutation = False
 
     @property
     def width(self) -> int:
@@ -129,7 +128,7 @@ class SimpleITKImage(BaseModel):
             return None
 
     @validator("image")
-    def check_color_space(cls, image: Image):
+    def check_color_space(cls, image: Image):  # noqa: B902, N805
         cs = image.GetNumberOfComponentsPerPixel()
         if cs not in ITK_COLOR_SPACE_MAP:
             raise ValueError(f"Unknown color space for MetaIO image: {cs}")
@@ -207,120 +206,15 @@ class TIFFImage(BaseModel):
     name: str
     consumed_files: Set[Path]
 
+    width: int
+    height: int
+    voxel_width_mm: float
+    voxel_height_mm: float
+    resolution_levels: int
+    color_space: ColorSpace
+
     class Config:
-        underscore_attrs_are_private = True
-
-    @property
-    def width(self) -> int:
-        return int(
-            self._get_property(
-                tiff_key="ImageWidth", openslide_key="openslide.level[0].width"
-            )
-        )
-
-    @property
-    def height(self) -> int:
-        return int(
-            self._get_property(
-                tiff_key="ImageLength",
-                openslide_key="openslide.level[0].height",
-            )
-        )
-
-    @property
-    def voxel_width_mm(self) -> float:
-        try:
-            return self._get_tiff_resolution(tiff_key="XResolution")
-        except (ValueError, TypeError, ZeroDivisionError, IndexError) as e:
-            logger.debug(e)
-
-        return float(
-            self._get_openslide_property(openslide_key="openslide.mpp-x")
-            / 1000
-        )
-
-    @property
-    def voxel_height_mm(self) -> float:
-        try:
-            return self._get_tiff_resolution(tiff_key="YResolution")
-        except (ValueError, TypeError, ZeroDivisionError, IndexError) as e:
-            logger.debug(e)
-
-        return float(
-            self._get_openslide_property(openslide_key="openslide.mpp-y")
-            / 1000
-        )
-
-    def _get_tiff_resolution(self, *, tiff_key: str) -> float:
-        res = self._get_tiff_property(tiff_key=tiff_key)
-        res_unit = str(self._get_tiff_property(tiff_key="ResolutionUnit"))
-
-        if res_unit.upper() == "RESUNIT.INCH":
-            return 25.4 / (res[0] / res[1])
-        elif res_unit.upper() == "RESUNIT.CENTIMETER":
-            return 10 / (res[0] / res[1])
-        raise ValueError(
-            f"Invalid resolution unit {res_unit} in {self.file}"
-        )
-
-    @property
-    def resolution_levels(self) -> int:
-        with TiffFile(str(self.file.absolute())) as f:
-            try:
-                return len(f.pages)
-            except AttributeError:
-                logger.debug(
-                    f"Could not determine number of pages for {self.file}"
-                )
-
-        return int(
-            self._get_openslide_property(openslide_key="openslide.level-count")
-        )
-
-    @property
-    def color_space(self) -> ColorSpace:
-        color_space = self._get_tiff_property(
-            tiff_key="PhotometricInterpretation"
-        )
-        color_space_code = str(color_space).split(".")[1].upper()
-
-        if color_space_code == "MINISBLACK":
-            return ColorSpace.GRAY
-        else:
-            return ColorSpace[color_space_code]
-
-    def _get_property(self, *, tiff_key: str, openslide_key: str):
-        try:
-            return self._get_tiff_property(tiff_key=tiff_key)
-        except ValueError as e:
-            logger.debug(e)
-
-        try:
-            return self._get_openslide_property(openslide_key=openslide_key)
-        except ValueError as e:
-            logger.debug(e)
-
-        raise ValueError(
-            f"Could not find {tiff_key} or {openslide_key} in {self.file}"
-        )
-
-    def _get_tiff_property(self, *, tiff_key: str):
-        with TiffFile(str(self.file.absolute())) as f:
-            try:
-                return f.pages[0].tags[tiff_key].value
-            except (IndexError, KeyError, AttributeError):
-                raise ValueError(
-                    f"Could not find {tiff_key} in {self.file} using tifffile"
-                )
-
-    def _get_openslide_property(self, *, openslide_key: str):
-        with open_slide(str(self.file.absolute())) as f:
-            try:
-                return f.properties[openslide_key]
-            except KeyError:
-                raise ValueError(
-                    f"Could not find {openslide_key} in {self.file} using openslide"
-                )
+        allow_mutation = False
 
     def save(self, output_directory: Path) -> Tuple[PanImg, Set[PanImgFile]]:
         pk = uuid4()
