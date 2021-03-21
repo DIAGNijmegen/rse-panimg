@@ -299,7 +299,7 @@ def test_handle_complex_files(tmpdir_factory):
     ), "Remove work-around calculation of xres and yres in _convert_to_tiff function."
 
 
-@pytest.mark.skip(
+@pytest.mark.xfail(
     reason="skip for now as we don't want to upload a large testset"
 )
 @pytest.mark.parametrize(
@@ -318,7 +318,11 @@ def test_convert_to_tiff(resource, tmpdir_factory):
 
     input_files = {f for f in resource.glob("*") if f.is_file()}
 
-    result = image_builder_tiff(files=input_files, output_directory=output_dir)
+    result = _build_files(
+        builder=image_builder_tiff,
+        files=input_files,
+        output_directory=output_dir,
+    )
 
     assert len(result.new_images) == 1
     assert len(result.new_image_files) == 1
