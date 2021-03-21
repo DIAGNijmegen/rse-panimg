@@ -291,6 +291,7 @@ def _convert_to_tiff(
     *, path: Path, pk: UUID, converter, output_directory: Path
 ) -> Path:
     new_file_name = output_directory / path.name / f"{pk}.tif"
+    new_file_name.parent.mkdir()
 
     image = converter.Image.new_from_file(
         str(path.absolute()), access="sequential"
