@@ -15,7 +15,6 @@ from panimg.exceptions import ValidationError
 from panimg.image_builders.tiff import (
     GrandChallengeTiffFile,
     _convert,
-    _create_tiff_image_entry,
     _extract_tags,
     _get_color_space,
     _get_mrxs_files,
@@ -23,6 +22,7 @@ from panimg.image_builders.tiff import (
     image_builder_tiff,
 )
 from panimg.models import ColorSpace
+from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
 
@@ -193,18 +193,16 @@ def test_load_with_open_slide(source_dir, filename, tmpdir_factory):
 
 @pytest.mark.parametrize(
     "resource, expected_error_message, voxel_size",
-    [(RESOURCE_PATH / "valid_tiff.tif", "", [1, 1, None])],
+    [(RESOURCE_PATH / "valid_tiff.tif", "", [1, 1])],
 )
 def test_tiff_image_entry_creation(
     resource, expected_error_message, voxel_size
 ):
     error_message = ""
-    image_entry = None
     gc_file = GrandChallengeTiffFile(resource)
     try:
         tiff_file = tifffile.TiffFile(str(gc_file.path.absolute()))
         gc_file = _extract_tags(gc_file=gc_file, pages=tiff_file.pages)
-        image_entry = _create_tiff_image_entry(tiff_file=gc_file)
     except ValidationError as e:
         error_message = str(e)
 
@@ -218,20 +216,17 @@ def test_tiff_image_entry_creation(
         tiff_file = tiff_lib.TiffFile(str(resource.absolute()))
         tiff_tags = tiff_file.pages[0].tags
 
-        assert image_entry.name == resource.name
-        assert image_entry.width == tiff_tags["ImageWidth"].value
-        assert image_entry.height == tiff_tags["ImageLength"].value
-        assert image_entry.depth == 1
-        assert image_entry.resolution_levels == len(tiff_file.pages)
-        assert image_entry.color_space == _get_color_space(
+        assert gc_file.path.name == resource.name
+        assert gc_file.image_width == tiff_tags["ImageWidth"].value
+        assert gc_file.image_height == tiff_tags["ImageLength"].value
+        assert gc_file.resolution_levels == len(tiff_file.pages)
+        assert gc_file.color_space == _get_color_space(
             color_space_string=str(
                 tiff_tags["PhotometricInterpretation"].value
             )
         )
-        assert image_entry.voxel_width_mm == approx(voxel_size[0])
-        assert image_entry.voxel_height_mm == approx(voxel_size[1])
-        assert image_entry.voxel_depth_mm == voxel_size[2]
-        assert image_entry.pk == gc_file.pk
+        assert gc_file.voxel_width_mm == approx(voxel_size[0])
+        assert gc_file.voxel_height_mm == approx(voxel_size[1])
 
 
 # Integration test of all features being accessed through the image builder
@@ -247,8 +242,8 @@ def test_image_builder_tiff(tmpdir_factory,):
     )
     files = [Path(d[0]).joinpath(f) for d in os.walk(temp_dir) for f in d[2]]
 
-    image_builder_result = image_builder_tiff(
-        files=files, output_directory=output_dir
+    image_builder_result = _build_files(
+        builder=image_builder_tiff, files=files, output_directory=output_dir
     )
 
     expected_files = [
@@ -304,7 +299,7 @@ def test_handle_complex_files(tmpdir_factory):
     ), "Remove work-around calculation of xres and yres in _convert_to_tiff function."
 
 
-@pytest.mark.skip(
+@pytest.mark.xfail(
     reason="skip for now as we don't want to upload a large testset"
 )
 @pytest.mark.parametrize(
@@ -323,7 +318,11 @@ def test_convert_to_tiff(resource, tmpdir_factory):
 
     input_files = {f for f in resource.glob("*") if f.is_file()}
 
-    result = image_builder_tiff(files=input_files, output_directory=output_dir)
+    result = _build_files(
+        builder=image_builder_tiff,
+        files=input_files,
+        output_directory=output_dir,
+    )
 
     assert len(result.new_images) == 1
     assert len(result.new_image_files) == 1
@@ -338,8 +337,10 @@ def test_error_handling(tmpdir_factory):
     shutil.copytree(RESOURCE_PATH / "complex_tiff", temp_dir)
     files = {Path(d[0]).joinpath(f) for d in os.walk(temp_dir) for f in d[2]}
 
-    image_builder_result = image_builder_tiff(
-        files=files, output_directory=Path(tmpdir_factory.mktemp("output"))
+    image_builder_result = _build_files(
+        builder=image_builder_tiff,
+        files=files,
+        output_directory=Path(tmpdir_factory.mktemp("output")),
     )
 
     assert len(image_builder_result.file_errors) == 14

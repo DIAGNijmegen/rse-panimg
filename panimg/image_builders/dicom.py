@@ -1,14 +1,14 @@
 from collections import defaultdict, namedtuple
 from math import isclose
 from pathlib import Path
-from typing import Set
+from typing import DefaultDict, Iterator, List, Set
 
 import SimpleITK
 import numpy as np
 import pydicom
 
-from panimg.image_builders.utils import convert_itk_to_internal
-from panimg.models import PanImgFile, PanImgResult
+from panimg.exceptions import UnconsumedFilesException
+from panimg.models import SimpleITKImage
 
 NUMPY_IMAGE_TYPES = {
     "character": SimpleITK.sitkUInt8,
@@ -46,7 +46,7 @@ def pixel_data_reached(tag, vr, length):
     return pydicom.datadict.keyword_for_tag(tag) == "PixelData"
 
 
-def _get_headers_by_study(files):
+def _get_headers_by_study(files, file_errors):
     """
     Gets all headers from dicom files found in path.
 
@@ -62,7 +62,6 @@ def _get_headers_by_study(files):
     grouped by study id.
     """
     studies = {}
-    errors = defaultdict(list)
     indices = {}
 
     for file in files:
@@ -91,20 +90,22 @@ def _get_headers_by_study(files):
                 studies[key]["index"] = index
                 studies[key]["headers"] = headers
             except Exception as e:
-                errors[file].append(format_error(str(e)))
+                file_errors[file].append(format_error(str(e)))
 
     for key in studies:
         studies[key]["headers"].sort(
             key=lambda x: int(x["data"].InstanceNumber)
         )
-    return studies, errors
+    return studies
 
 
 def format_error(message: str) -> str:
     return f"Dicom image builder: {message}"
 
 
-def _validate_dicom_files(files: Set[Path]):
+def _validate_dicom_files(
+    files: Set[Path], file_errors: DefaultDict[Path, List[str]]
+):
     """
     Gets the headers for all dicom files on path and validates them.
 
@@ -123,7 +124,7 @@ def _validate_dicom_files(files: Set[Path]):
 
     Any study with an inconsistent amount of slices per time point is discarded.
     """
-    studies, errors = _get_headers_by_study(files)
+    studies = _get_headers_by_study(files=files, file_errors=file_errors)
     result = []
     dicom_dataset = namedtuple(
         "dicom_dataset", ["headers", "n_time", "n_slices", "index"]
@@ -149,7 +150,7 @@ def _validate_dicom_files(files: Set[Path]):
             continue
         if len(headers) % n_time > 0:
             for d in headers:
-                errors[d["file"]].append(
+                file_errors[d["file"]].append(
                     format_error("Number of slices per time point differs")
                 )
             continue
@@ -160,7 +161,7 @@ def _validate_dicom_files(files: Set[Path]):
             )
         )
     del studies
-    return result, errors
+    return result
 
 
 def _extract_direction(dicom_ds, direction):
@@ -177,9 +178,7 @@ def _extract_direction(dicom_ds, direction):
     return direction
 
 
-def _process_dicom_file(  # noqa: C901
-    *, dicom_ds, created_image_prefix, output_directory
-):
+def _process_dicom_file(*, dicom_ds):  # noqa: C901
     ref_file = pydicom.dcmread(str(dicom_ds.headers[0]["file"]))
     ref_origin = tuple(
         float(i) for i in getattr(ref_file, "ImagePositionPatient", (0, 0, 0))
@@ -256,15 +255,13 @@ def _process_dicom_file(  # noqa: C901
         if getattr(ref_file, f, False):
             img.SetMetaData(f, str(getattr(ref_file, f)))
 
-    # Convert the SimpleITK image to our internal representation
-    return convert_itk_to_internal(
-        simple_itk_image=img,
+    return SimpleITKImage(
+        image=img,
         name=(
-            f"{created_image_prefix}"
-            f"-{dicom_ds.headers[0]['data'].StudyInstanceUID}"
-            f"-{dicom_ds.index}"
+            f"{dicom_ds.headers[0]['data'].StudyInstanceUID}-{dicom_ds.index}"
         ),
-        output_directory=output_directory,
+        consumed_files={d["file"] for d in dicom_ds.headers},
+        spacing_valid=True,
     )
 
 
@@ -337,13 +334,7 @@ def _create_itk_from_dcm(
     return img
 
 
-def image_builder_dicom(
-    *,
-    files: Set[Path],
-    output_directory: Path,
-    created_image_prefix: str = "",
-    **_,
-) -> PanImgResult:
+def image_builder_dicom(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects by inspecting files in a directory.
 
@@ -361,28 +352,16 @@ def image_builder_dicom(
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
-    studies, file_errors = _validate_dicom_files(files)
-    new_images = set()
-    new_image_files: Set[PanImgFile] = set()
-    consumed_files: Set[Path] = set()
+    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+
+    studies = _validate_dicom_files(files=files, file_errors=file_errors)
+
     for dicom_ds in studies:
         try:
-            n_image, n_image_files = _process_dicom_file(
-                dicom_ds=dicom_ds,
-                created_image_prefix=created_image_prefix,
-                output_directory=output_directory,
-            )
-            new_images.add(n_image)
-            new_image_files |= set(n_image_files)
-            consumed_files |= {d["file"] for d in dicom_ds.headers}
+            yield _process_dicom_file(dicom_ds=dicom_ds)
         except Exception as e:
             for d in dicom_ds.headers:
                 file_errors[d["file"]].append(format_error(str(e)))
 
-    return PanImgResult(
-        consumed_files=consumed_files,
-        file_errors=file_errors,
-        new_images=new_images,
-        new_image_files=new_image_files,
-        new_folders=set(),
-    )
+    if file_errors:
+        raise UnconsumedFilesException(file_errors=file_errors)

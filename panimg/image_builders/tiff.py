@@ -1,24 +1,20 @@
 import os
 import re
-import shutil
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Callable, Dict, List, Optional, Set
+from typing import Callable, DefaultDict, Dict, Iterator, List, Optional, Set
 from uuid import UUID, uuid4
 
 import openslide
 import pyvips
 import tifffile
 
-from panimg.exceptions import ValidationError
+from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.models import (
     ColorSpace,
-    ImageType,
-    PanImg,
-    PanImgFile,
-    PanImgResult,
+    TIFFImage,
 )
 
 
@@ -32,7 +28,6 @@ class GrandChallengeTiffFile:
     color_space: Optional[ColorSpace] = None
     voxel_width_mm: float = 0
     voxel_height_mm: float = 0
-    voxel_depth_mm: Optional[float] = None
     associated_files: List[Path] = field(default_factory=list)
 
     def validate(self) -> None:
@@ -175,8 +170,6 @@ def _extract_tags(
         gc_file.voxel_width_mm = _get_voxel_spacing_mm(tags, "XResolution")
         gc_file.voxel_height_mm = _get_voxel_spacing_mm(tags, "YResolution")
 
-    gc_file.voxel_depth_mm = None
-
     return gc_file
 
 
@@ -298,6 +291,7 @@ def _convert_to_tiff(
     *, path: Path, pk: UUID, converter, output_directory: Path
 ) -> Path:
     new_file_name = output_directory / path.name / f"{pk}.tif"
+    new_file_name.parent.mkdir()
 
     image = converter.Image.new_from_file(
         str(path.absolute()), access="sequential"
@@ -310,20 +304,14 @@ def _convert_to_tiff(
         y_res = 1000.0 / float(image.get("openslide.mpp-y"))
         image = image.copy(xres=x_res, yres=y_res)
 
-    with TemporaryDirectory() as d:
-        temp_file = Path(d) / new_file_name.name
-
-        image.write_to_file(
-            str(temp_file.absolute()),
-            tile=True,
-            pyramid=True,
-            bigtiff=True,
-            compression="jpeg",
-            Q=70,
-        )
-
-        new_file_name.parent.mkdir()
-        shutil.move(temp_file, new_file_name)
+    image.write_to_file(
+        str(new_file_name.absolute()),
+        tile=True,
+        pyramid=True,
+        bigtiff=True,
+        compression="jpeg",
+        Q=70,
+    )
 
     return new_file_name
 
@@ -367,102 +355,71 @@ def _load_gc_files(
             if g.associated_files is not None
         ):
             gc_file = GrandChallengeTiffFile(file)
-
-            out_file = (
-                output_directory
-                / str(gc_file.path.name)
-                / f"{gc_file.pk}{gc_file.path.suffix}"
-            )
-            out_file.parent.mkdir()
-
-            shutil.copy(
-                src=str(gc_file.path.resolve()), dst=str(out_file.resolve())
-            )
-
             loaded_files.append(gc_file)
 
     return loaded_files
 
 
 def image_builder_tiff(  # noqa: C901
-    *, files: Set[Path], output_directory: Path, **_
-) -> PanImgResult:
-    new_images = set()
-    new_image_files: Set[PanImgFile] = set()
-    consumed_files: Set[Path] = set()
-    file_errors: Dict[Path, List[str]] = defaultdict(list)
+    *, files: Set[Path]
+) -> Iterator[TIFFImage]:
+    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
-    loaded_files = _load_gc_files(
-        files=files,
-        converter=pyvips,
-        output_directory=output_directory,
-        file_errors=file_errors,
-    )
+    with TemporaryDirectory() as output_directory:
 
-    for gc_file in loaded_files:
-        # try and load image with tiff file
-        try:
-            gc_file = _load_with_tiff(gc_file=gc_file)
-        except Exception as e:
-            file_errors[gc_file.path].append(f"TIFF load error: {e}.")
-
-        # try and load image with open slide
-        try:
-            gc_file = _load_with_openslide(gc_file=gc_file)
-        except Exception as e:
-            file_errors[gc_file.path].append(f"OpenSlide load error: {e}.")
-
-        # validate
-        try:
-            gc_file.validate()
-        except ValidationError as e:
-            file_errors[gc_file.path].append(f"Validation error: {e}.")
-            continue
-
-        image = _create_tiff_image_entry(tiff_file=gc_file)
-        new_images.add(image)
-
-        new_image_files.add(
-            PanImgFile(
-                image_id=image.pk,
-                image_type=ImageType.TIFF,
-                file=gc_file.path.absolute(),
-            )
+        loaded_files = _load_gc_files(
+            files=files,
+            converter=pyvips,
+            output_directory=Path(output_directory),
+            file_errors=file_errors,
         )
 
-        if gc_file.associated_files:
-            consumed_files |= {f.absolute() for f in gc_file.associated_files}
-        else:
-            consumed_files.add(gc_file.path.absolute())
+        for gc_file in loaded_files:
+            # try and load image with tiff file
+            try:
+                gc_file = _load_with_tiff(gc_file=gc_file)
+            except Exception:
+                file_errors[gc_file.path].append(
+                    "Could not open file with tifffile."
+                )
 
-    return PanImgResult(
-        consumed_files=consumed_files,
-        file_errors=file_errors,
-        new_images=new_images,
-        new_image_files=new_image_files,
-        new_folders=set(),
-    )
+            # try and load image with open slide
+            try:
+                gc_file = _load_with_openslide(gc_file=gc_file)
+            except Exception:
+                file_errors[gc_file.path].append(
+                    "Could not open file with OpenSlide."
+                )
 
+            # validate
+            try:
+                gc_file.validate()
+                if gc_file.color_space is None:
+                    # TODO This needs to be solved by refactoring of
+                    # GrandChallengeTiffFile
+                    raise RuntimeError("Color space not found")
+            except ValidationError as e:
+                file_errors[gc_file.path].append(f"Validation error: {e}.")
+                continue
 
-def _create_tiff_image_entry(*, tiff_file: GrandChallengeTiffFile) -> PanImg:
-    # Builds a new Image model item
+            if gc_file.associated_files:
+                consumed_files = {
+                    f.absolute() for f in gc_file.associated_files
+                }
+            else:
+                consumed_files = {gc_file.path.absolute()}
 
-    if tiff_file.color_space is None:
-        # TODO This needs to be solved by refactoring of GrandChallengeTiffFile
-        raise RuntimeError("Color space not found")
+            yield TIFFImage(
+                file=gc_file.path,
+                name=gc_file.path.name,
+                consumed_files=consumed_files,
+                width=gc_file.image_width,
+                height=gc_file.image_height,
+                voxel_width_mm=gc_file.voxel_width_mm,
+                voxel_height_mm=gc_file.voxel_height_mm,
+                resolution_levels=gc_file.resolution_levels,
+                color_space=gc_file.color_space,
+            )
 
-    return PanImg(
-        pk=tiff_file.pk,
-        name=tiff_file.path.name,
-        width=tiff_file.image_width,
-        height=tiff_file.image_height,
-        depth=1,
-        resolution_levels=tiff_file.resolution_levels,
-        color_space=tiff_file.color_space,
-        voxel_width_mm=tiff_file.voxel_width_mm,
-        voxel_height_mm=tiff_file.voxel_height_mm,
-        voxel_depth_mm=tiff_file.voxel_depth_mm,
-        timepoints=None,
-        window_center=None,
-        window_width=None,
-    )
+    if file_errors:
+        raise UnconsumedFilesException(file_errors=file_errors)

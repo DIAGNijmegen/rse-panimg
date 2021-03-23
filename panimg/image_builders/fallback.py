@@ -1,24 +1,21 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import DefaultDict, Iterator, List, Set
 
 import SimpleITK
 import numpy as np
 from PIL import Image
 from PIL.Image import DecompressionBombError
 
-from panimg.exceptions import ValidationError
-from panimg.image_builders.utils import convert_itk_to_internal
-from panimg.models import PanImgFile, PanImgResult
+from panimg.exceptions import UnconsumedFilesException, ValidationError
+from panimg.models import SimpleITKImage
 
 
 def format_error(message: str) -> str:
     return f"Fallback image builder: {message}"
 
 
-def image_builder_fallback(
-    *, files: Set[Path], output_directory: Path, **_
-) -> PanImgResult:
+def image_builder_fallback(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects by inspecting files in a directory.
 
@@ -36,10 +33,8 @@ def image_builder_fallback(
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
-    errors: Dict[Path, List[str]] = defaultdict(list)
-    new_images = set()
-    new_image_files: Set[PanImgFile] = set()
-    consumed_files = set()
+    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+
     for file in files:
         try:
             img = Image.open(file)
@@ -52,22 +47,15 @@ def image_builder_fallback(
             img_array = np.array(img)
             is_vector = img.mode != "L"
             img = SimpleITK.GetImageFromArray(img_array, isVector=is_vector)
-            n_image, n_image_files = convert_itk_to_internal(
-                simple_itk_image=img,
-                name=file.name,
-                use_spacing=False,
-                output_directory=output_directory,
-            )
-            new_images.add(n_image)
-            new_image_files |= set(n_image_files)
-            consumed_files.add(file)
-        except (OSError, ValidationError, DecompressionBombError):
-            errors[file].append(format_error("Not a valid image file"))
 
-    return PanImgResult(
-        consumed_files=consumed_files,
-        file_errors=errors,
-        new_images=new_images,
-        new_image_files=new_image_files,
-        new_folders=set(),
-    )
+            yield SimpleITKImage(
+                image=img,
+                name=file.name,
+                consumed_files={file},
+                spacing_valid=False,
+            )
+        except (OSError, ValidationError, DecompressionBombError):
+            file_errors[file].append(format_error("Not a valid image file"))
+
+    if file_errors:
+        raise UnconsumedFilesException(file_errors=file_errors)

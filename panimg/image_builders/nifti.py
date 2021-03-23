@@ -1,20 +1,18 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import DefaultDict, Iterator, List, Set
 
 import SimpleITK
 
-from panimg.image_builders.utils import convert_itk_to_internal
-from panimg.models import PanImg, PanImgFile, PanImgResult
+from panimg.exceptions import UnconsumedFilesException
+from panimg.models import SimpleITKImage
 
 
 def format_error(message: str) -> str:
     return f"NifTI image builder: {message}"
 
 
-def image_builder_nifti(
-    *, files: Set[Path], output_directory: Path, **_
-) -> PanImgResult:
+def image_builder_nifti(*, files: Set[Path],) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects from files in NifTI format (nii/nii.gz)
 
@@ -31,12 +29,11 @@ def image_builder_nifti(
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
-    errors: Dict[Path, List[str]] = defaultdict(list)
-    new_images: Set[PanImg] = set()
-    new_image_files: Set[PanImgFile] = set()
-    consumed_files = set()
+    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+
     for file in files:
         if not (file.name.endswith(".nii") or file.name.endswith(".nii.gz")):
+            file_errors[file].append(format_error("Not a NifTI image file"))
             continue
 
         try:
@@ -45,25 +42,17 @@ def image_builder_nifti(
             reader.SetFileName(str(file.absolute()))
             img: SimpleITK.Image = reader.Execute()
         except RuntimeError:
-            errors[file].append(format_error("Not a valid NifTI image file"))
+            file_errors[file].append(
+                format_error("Not a valid NifTI image file")
+            )
             continue
 
-        try:
-            n_image, n_image_files = convert_itk_to_internal(
-                simple_itk_image=img,
-                name=file.name,
-                output_directory=output_directory,
-            )
-            new_images.add(n_image)
-            new_image_files |= set(n_image_files)
-            consumed_files.add(file)
-        except ValueError as e:
-            errors[file].append(format_error(str(e)))
+        yield SimpleITKImage(
+            image=img,
+            name=file.name,
+            consumed_files={file},
+            spacing_valid=True,
+        )
 
-    return PanImgResult(
-        consumed_files=consumed_files,
-        file_errors=errors,
-        new_images=new_images,
-        new_image_files=new_image_files,
-        new_folders=set(),
-    )
+    if file_errors:
+        raise UnconsumedFilesException(file_errors=file_errors)

@@ -14,3 +14,12 @@ DEFAULT_IMAGE_BUILDERS: Iterable[ImageBuilder] = [
     image_builder_tiff,
     image_builder_fallback,
 ]
+
+__all__ = [
+    "image_builder_mhd",
+    "image_builder_nifti",
+    "image_builder_dicom",
+    "image_builder_tiff",
+    "image_builder_fallback",
+    "DEFAULT_IMAGE_BUILDERS",
+]
