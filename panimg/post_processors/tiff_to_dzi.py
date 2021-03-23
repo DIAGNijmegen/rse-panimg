@@ -1,8 +1,7 @@
 import logging
 from typing import Set
 
-import pyvips
-
+from panimg.exceptions import DeferredMissingLibraryException
 from panimg.models import (
     ImageType,
     PanImgFile,
@@ -10,6 +9,13 @@ from panimg.models import (
     PostProcessorResult,
 )
 from panimg.settings import DZI_TILE_SIZE
+
+try:
+    import pyvips
+except OSError:
+    pyvips = DeferredMissingLibraryException(
+        "libvips is not installed on the system"
+    )
 
 logger = logging.getLogger(__name__)
 
