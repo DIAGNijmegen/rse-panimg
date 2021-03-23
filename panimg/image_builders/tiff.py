@@ -30,7 +30,7 @@ try:
     import pyvips
 except OSError:
     pyvips = DeferredMissingLibraryException(
-        "libslide is not installed on the system"
+        "libvips is not installed on the system"
     )
 
 
