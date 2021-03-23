@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 import tifffile
 
 from panimg.exceptions import (
-    MissingLibraryMockModule,
+    DeferredMissingLibraryException,
     UnconsumedFilesException,
     ValidationError,
 )
@@ -22,14 +22,14 @@ from panimg.models import (
 try:
     import openslide
 except OSError:
-    openslide = MissingLibraryMockModule(
+    openslide = DeferredMissingLibraryException(
         "libopenslide is not installed on the system"
     )
 
 try:
     import pyvips
 except OSError:
-    pyvips = MissingLibraryMockModule(
+    pyvips = DeferredMissingLibraryException(
         "libslide is not installed on the system"
     )
 

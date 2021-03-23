@@ -22,7 +22,7 @@ class MissingLibraryException(RuntimeError):
     pass
 
 
-class MissingLibraryMockModule:
+class DeferredMissingLibraryException:
     """
     Replaces a module that is not working due to a missing external
     dependency (such as OpenSlide) and raises an exception as soon as
