@@ -7,15 +7,31 @@ from tempfile import TemporaryDirectory
 from typing import Callable, DefaultDict, Dict, Iterator, List, Optional, Set
 from uuid import UUID, uuid4
 
-import openslide
-import pyvips
 import tifffile
 
-from panimg.exceptions import UnconsumedFilesException, ValidationError
+from panimg.exceptions import (
+    DeferredMissingLibraryException,
+    UnconsumedFilesException,
+    ValidationError,
+)
 from panimg.models import (
     ColorSpace,
     TIFFImage,
 )
+
+try:
+    import openslide
+except OSError:
+    openslide = DeferredMissingLibraryException(
+        "libopenslide is not installed on the system"
+    )
+
+try:
+    import pyvips
+except OSError:
+    pyvips = DeferredMissingLibraryException(
+        "libvips is not installed on the system"
+    )
 
 
 @dataclass
