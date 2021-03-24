@@ -1,7 +1,6 @@
 import logging
 from typing import Set
 
-from panimg.exceptions import DeferredMissingLibraryException
 from panimg.models import (
     ImageType,
     PanImgFile,
@@ -13,14 +12,20 @@ from panimg.settings import DZI_TILE_SIZE
 try:
     import pyvips
 except OSError:
-    pyvips = DeferredMissingLibraryException(
-        "libvips is not installed on the system"
-    )
+    pyvips = False
 
 logger = logging.getLogger(__name__)
 
 
 def tiff_to_dzi(*, image_files: Set[PanImgFile]) -> PostProcessorResult:
+    if pyvips is False:
+        raise ImportError(
+            f"Could not import pyvips, which is required for the "
+            f"{__name__} post processor. Either ensure that libvips-dev "
+            f"is installed or remove {__name__} from your list of post "
+            f"processors."
+        )
+
     new_image_files: Set[PanImgFile] = set()
     new_folders: Set[PanImgFolder] = set()
 
