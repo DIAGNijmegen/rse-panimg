@@ -7,15 +7,26 @@ from tempfile import TemporaryDirectory
 from typing import Callable, DefaultDict, Dict, Iterator, List, Optional, Set
 from uuid import UUID, uuid4
 
-import openslide
-import pyvips
 import tifffile
 
-from panimg.exceptions import UnconsumedFilesException, ValidationError
+from panimg.exceptions import (
+    UnconsumedFilesException,
+    ValidationError,
+)
 from panimg.models import (
     ColorSpace,
     TIFFImage,
 )
+
+try:
+    import openslide
+except OSError:
+    openslide = False
+
+try:
+    import pyvips
+except OSError:
+    pyvips = False
 
 
 @dataclass
@@ -363,6 +374,20 @@ def _load_gc_files(
 def image_builder_tiff(  # noqa: C901
     *, files: Set[Path]
 ) -> Iterator[TIFFImage]:
+    if openslide is False:
+        raise ImportError(
+            f"Could not import openslide, which is required for the "
+            f"{__name__} image builder. Either ensure that libopenslide-dev "
+            f"is installed or remove {__name__} from your list of builders."
+        )
+
+    if pyvips is False:
+        raise ImportError(
+            f"Could not import pyvips, which is required for the "
+            f"{__name__} image builder. Either ensure that libvips-dev "
+            f"is installed or remove {__name__} from your list of builders."
+        )
+
     file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
     with TemporaryDirectory() as output_directory:

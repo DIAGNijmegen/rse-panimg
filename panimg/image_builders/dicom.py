@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict, namedtuple
 from math import isclose
 from pathlib import Path
@@ -6,9 +7,14 @@ from typing import DefaultDict, Iterator, List, Set
 import SimpleITK
 import numpy as np
 import pydicom
+from pydicom.pixel_data_handlers.gdcm_handler import (
+    is_available as gdcm_is_available,
+)
 
 from panimg.exceptions import UnconsumedFilesException
 from panimg.models import SimpleITKImage
+
+logger = logging.getLogger(__name__)
 
 NUMPY_IMAGE_TYPES = {
     "character": SimpleITK.sitkUInt8,
@@ -352,6 +358,13 @@ def image_builder_dicom(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
+    if not gdcm_is_available():
+        logger.warning(
+            "GDCM is unavailable, conversion of DICOM with compressed "
+            "transfer syntax will fail to convert. To correct this, install"
+            "GDCM."
+        )
+
     file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
     studies = _validate_dicom_files(files=files, file_errors=file_errors)
