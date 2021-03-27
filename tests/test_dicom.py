@@ -109,6 +109,22 @@ def test_image_builder_dicom_4dct(tmpdir):
     )
 
 
+def test_image_builder_dicom_enhanced():
+    # Load reference image from individual slices
+    slices = set((RESOURCE_PATH / "dicom_enhanced").glob("slice*.dcm"))
+    ref_images = list(image_builder_dicom(files=slices))
+    assert len(ref_images) == 1
+    ref_image = ref_images.pop()
+
+    # Load the same image but now stored as enhanced DICOM volume
+    volume = {RESOURCE_PATH / "dicom_enhanced" / "volume.dcm"}
+    images = list(image_builder_dicom(files=volume))
+    assert len(images) == 1
+    image = images.pop()
+
+    assert image == ref_image
+
+
 @pytest.mark.parametrize(
     "folder,element_type",
     [
@@ -143,7 +159,7 @@ def test_dicom_rescaling(folder, element_type, tmpdir):
 def test_dicom_window_level(tmpdir):
     files = {
         Path(d[0]).joinpath(f)
-        for d in os.walk(RESOURCE_PATH / "dicom")
+        for d in os.walk(DICOM_DIR)
         for f in d[2]
     }
     result = _build_files(
