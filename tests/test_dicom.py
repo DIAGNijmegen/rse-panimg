@@ -157,11 +157,7 @@ def test_dicom_rescaling(folder, element_type, tmpdir):
 
 
 def test_dicom_window_level(tmpdir):
-    files = {
-        Path(d[0]).joinpath(f)
-        for d in os.walk(DICOM_DIR)
-        for f in d[2]
-    }
+    files = {Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]}
     result = _build_files(
         builder=image_builder_dicom, files=files, output_directory=tmpdir
     )
