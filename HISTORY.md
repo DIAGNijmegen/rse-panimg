@@ -1,5 +1,10 @@
 # History
 
+## 0.2.1 (2021-04-12)
+
+* Allows importing without pyvips and openslide
+  * Checks for these libraries are now only done where needed at runtime
+
 ## 0.2.0 (2021-03-23)
 
 * Builders now return generators
