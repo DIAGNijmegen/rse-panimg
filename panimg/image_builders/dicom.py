@@ -204,7 +204,7 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
     content_times = []
     exposures = []
     origin = None
-    origin_diff = 0
+    origin_diff = np.array((0, 0, 0), dtype=float)
     n_diffs = 0
     for partial in dicom_ds.headers:
         ds = partial["data"]
