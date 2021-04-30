@@ -60,6 +60,19 @@ def test_validate_dicom_files():
             ]
 
 
+def test_image_builder_dicom_single_slice(tmpdir):
+    files = {DICOM_DIR / "1.dcm"}
+    result = _build_files(
+        builder=image_builder_dicom, files=files, output_directory=tmpdir
+    )
+    assert result.consumed_files == files
+    assert len(result.new_images) == 1
+
+    image = result.new_images.pop()
+    assert image.depth == 1
+    assert pytest.approx(image.voxel_depth_mm, 1.0)
+
+
 def test_image_builder_dicom_4dct(tmpdir):
     files = {Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]}
     result = _build_files(
