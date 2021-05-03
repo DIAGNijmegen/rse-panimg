@@ -54,6 +54,7 @@ Pillow = "*"
 openslide-python = "*"
 pyvips = "*"
 tifffile = "*"
+oct-converter = "^0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
