@@ -18,6 +18,10 @@ EXPECTED_ERROR_MESSAGE = {
     ],
     "image_builder_mhd": ["Mhd image builder: Not an ITK file"],
     "image_builder_nifti": ["NifTI image builder: Not a NifTI image file"],
+    "image_builder_oct": [
+        "OCT image builder: Not a valid OCT file "
+        "(supported formats: .fds,.fda,.e2e)",
+    ],
     "image_builder_tiff": [
         "Could not open file with tifffile.",
         "Could not open file with OpenSlide.",
@@ -40,21 +44,27 @@ def test_image_builder_raises_unconsumed_file_exception(tmp_path, builder):
 
 
 @pytest.mark.parametrize("builder", DEFAULT_IMAGE_BUILDERS)
-def test_one_image_consumed_by_each_builder(tmp_path, builder):
-    # Each of these images should only be consumed by one builder
-    # The other files should error out
+def test_number_of_images_consumed_by_each_builder(tmp_path, builder):
+    # Except for the oct builder, each of the builders should only consume one
+    # image. The other files should error out.
     files = {
         *(RESOURCE_PATH / "dicom").glob("*.dcm"),
         RESOURCE_PATH / "test_rgb.png",
         RESOURCE_PATH / "image10x10x10.mha",
         RESOURCE_PATH / "image10x11x12.nii.gz",
         RESOURCE_PATH / "valid_tiff.tif",
+        # RESOURCE_PATH / "oct/BRVO_O4003_baseline.e2e",
+        RESOURCE_PATH / "oct/eg_oct_fda.fda",
+        RESOURCE_PATH / "oct/eg_oct_fds.fds",
     }
 
     result = _build_files(
         builder=builder, files=files, output_directory=tmp_path
     )
 
-    assert len(result.new_images) == 1
+    if "image_builder_oct" in builder:
+        assert len(result.new_images) == 3
+    else:
+        assert len(result.new_images) == 1
     assert len(result.consumed_files) == len(files) - len(result.file_errors)
     assert result.consumed_files | {*result.file_errors} == files
