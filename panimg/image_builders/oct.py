@@ -16,8 +16,7 @@ def format_error(message: str) -> str:
 
 
 def create_itk_oct_volume(file, volume):
-    np_array = volume.volume
-    img_array = np.array(np_array)
+    img_array = np.array(volume)
     img = SimpleITK.GetImageFromArray(img_array, isVector=False)
     return SimpleITKImage(
         image=img, name=file.name, consumed_files={file}, spacing_valid=False,
