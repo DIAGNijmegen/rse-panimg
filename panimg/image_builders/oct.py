@@ -15,6 +15,15 @@ def format_error(message: str) -> str:
     return f"OCT image builder: {message}"
 
 
+def create_itk_oct_volume(file, volume):
+    np_array = volume.volume
+    img_array = np.array(np_array)
+    img = SimpleITK.GetImageFromArray(img_array, isVector=False)
+    return SimpleITKImage(
+        image=img, name=file.name, consumed_files={file}, spacing_valid=False,
+    )
+
+
 def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
     """
     Constructs OCT image objects by inspecting files in a directory by using
@@ -50,27 +59,10 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
             oct_volume = img.read_oct_volume()
             if file.suffix == ".e2e":
                 for volume in oct_volume:
-                    np_array = volume.volume
-                    img_array = np.array(np_array)
-                    img = SimpleITK.GetImageFromArray(
-                        img_array, isVector=False
-                    )
-                    yield SimpleITKImage(
-                        image=img,
-                        name=file.name,
-                        consumed_files={file},
-                        spacing_valid=False,
-                    )
+                    yield create_itk_oct_volume(file, volume.volume)
             else:
-                np_array = oct_volume.volume
-                img_array = np.array(np_array)
-                img = SimpleITK.GetImageFromArray(img_array, isVector=False)
-                yield SimpleITKImage(
-                    image=img,
-                    name=file.name,
-                    consumed_files={file},
-                    spacing_valid=False,
-                )
+                yield create_itk_oct_volume(file, oct_volume.volume)
+
         except (OSError, ValidationError, StreamError, ValueError, IndexError):
             file_errors[file].append(
                 format_error(
