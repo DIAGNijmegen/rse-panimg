@@ -5,7 +5,7 @@ from typing import DefaultDict, Iterator, List, Set
 import SimpleITK
 import numpy as np
 from construct.core import StreamError
-from oct_converter.readers import FDS
+from oct_converter.readers import E2E, FDA, FDS
 
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.models import SimpleITKImage
@@ -38,20 +38,46 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
 
     for file in files:
         try:
-            fds = FDS(file)
-            oct_volume = fds.read_oct_volume()
-            np_array = oct_volume.volume
+            if file.suffix == ".fds":
+                img = FDS(file)
+            elif file.suffix == ".fda":
+                img = FDA(file)
+            elif file.suffix == ".e2e":
+                img = E2E(file)
+            else:
+                raise ValueError
 
-            img_array = np.array(np_array)
-            img = SimpleITK.GetImageFromArray(img_array, isVector=False)
-            yield SimpleITKImage(
-                image=img,
-                name=file.name,
-                consumed_files={file},
-                spacing_valid=False,
+            oct_volume = img.read_oct_volume()
+            if file.suffix == ".e2e":
+                for volume in oct_volume:
+                    np_array = volume.volume
+                    img_array = np.array(np_array)
+                    img = SimpleITK.GetImageFromArray(
+                        img_array, isVector=False
+                    )
+                    yield SimpleITKImage(
+                        image=img,
+                        name=file.name,
+                        consumed_files={file},
+                        spacing_valid=False,
+                    )
+            else:
+                np_array = oct_volume.volume
+                img_array = np.array(np_array)
+                img = SimpleITK.GetImageFromArray(img_array, isVector=False)
+                yield SimpleITKImage(
+                    image=img,
+                    name=file.name,
+                    consumed_files={file},
+                    spacing_valid=False,
+                )
+        except (OSError, ValidationError, StreamError, ValueError, IndexError):
+            file_errors[file].append(
+                format_error(
+                    "Not a valid OCT file "
+                    "(supported formats: .fds,.fda,.e2e)"
+                )
             )
-        except (OSError, ValidationError, StreamError):
-            file_errors[file].append(format_error("Not a valid image file"))
 
     if file_errors:
         raise UnconsumedFilesException(file_errors=file_errors)

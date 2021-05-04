@@ -55,6 +55,7 @@ openslide-python = "*"
 pyvips = "*"
 tifffile = "*"
 oct-converter = "^0.1"
+construct = "^2.10.67"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
