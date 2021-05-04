@@ -1,7 +1,7 @@
 import pytest
 
 from panimg.exceptions import UnconsumedFilesException
-from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
+from panimg.image_builders import DEFAULT_IMAGE_BUILDERS, image_builder_oct
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
@@ -62,8 +62,8 @@ def test_number_of_images_consumed_by_each_builder(tmp_path, builder):
         builder=builder, files=files, output_directory=tmp_path
     )
 
-    if "image_builder_oct" in builder:
-        assert len(result.new_images) == 3
+    if image_builder_oct == builder:
+        assert len(result.new_images) == 2
     else:
         assert len(result.new_images) == 1
     assert len(result.consumed_files) == len(files) - len(result.file_errors)
