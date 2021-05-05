@@ -1,5 +1,9 @@
 # History
 
+## 0.2.2 (2021-05-05)
+
+* Fix imports in subdirectories
+
 ## 0.2.1 (2021-04-12)
 
 * Allows importing without pyvips and openslide
