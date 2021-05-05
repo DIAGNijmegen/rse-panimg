@@ -27,9 +27,9 @@ def create_itk_oct_volume(file, volume, oct_voxel_spacing):
     [st, _, sl] = img_array.shape
     img.SetSpacing(
         [
-            oct_voxel_spacing.xmm / st,
-            oct_voxel_spacing.y / 1000,
-            oct_voxel_spacing.zmm / sl,
+            oct_voxel_spacing["xmm"] / st,
+            oct_voxel_spacing["ymm"],
+            oct_voxel_spacing["zmm"] / sl,
         ]
     )
     return SimpleITKImage(
@@ -51,7 +51,12 @@ def extract_voxel_spacing(img):
         chunk_location, chunk_size = img.chunk_dict[b"@PARAM_SCAN_04"]
         f.seek(chunk_location)
         raw = f.read(chunk_size)
-        oct_voxel_spacing = voxel_spacing_meta_data.parse(raw)
+        spacing = voxel_spacing_meta_data.parse(raw)
+        oct_voxel_spacing = dict.fromkeys(["xmm", "zmm", "ymm"], None)
+        oct_voxel_spacing["xmm"] = spacing.xmm
+        oct_voxel_spacing["zmm"] = spacing.zmm
+        oct_voxel_spacing["ymm"] = spacing.y / 1000
+
     return oct_voxel_spacing
 
 
@@ -86,9 +91,10 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
                 oct_voxel_spacing = extract_voxel_spacing(img)
             elif file.suffix == ".e2e":
                 img = E2E(file)
-                oct_voxel_spacing.xmm = 6
-                oct_voxel_spacing.zmm = 4.5
-                oct_voxel_spacing.y = 3.9
+                oct_voxel_spacing = dict.fromkeys(["xmm", "zmm", "ymm"], None)
+                oct_voxel_spacing["xmm"] = 6
+                oct_voxel_spacing["zmm"] = 4.5
+                oct_voxel_spacing["ymm"] = 0.0039
             else:
                 raise ValueError
 

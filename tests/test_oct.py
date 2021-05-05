@@ -36,6 +36,9 @@ def test_image_builder_oct(tmpdir, src):
     assert image.width == 512
     assert image.height in (650, 496)
     assert image.depth in (128, 49)
+    assert image.voxel_width_mm in (0.046875, 0.12244897959183673)
+    assert image.voxel_height_mm in (0.0035, 0.0039)
+    assert image.voxel_depth_mm in (0.01171875, 0.0087890625)
 
 
 def test_image_builder_oct_corrupt_file(tmpdir):
