@@ -77,8 +77,10 @@ def _convert_directory(
     for o in Path(input_directory).iterdir():
         if o.is_dir():
             _convert_directory(
-                input_directory=input_directory / o,
-                output_directory=output_directory / o,
+                input_directory=input_directory
+                / o.relative_to(input_directory),
+                output_directory=output_directory
+                / o.relative_to(input_directory),
                 builders=builders,
                 consumed_files=consumed_files,
                 new_images=new_images,
