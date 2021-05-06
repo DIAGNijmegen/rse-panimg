@@ -25,24 +25,25 @@ def create_itk_images(file, oct_volume, fundus_image, oct_voxel_spacing):
     if file.suffix == ".e2e":
         for volume in oct_volume:
             eye_choice = volume.laterality
-            yield create_itk_oct_volume(
+            itk_oct = create_itk_oct_volume(
                 file, volume.volume, oct_voxel_spacing, eye_choice
             )
         for image in fundus_image:
             eye_choice = image.laterality
-            yield create_itk_fundus_image(
+            itk_fundus = create_itk_fundus_image(
                 file, image.image, eye_choice, is_vector=False
             )
     else:
         eye_choice = oct_volume.laterality
         img_array = fundus_image.image.astype(np.uint8)
         img_array = img_array[:, :, ::-1]
-        yield create_itk_oct_volume(
+        itk_oct = create_itk_oct_volume(
             file, oct_volume.volume, oct_voxel_spacing, eye_choice
         )
-        yield create_itk_fundus_image(
+        itk_fundus = create_itk_fundus_image(
             file, img_array, eye_choice, is_vector=True
         )
+    return itk_oct, itk_fundus
 
 
 def create_itk_oct_volume(file, volume, oct_voxel_spacing, eye_choice):
@@ -154,7 +155,8 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
             itk_images = create_itk_images(
                 file, oct_volume, fundus_image, oct_voxel_spacing
             )
-            yield itk_images
+            yield itk_images[0]
+            yield itk_images[1]
 
         except (OSError, ValidationError, StreamError, ValueError, IndexError):
             file_errors[file].append(
