@@ -47,6 +47,7 @@ class PanImg:
     window_center: Optional[float]
     window_width: Optional[float]
     color_space: ColorSpace
+    eye_choice: Optional[str]
 
 
 @dataclass(frozen=True)
@@ -84,6 +85,7 @@ class SimpleITKImage(BaseModel):
     consumed_files: Set[Path]
 
     spacing_valid: bool
+    oct_image: bool
 
     class Config:
         arbitrary_types_allowed = True
@@ -162,6 +164,16 @@ class SimpleITKImage(BaseModel):
         else:
             return None
 
+    @property
+    def eye_choice(self) -> Optional[str]:
+        if self.oct_image:
+            try:
+                return str(self.image.eye_choice)
+            except IndexError:
+                return None
+        else:
+            return None
+
     def save(self, output_directory: Path) -> Tuple[PanImg, Set[PanImgFile]]:
         pk = uuid4()
 
@@ -182,6 +194,7 @@ class SimpleITKImage(BaseModel):
             voxel_width_mm=self.voxel_width_mm,
             voxel_height_mm=self.voxel_height_mm,
             voxel_depth_mm=self.voxel_depth_mm,
+            eye_choice=self.eye_choice,
         )
 
         WriteImage(
@@ -212,6 +225,7 @@ class TIFFImage(BaseModel):
     voxel_height_mm: float
     resolution_levels: int
     color_space: ColorSpace
+    eye_choice: Optional[str]
 
     class Config:
         allow_mutation = False
@@ -236,6 +250,7 @@ class TIFFImage(BaseModel):
             timepoints=None,
             window_center=None,
             window_width=None,
+            eye_choice=self.eye_choice,
         )
 
         shutil.copy(src=self.file, dst=output_file)

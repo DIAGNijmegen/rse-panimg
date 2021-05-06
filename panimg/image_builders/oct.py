@@ -21,7 +21,7 @@ def format_error(message: str) -> str:
     return f"OCT image builder: {message}"
 
 
-def create_itk_oct_volume(file, volume, oct_voxel_spacing):
+def create_itk_oct_volume(file, volume, oct_voxel_spacing, eye_choice):
     img_array = np.array(volume)
     img = SimpleITK.GetImageFromArray(img_array, isVector=False)
     [st, _, sl] = img_array.shape
@@ -32,8 +32,18 @@ def create_itk_oct_volume(file, volume, oct_voxel_spacing):
             oct_voxel_spacing["zmm"] / sl,
         ]
     )
+    if eye_choice == "L":
+        img.eye_choice = "OS"
+    elif eye_choice == "R":
+        img.eye_choice = "OD"
+    else:
+        img.eye_choice = "U"
     return SimpleITKImage(
-        image=img, name=file.name, consumed_files={file}, spacing_valid=True,
+        image=img,
+        name=file.name,
+        consumed_files={file},
+        spacing_valid=True,
+        oct_image=True,
     )
 
 
@@ -102,12 +112,14 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
 
             if file.suffix == ".e2e":
                 for volume in oct_volume:
+                    eye_choice = volume.laterality
                     yield create_itk_oct_volume(
-                        file, volume.volume, oct_voxel_spacing
+                        file, volume.volume, oct_voxel_spacing, eye_choice
                     )
             else:
+                eye_choice = None
                 yield create_itk_oct_volume(
-                    file, oct_volume.volume, oct_voxel_spacing
+                    file, oct_volume.volume, oct_voxel_spacing, eye_choice
                 )
 
         except (OSError, ValidationError, StreamError, ValueError, IndexError):

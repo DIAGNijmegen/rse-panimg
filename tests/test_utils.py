@@ -61,5 +61,6 @@ def test_convert_itk_to_internal(image: Path):
         image=img_ref,
         consumed_files=set(),
         spacing_valid=True,
+        oct_image=False,
     )
     assert_img_properties(img_ref, internal_image)
