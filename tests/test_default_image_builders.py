@@ -63,7 +63,7 @@ def test_number_of_images_consumed_by_each_builder(tmp_path, builder):
     )
 
     if image_builder_oct == builder:
-        assert len(result.new_images) == 2
+        assert len(result.new_images) == 4
     else:
         assert len(result.new_images) == 1
     assert len(result.consumed_files) == len(files) - len(result.file_errors)
