@@ -18,7 +18,14 @@ from tests import RESOURCE_PATH
     (
         # RESOURCE_PATH / "oct/BRVO_O4003_baseline.e2e",
         RESOURCE_PATH / "oct/eg_oct_fda.fda",
-        RESOURCE_PATH / "oct/eg_oct_fds.fds",
+        # Minimized .fds OCT file was created by taking example OCT file at
+        # biobank.ndph.ox.ac.uk/showcase/showcase/examples/eg_oct_fds.fds
+        # and downsizing:
+        #   - OCT volume (@IMG_SCAN_03) to 2x2x2 16bit voxels,
+        #   - OBS (@IMG_OBS) scan to 2x2x1 24bit voxels,
+        #   - MOT_COMP (@IMG_MOT_COMP_03) to 2x2x2 16bit voxels,
+        #   - TRC (@IMG_TRC_02) to 2x2x2 24bit voxels
+        RESOURCE_PATH / "oct/fds_minimized.fds",
     ),
 )
 def test_image_builder_oct(tmpdir, src):
@@ -34,20 +41,20 @@ def test_image_builder_oct(tmpdir, src):
     assert len(result.new_images) == 2
     for result in result.new_images:
         if "fundus" in result.name:
-            assert result.width in (768, 2048)
-            assert result.height in (768, 1536)
+            assert result.width in (2048, 2)
+            assert result.height in (1536, 2)
             assert result.depth is None
             assert result.voxel_width_mm is None
             assert result.voxel_height_mm is None
             assert result.voxel_depth_mm is None
             assert result.eye_choice is not None
         else:
-            assert result.width == 512
-            assert result.height in (650, 496)
-            assert result.depth in (128, 49)
-            assert result.voxel_width_mm in (0.046875, 0.12244897959183673)
+            assert result.width in (2, 512)
+            assert result.height in (2, 650)
+            assert result.depth in (2, 128)
+            assert result.voxel_width_mm in (0.046875, 3)
             assert result.voxel_height_mm in (0.0035, 0.0039)
-            assert result.voxel_depth_mm in (0.01171875, 0.0087890625)
+            assert result.voxel_depth_mm in (0.01171875, 3)
             assert result.eye_choice is not None
 
 
