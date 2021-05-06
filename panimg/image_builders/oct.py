@@ -117,7 +117,7 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
                         file, volume.volume, oct_voxel_spacing, eye_choice
                     )
             else:
-                eye_choice = None
+                eye_choice = oct_volume.laterality
                 yield create_itk_oct_volume(
                     file, oct_volume.volume, oct_voxel_spacing, eye_choice
                 )
