@@ -31,15 +31,24 @@ def test_image_builder_oct(tmpdir, src):
         )
 
     assert result.consumed_files == {dest}
-    assert len(result.new_images) == 1
-    image = result.new_images.pop()
-    assert image.width == 512
-    assert image.height in (650, 496)
-    assert image.depth in (128, 49)
-    assert image.voxel_width_mm in (0.046875, 0.12244897959183673)
-    assert image.voxel_height_mm in (0.0035, 0.0039)
-    assert image.voxel_depth_mm in (0.01171875, 0.0087890625)
-    assert image.eye_choice is not None
+    assert len(result.new_images) == 2
+    for result in result.new_images:
+        if "fundus" in result.name:
+            assert result.width in (768, 2048)
+            assert result.height in (768, 1536)
+            assert result.depth is None
+            assert result.voxel_width_mm is None
+            assert result.voxel_height_mm is None
+            assert result.voxel_depth_mm is None
+            assert result.eye_choice is not None
+        else:
+            assert result.width == 512
+            assert result.height in (650, 496)
+            assert result.depth in (128, 49)
+            assert result.voxel_width_mm in (0.046875, 0.12244897959183673)
+            assert result.voxel_height_mm in (0.0035, 0.0039)
+            assert result.voxel_depth_mm in (0.01171875, 0.0087890625)
+            assert result.eye_choice is not None
 
 
 def test_image_builder_oct_corrupt_file(tmpdir):
