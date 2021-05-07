@@ -41,8 +41,8 @@ def test_image_builder_oct(tmpdir, src):
     assert len(result.new_images) == 2
     for result in result.new_images:
         if "fundus" in result.name:
-            assert result.width in (2048, 2)
-            assert result.height in (1536, 2)
+            assert result.width in (2048, 2, 768)
+            assert result.height in (1536, 2, 768)
             assert result.depth is None
             assert result.voxel_width_mm is None
             assert result.voxel_height_mm is None
@@ -50,11 +50,15 @@ def test_image_builder_oct(tmpdir, src):
             assert result.eye_choice is not None
         else:
             assert result.width in (2, 512)
-            assert result.height in (2, 650)
-            assert result.depth in (2, 128)
-            assert result.voxel_width_mm in (0.046875, 3)
+            assert result.height in (2, 650, 496)
+            assert result.depth in (2, 128, 49)
+            assert result.voxel_width_mm in (
+                3,
+                0.12244897959183673,
+                0.01171875,
+            )
             assert result.voxel_height_mm in (0.0035, 0.0039)
-            assert result.voxel_depth_mm in (0.01171875, 3)
+            assert result.voxel_depth_mm in (3, 0.09183673469387756, 0.046875)
             assert result.eye_choice is not None
 
 

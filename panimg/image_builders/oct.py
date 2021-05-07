@@ -21,12 +21,12 @@ def format_error(message: str) -> str:
     return f"OCT image builder: {message}"
 
 
-def create_itk_images(file, oct_volume, fundus_image, oct_voxel_spacing):
+def create_itk_images(file, oct_volume, fundus_image, oct_slice_size):
     if file.suffix == ".e2e":
         for volume in oct_volume:
             eye_choice = volume.laterality
             itk_oct = create_itk_oct_volume(
-                file, volume.volume, oct_voxel_spacing, eye_choice
+                file, volume.volume, oct_slice_size, eye_choice
             )
         for image in fundus_image:
             eye_choice = image.laterality
@@ -38,7 +38,7 @@ def create_itk_images(file, oct_volume, fundus_image, oct_voxel_spacing):
         img_array = fundus_image.image.astype(np.uint8)
         img_array = img_array[:, :, ::-1]
         itk_oct = create_itk_oct_volume(
-            file, oct_volume.volume, oct_voxel_spacing, eye_choice
+            file, oct_volume.volume, oct_slice_size, eye_choice
         )
         itk_fundus = create_itk_fundus_image(
             file, img_array, eye_choice, is_vector=True
@@ -46,15 +46,15 @@ def create_itk_images(file, oct_volume, fundus_image, oct_voxel_spacing):
     return itk_oct, itk_fundus
 
 
-def create_itk_oct_volume(file, volume, oct_voxel_spacing, eye_choice):
+def create_itk_oct_volume(file, volume, oct_slice_size, eye_choice):
     img_array = np.array(volume)
     img = SimpleITK.GetImageFromArray(img_array, isVector=False)
     [st, _, sl] = img_array.shape
     img.SetSpacing(
         [
-            oct_voxel_spacing["xmm"] / st,
-            oct_voxel_spacing["ymm"],
-            oct_voxel_spacing["zmm"] / sl,
+            oct_slice_size["xmm"] / sl,
+            oct_slice_size["ymm"],
+            oct_slice_size["zmm"] / st,
         ]
     )
     if eye_choice == "L":
@@ -89,8 +89,8 @@ def create_itk_fundus_image(file, image, eye_choice, is_vector):
     )
 
 
-def extract_voxel_spacing(img):
-    voxel_spacing_meta_data = Struct(
+def extract_slice_size(img):
+    slice_size_meta_data = Struct(
         "unknown" / PaddedString(12, "utf16"),
         "xmm" / Float64l,
         "zmm" / Float64l,
@@ -103,12 +103,12 @@ def extract_voxel_spacing(img):
         chunk_location, chunk_size = img.chunk_dict[b"@PARAM_SCAN_04"]
         f.seek(chunk_location)
         raw = f.read(chunk_size)
-        spacing = voxel_spacing_meta_data.parse(raw)
-        oct_voxel_spacing = dict.fromkeys(["xmm", "zmm", "ymm"], None)
-        oct_voxel_spacing["xmm"] = spacing.xmm
-        oct_voxel_spacing["zmm"] = spacing.zmm
-        oct_voxel_spacing["ymm"] = spacing.y / 1000
-    return oct_voxel_spacing
+        spacing = slice_size_meta_data.parse(raw)
+        oct_slice_size = dict.fromkeys(["xmm", "zmm", "ymm"], None)
+        oct_slice_size["xmm"] = spacing.xmm
+        oct_slice_size["zmm"] = spacing.zmm
+        oct_slice_size["ymm"] = spacing.y / 1000
+    return oct_slice_size
 
 
 def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
@@ -136,16 +136,16 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
         try:
             if file.suffix == ".fds":
                 img = FDS(file)
-                oct_voxel_spacing = extract_voxel_spacing(img)
+                oct_slice_size = extract_slice_size(img)
             elif file.suffix == ".fda":
                 img = FDA(file)
-                oct_voxel_spacing = extract_voxel_spacing(img)
+                oct_slice_size = extract_slice_size(img)
             elif file.suffix == ".e2e":
                 img = E2E(file)
-                oct_voxel_spacing = dict.fromkeys(["xmm", "zmm", "ymm"], None)
-                oct_voxel_spacing["xmm"] = 6
-                oct_voxel_spacing["zmm"] = 4.5
-                oct_voxel_spacing["ymm"] = 0.0039
+                oct_slice_size = dict.fromkeys(["xmm", "zmm", "ymm"], None)
+                oct_slice_size["xmm"] = 6
+                oct_slice_size["zmm"] = 4.5
+                oct_slice_size["ymm"] = 0.0039
             else:
                 raise ValueError
 
@@ -153,7 +153,7 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
             fundus_image = img.read_fundus_image()
 
             itk_images = create_itk_images(
-                file, oct_volume, fundus_image, oct_voxel_spacing
+                file, oct_volume, fundus_image, oct_slice_size
             )
             yield itk_images[0]
             yield itk_images[1]
