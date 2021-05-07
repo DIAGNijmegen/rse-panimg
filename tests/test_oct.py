@@ -14,21 +14,69 @@ from tests import RESOURCE_PATH
 
 
 @pytest.mark.parametrize(
-    "src",
+    "src,expected_fundus_properties,expected_oct_properties",
     (
+        # TODO retrieve publicly usable E2E file and minimize it
         # RESOURCE_PATH / "oct/BRVO_O4003_baseline.e2e",
-        RESOURCE_PATH / "oct/eg_oct_fda.fda",
-        # Minimized .fds OCT file was created by taking example OCT file at
-        # biobank.ndph.ox.ac.uk/showcase/showcase/examples/eg_oct_fds.fds
-        # and downsizing:
-        #   - OCT volume (@IMG_SCAN_03) to 2x2x2 16bit voxels,
-        #   - OBS (@IMG_OBS) scan to 2x2x1 24bit voxels,
-        #   - MOT_COMP (@IMG_MOT_COMP_03) to 2x2x2 16bit voxels,
-        #   - TRC (@IMG_TRC_02) to 2x2x2 24bit voxels
-        RESOURCE_PATH / "oct/fds_minimized.fds",
+        (
+            # Minimized .fda OCT file was created by taking example OCT file at
+            # biobank.ndph.ox.ac.uk/showcase/showcase/examples/eg_oct_fda.fda
+            # and downsizing:
+            #   - OCT volume (@IMG_JPEG) to 512x650x1 J2C encoded,
+            #   - Fundus (@IMG_FUNDUS) to 2x3x1 J2C encoded
+            RESOURCE_PATH / "oct/fda_minimized.fda",
+            {
+                "width": 2,
+                "height": 3,
+                "depth": None,
+                "voxel_width_mm": None,
+                "voxel_height_mm": None,
+                "voxel_depth_mm": None,
+                "eye_choice": "U",
+            },
+            {
+                "width": 512,
+                "height": 650,
+                "depth": 1,
+                "voxel_width_mm": 0.01171875,
+                "voxel_height_mm": 0.0035,
+                "voxel_depth_mm": 6,
+                "eye_choice": "U",
+            },
+        ),
+        (
+            # Minimized .fds OCT file was created by taking example OCT file at
+            # biobank.ndph.ox.ac.uk/showcase/showcase/examples/eg_oct_fds.fds
+            # and downsizing:
+            #   - OCT volume (@IMG_SCAN_03) to 2x3x4 16bit voxels,
+            #   - OBS (@IMG_OBS) scan to 2x3x1 24bit voxels,
+            #   - MOT_COMP (@IMG_MOT_COMP_03) to 2x3x4 16bit voxels,
+            #   - TRC (@IMG_TRC_02) to 2x3x4 24bit voxels
+            RESOURCE_PATH / "oct/fds_minimized.fds",
+            {
+                "width": 2,
+                "height": 3,
+                "depth": None,
+                "voxel_width_mm": None,
+                "voxel_height_mm": None,
+                "voxel_depth_mm": None,
+                "eye_choice": "U",
+            },
+            {
+                "width": 2,
+                "height": 3,
+                "depth": 4,
+                "voxel_width_mm": 3.0,
+                "voxel_height_mm": 0.0035,
+                "voxel_depth_mm": 1.5,
+                "eye_choice": "U",
+            },
+        ),
     ),
 )
-def test_image_builder_oct(tmpdir, src):
+def test_image_builder_oct(
+    tmpdir, src, expected_fundus_properties, expected_oct_properties
+):
     dest = Path(tmpdir) / src.name
     shutil.copy(str(src), str(dest))
     files = {Path(d[0]).joinpath(f) for d in os.walk(tmpdir) for f in d[2]}
@@ -40,26 +88,12 @@ def test_image_builder_oct(tmpdir, src):
     assert result.consumed_files == {dest}
     assert len(result.new_images) == 2
     for result in result.new_images:
+        expected_values = expected_oct_properties
         if "fundus" in result.name:
-            assert result.width in (2048, 2, 768)
-            assert result.height in (1536, 2, 768)
-            assert result.depth is None
-            assert result.voxel_width_mm is None
-            assert result.voxel_height_mm is None
-            assert result.voxel_depth_mm is None
-            assert result.eye_choice is not None
-        else:
-            assert result.width in (2, 512)
-            assert result.height in (2, 650, 496)
-            assert result.depth in (2, 128, 49)
-            assert result.voxel_width_mm in (
-                3,
-                0.12244897959183673,
-                0.01171875,
-            )
-            assert result.voxel_height_mm in (0.0035, 0.0039)
-            assert result.voxel_depth_mm in (3, 0.09183673469387756, 0.046875)
-            assert result.eye_choice is not None
+            expected_values = expected_fundus_properties
+
+        for k, v in expected_values.items():
+            assert getattr(result, k) == v
 
 
 def test_image_builder_oct_corrupt_file(tmpdir):
