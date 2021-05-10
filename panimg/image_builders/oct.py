@@ -1,6 +1,9 @@
+from collections import defaultdict
+from pathlib import Path
+from typing import DefaultDict, Iterator, List, Set, Union
+
 import SimpleITK
 import numpy as np
-from collections import defaultdict
 from construct.core import (
     Float64l,
     Int8ul,
@@ -8,8 +11,6 @@ from construct.core import (
     StreamError,
     Struct,
 )
-from pathlib import Path
-from typing import DefaultDict, Iterator, List, Set
 
 from panimg.contrib.oct_converter.readers import E2E, FDA, FDS
 from panimg.exceptions import UnconsumedFilesException, ValidationError
@@ -128,17 +129,15 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
     for file in files:
         try:
             if file.suffix == ".fds":
-                img = FDS(file)
+                img: Union[FDS, FDA, E2E] = FDS(file)
                 oct_slice_size = extract_slice_size(img)
             elif file.suffix == ".fda":
                 img = FDA(file)
                 oct_slice_size = extract_slice_size(img)
             elif file.suffix == ".e2e":
                 img = E2E(file)
-                oct_slice_size = dict.fromkeys(["xmm", "zmm", "ymm"], None)
-                oct_slice_size["xmm"] = 6
-                oct_slice_size["zmm"] = 4.5
-                oct_slice_size["ymm"] = 0.0039
+                # TODO Document these size choices
+                oct_slice_size = {"xmm": 6, "zmm": 4.5, "ymm": 0.0039}
             else:
                 raise ValueError
 
@@ -148,14 +147,13 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
             itk_images = create_itk_images(
                 file, oct_volume, fundus_image, oct_slice_size
             )
-            yield itk_images[0]
-            yield itk_images[1]
+
+            yield from itk_images
 
         except (OSError, ValidationError, StreamError, ValueError, IndexError):
             file_errors[file].append(
                 format_error(
-                    "Not a valid OCT file "
-                    "(supported formats: .fds,.fda,.e2e)"
+                    "Not a valid OCT file (supported formats: .fds,.fda,.e2e)"
                 )
             )
 

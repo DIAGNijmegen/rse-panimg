@@ -18,16 +18,19 @@ class ColorSpace(str, Enum):
     RGBA = "RGBA"
     YCBCR = "YCBCR"
 
+
 ITK_COLOR_SPACE_MAP = {
     1: ColorSpace.GRAY,
     3: ColorSpace.RGB,
     4: ColorSpace.RGBA,
 }
 
+
 class ImageType(str, Enum):
     MHD = "MHD"
     TIFF = "TIFF"
     DZI = "DZI"
+
 
 class EyeChoice(str, Enum):
     OCULUS_DEXTER = "OD"

@@ -6,10 +6,14 @@ try:
 except ImportError:
     cv2 = False
 
-VIDEO_TYPES = ['.avi', '.mp4', ]
-IMAGE_TYPES = ['.png', '.bmp', '.tiff', '.jpg', '.jpeg']
+VIDEO_TYPES = [
+    ".avi",
+    ".mp4",
+]
+IMAGE_TYPES = [".png", ".bmp", ".tiff", ".jpg", ".jpeg"]
 
-class FundusImageWithMetaData(object):
+
+class FundusImageWithMetaData:
     """ Class to hold the fundus image and any related metadata, and enable saving.
 
     Attributes:
@@ -19,12 +23,13 @@ class FundusImageWithMetaData(object):
         DOB (str): Patient date of birth.
     """
 
-    def __init__(self, image, laterality=None, patient_id=None, patient_dob=None):
+    def __init__(
+        self, image, laterality=None, patient_id=None, patient_dob=None
+    ):
         self.image = image
         self.laterality = laterality
         self.patient_id = patient_id
         self.DOB = patient_dob
-
 
     def save(self, filepath):
         """Saves fundus image.
@@ -33,12 +38,16 @@ class FundusImageWithMetaData(object):
             filepath (str): Location to save volume to. Extension must be in IMAGE_TYPES.
         """
         if cv2 is False:
-            raise RuntimeError("cv2 is missing, please install oct-converter[extras]")
+            raise RuntimeError(
+                "cv2 is missing, please install oct-converter[extras]"
+            )
 
         extension = os.path.splitext(filepath)[1]
         if extension.lower() in IMAGE_TYPES:
             cv2.imwrite(filepath, self.image)
-        elif extension.lower() == '.npy':
+        elif extension.lower() == ".npy":
             np.save(filepath, self.image)
         else:
-            raise NotImplementedError('Saving with file extension {} not supported'.format(extension))
+            raise NotImplementedError(
+                f"Saving with file extension {extension} not supported"
+            )

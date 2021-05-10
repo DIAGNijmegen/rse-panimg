@@ -14,11 +14,14 @@ try:
 except ImportError:
     plt = False
 
-VIDEO_TYPES = ['.avi', '.mp4', ]
-IMAGE_TYPES = ['.png', '.bmp', '.tiff', '.jpg', '.jpeg']
+VIDEO_TYPES = [
+    ".avi",
+    ".mp4",
+]
+IMAGE_TYPES = [".png", ".bmp", ".tiff", ".jpg", ".jpeg"]
 
 
-class OCTVolumeWithMetaData(object):
+class OCTVolumeWithMetaData:
     """ Class to hold the OCT volume and any related metadata, and enable viewing and saving.
 
     Attributes:
@@ -29,7 +32,9 @@ class OCTVolumeWithMetaData(object):
         num_slices: Number of b-scans present in volume.
     """
 
-    def __init__(self, volume, laterality=None, patient_id=None, patient_dob=None):
+    def __init__(
+        self, volume, laterality=None, patient_id=None, patient_dob=None
+    ):
         self.volume = volume
         self.laterality = laterality
         self.patient_id = patient_id
@@ -45,26 +50,29 @@ class OCTVolumeWithMetaData(object):
             filepath (str): Location to save montage to.
         """
         if plt is False:
-            raise RuntimeError("matplotlib is missing, please install oct-converter[extras]")
+            raise RuntimeError(
+                "matplotlib is missing, please install oct-converter[extras]"
+            )
 
         images = rows * cols
         x_size = rows * self.volume[0].shape[0]
         y_size = cols * self.volume[0].shape[1]
         ratio = y_size / x_size
-        slices_indices = np.linspace(0, self.num_slices - 1, images).astype(np.int)
-        plt.figure(figsize=(12*ratio,12))
+        slices_indices = np.linspace(0, self.num_slices - 1, images).astype(
+            np.int
+        )
+        plt.figure(figsize=(12 * ratio, 12))
         for i in range(images):
-            plt.subplot(rows, cols, i +1)
-            plt.imshow(self.volume[slices_indices[i]],cmap='gray')
-            plt.axis('off')
-            plt.title('{}'.format(slices_indices[i]))
-        plt.suptitle('OCT volume with {} slices.'.format(self.num_slices))
+            plt.subplot(rows, cols, i + 1)
+            plt.imshow(self.volume[slices_indices[i]], cmap="gray")
+            plt.axis("off")
+            plt.title("{}".format(slices_indices[i]))
+        plt.suptitle(f"OCT volume with {self.num_slices} slices.")
 
         if filepath is not None:
             plt.savefig(filepath)
         else:
             plt.show()
-
 
     def save(self, filepath):
         """Saves OCT volume as a video or stack of slices.
@@ -73,10 +81,14 @@ class OCTVolumeWithMetaData(object):
             filepath (str): Location to save volume to. Extension must be in VIDEO_TYPES or IMAGE_TYPES.
         """
         if imageio is False:
-            raise RuntimeError("imageio is missing, please install oct-converter[extras]")
+            raise RuntimeError(
+                "imageio is missing, please install oct-converter[extras]"
+            )
 
         if cv2 is False:
-            raise RuntimeError("cv2 is missing, please install oct-converter[extras]")
+            raise RuntimeError(
+                "cv2 is missing, please install oct-converter[extras]"
+            )
 
         extension = os.path.splitext(filepath)[1]
         if extension.lower() in VIDEO_TYPES:
@@ -86,14 +98,18 @@ class OCTVolumeWithMetaData(object):
             video_writer.close()
         elif extension.lower() in IMAGE_TYPES:
             base = os.path.splitext(os.path.basename(filepath))[0]
-            print('Saving OCT as sequential slices {}_[1..{}]{}'.format(base, len(self.volume), extension))
+            print(
+                "Saving OCT as sequential slices {}_[1..{}]{}".format(
+                    base, len(self.volume), extension
+                )
+            )
             full_base = os.path.splitext(filepath)[0]
             for index, slice in enumerate(self.volume):
-                filename = '{}_{}{}'.format(full_base, index, extension)
+                filename = f"{full_base}_{index}{extension}"
                 cv2.imwrite(filename, slice)
-        elif extension.lower() == '.npy':
+        elif extension.lower() == ".npy":
             np.save(filepath, self.volume)
         else:
-            raise NotImplementedError('Saving with file extension {} not supported'.format(extension))
-
-
+            raise NotImplementedError(
+                f"Saving with file extension {extension} not supported"
+            )
