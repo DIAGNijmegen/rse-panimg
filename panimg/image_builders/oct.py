@@ -1,9 +1,6 @@
-from collections import defaultdict
-from pathlib import Path
-from typing import DefaultDict, Iterator, List, Set
-
 import SimpleITK
 import numpy as np
+from collections import defaultdict
 from construct.core import (
     Float64l,
     Int8ul,
@@ -11,30 +8,38 @@ from construct.core import (
     StreamError,
     Struct,
 )
-from panimg.contrib.oct_converter.readers import E2E, FDA, FDS
+from pathlib import Path
+from typing import DefaultDict, Iterator, List, Set
 
+from panimg.contrib.oct_converter.readers import E2E, FDA, FDS
 from panimg.exceptions import UnconsumedFilesException, ValidationError
-from panimg.models import SimpleITKImage
+from panimg.models import EyeChoice, SimpleITKImage
 
 
 def format_error(message: str) -> str:
     return f"OCT image builder: {message}"
 
 
+LATERALITY_TO_EYE_CHOICE = defaultdict(
+    lambda: EyeChoice.UNKNOWN,
+    {"L": EyeChoice.OCULUS_SINISTER, "R": EyeChoice.OCULUS_DEXTER},
+)
+
+
 def create_itk_images(file, oct_volume, fundus_image, oct_slice_size):
     if file.suffix == ".e2e":
         for volume in oct_volume:
-            eye_choice = volume.laterality
+            eye_choice = LATERALITY_TO_EYE_CHOICE[volume.laterality]
             itk_oct = create_itk_oct_volume(
                 file, volume.volume, oct_slice_size, eye_choice
             )
         for image in fundus_image:
-            eye_choice = image.laterality
+            eye_choice = LATERALITY_TO_EYE_CHOICE[image.laterality]
             itk_fundus = create_itk_fundus_image(
                 file, image.image, eye_choice, is_vector=False
             )
     else:
-        eye_choice = oct_volume.laterality
+        eye_choice = LATERALITY_TO_EYE_CHOICE[oct_volume.laterality]
         img_array = fundus_image.image.astype(np.uint8)
         img_array = img_array[:, :, ::-1]
         itk_oct = create_itk_oct_volume(
@@ -57,35 +62,23 @@ def create_itk_oct_volume(file, volume, oct_slice_size, eye_choice):
             oct_slice_size["zmm"] / st,
         ]
     )
-    if eye_choice == "L":
-        img.eye_choice = "OS"
-    elif eye_choice == "R":
-        img.eye_choice = "OD"
-    else:
-        img.eye_choice = "U"
     return SimpleITKImage(
         image=img,
         name=file.name,
         consumed_files={file},
         spacing_valid=True,
-        oct_image=True,
+        eye_choice=eye_choice,
     )
 
 
 def create_itk_fundus_image(file, image, eye_choice, is_vector):
     img = SimpleITK.GetImageFromArray(image, isVector=is_vector)
-    if eye_choice == "L":
-        img.eye_choice = "OS"
-    elif eye_choice == "R":
-        img.eye_choice = "OD"
-    else:
-        img.eye_choice = "U"
     return SimpleITKImage(
         image=img,
         name=file.stem + "_fundus" + file.suffix,
         consumed_files={file},
         spacing_valid=False,
-        oct_image=True,
+        eye_choice=eye_choice,
     )
 
 

@@ -18,18 +18,22 @@ class ColorSpace(str, Enum):
     RGBA = "RGBA"
     YCBCR = "YCBCR"
 
+ITK_COLOR_SPACE_MAP = {
+    1: ColorSpace.GRAY,
+    3: ColorSpace.RGB,
+    4: ColorSpace.RGBA,
+}
 
 class ImageType(str, Enum):
     MHD = "MHD"
     TIFF = "TIFF"
     DZI = "DZI"
 
-
-ITK_COLOR_SPACE_MAP = {
-    1: ColorSpace.GRAY,
-    3: ColorSpace.RGB,
-    4: ColorSpace.RGBA,
-}
+class EyeChoice(str, Enum):
+    OCULUS_DEXTER = "OD"
+    OCULUS_SINISTER = "OS"
+    UNKNOWN = "U"
+    NOT_APPLICABLE = "NA"
 
 
 @dataclass(frozen=True)
@@ -47,7 +51,7 @@ class PanImg:
     window_center: Optional[float]
     window_width: Optional[float]
     color_space: ColorSpace
-    eye_choice: Optional[str]
+    eye_choice: EyeChoice
 
 
 @dataclass(frozen=True)
@@ -85,7 +89,7 @@ class SimpleITKImage(BaseModel):
     consumed_files: Set[Path]
 
     spacing_valid: bool
-    oct_image: bool
+    eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
 
     class Config:
         arbitrary_types_allowed = True
@@ -164,16 +168,6 @@ class SimpleITKImage(BaseModel):
         else:
             return None
 
-    @property
-    def eye_choice(self) -> Optional[str]:
-        if self.oct_image:
-            try:
-                return str(self.image.eye_choice)
-            except IndexError:
-                return None
-        else:
-            return None
-
     def save(self, output_directory: Path) -> Tuple[PanImg, Set[PanImgFile]]:
         pk = uuid4()
 
@@ -225,7 +219,7 @@ class TIFFImage(BaseModel):
     voxel_height_mm: float
     resolution_levels: int
     color_space: ColorSpace
-    eye_choice: Optional[str]
+    eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
 
     class Config:
         allow_mutation = False

@@ -271,7 +271,6 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
         ),
         consumed_files={d["file"] for d in dicom_ds.headers},
         spacing_valid=True,
-        oct_image=False,
     )
 
 

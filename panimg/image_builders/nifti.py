@@ -52,7 +52,6 @@ def image_builder_nifti(*, files: Set[Path],) -> Iterator[SimpleITKImage]:
             name=file.name,
             consumed_files={file},
             spacing_valid=True,
-            oct_image=False,
         )
 
     if file_errors:
