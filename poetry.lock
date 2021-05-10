@@ -140,30 +140,6 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
-name = "oct_converter"
-version = "0.1"
-description = ""
-category = "main"
-optional = false
-python-versions = ">=3.7"
-develop = false
-
-[package.dependencies]
-construct = "*"
-numpy = "*"
-pydicom = "*"
-pylibjpeg = "*"
-
-[package.extras]
-extras = ["imageio", "opencv-python", "matplotlib", "imageio-ffmpeg"]
-
-[package.source]
-type = "git"
-url = "https://github.com/DIAGNijmegen/OCT-Converter.git"
-reference = "master"
-resolved_reference = "57aa692ac647a594ac43c41b855fd7c7a8c165de"
-
-[[package]]
 name = "openslide-python"
 version = "1.1.2"
 description = "Python interface to OpenSlide"
@@ -498,7 +474,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "6f71a2e34c0cdd6bb9863fd5c513372997ea54d8703d3d0a81e4f75a8760cfd1"
+content-hash = "1181fef12fd9eae18e0a7c6550242914f84c015e336b6dfdce82bc7041c5c9cc"
 
 [metadata.files]
 apipkg = [
@@ -663,7 +639,6 @@ numpy = [
     {file = "numpy-1.20.1-pp37-pypy37_pp73-manylinux2010_x86_64.whl", hash = "sha256:9eb551d122fadca7774b97db8a112b77231dcccda8e91a5bc99e79890797175e"},
     {file = "numpy-1.20.1.zip", hash = "sha256:3bc63486a870294683980d76ec1e3efc786295ae00128f9ea38e2c6e74d5a60a"},
 ]
-oct_converter = []
 openslide-python = [
     {file = "openslide-python-1.1.2.tar.gz", hash = "sha256:00f5e34dca56500b598454107a0acf243788ea2072b5468b3fea59f756b832a8"},
     {file = "openslide_python-1.1.2-cp27-cp27m-win32.whl", hash = "sha256:6a614ba40bd6eb1588adf86c90f59d4e4243e14903572015656135313956d557"},

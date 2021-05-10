@@ -11,7 +11,7 @@ from construct.core import (
     StreamError,
     Struct,
 )
-from oct_converter.readers import E2E, FDA, FDS
+from panimg.contrib.oct_converter.readers import E2E, FDA, FDS
 
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.models import SimpleITKImage

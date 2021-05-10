@@ -55,7 +55,7 @@ openslide-python = "*"
 pyvips = "*"
 tifffile = "*"
 construct = "*"
-oct-converter = {git = "https://github.com/DIAGNijmegen/OCT-Converter.git"}
+pylibjpeg = "*" # Required by oct-converter
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
