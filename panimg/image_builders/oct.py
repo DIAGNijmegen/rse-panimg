@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, Iterator, List, Set, Tuple, Union
+from typing import DefaultDict, Iterable, Iterator, List, Set, Tuple, Union
 
 import SimpleITK
 import numpy as np
@@ -13,6 +13,10 @@ from construct.core import (
 )
 from pydantic import BaseModel
 
+from panimg.contrib.oct_converter.image_types import (
+    FundusImageWithMetaData,
+    OCTVolumeWithMetaData,
+)
 from panimg.contrib.oct_converter.readers import E2E, FDA, FDS
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.models import EyeChoice, SimpleITKImage
@@ -37,37 +41,36 @@ class OctSliceSpacing(BaseModel):
 
 
 def create_itk_images(
-    *, file: Path, oct_volume, fundus_image, oct_slice_size: OctSliceSpacing,
+    *,
+    file: Path,
+    oct_volumes: Iterable[OCTVolumeWithMetaData],
+    fundus_images: Iterable[FundusImageWithMetaData],
+    oct_slice_size: OctSliceSpacing,
 ) -> Iterator[SimpleITKImage]:
-    if file.suffix == ".e2e":
-        for volume in oct_volume:
-            eye_choice = LATERALITY_TO_EYE_CHOICE[volume.laterality]
-            yield create_itk_oct_volume(
-                file=file,
-                volume=volume.volume,
-                oct_slice_size=oct_slice_size,
-                eye_choice=eye_choice,
-            )
-        for image in fundus_image:
-            eye_choice = LATERALITY_TO_EYE_CHOICE[image.laterality]
-            yield create_itk_fundus_image(
-                file=file,
-                image=image.image,
-                eye_choice=eye_choice,
-                is_vector=False,
-            )
-    else:
-        eye_choice = LATERALITY_TO_EYE_CHOICE[oct_volume.laterality]
-        img_array = fundus_image.image.astype(np.uint8)
-        img_array = img_array[:, :, ::-1]
+    for volume in oct_volumes:
+        eye_choice = LATERALITY_TO_EYE_CHOICE[volume.laterality]
         yield create_itk_oct_volume(
             file=file,
-            volume=oct_volume.volume,
+            volume=volume.volume,
             oct_slice_size=oct_slice_size,
             eye_choice=eye_choice,
         )
+    for image in fundus_images:
+        eye_choice = LATERALITY_TO_EYE_CHOICE[image.laterality]
+
+        if file.suffix != ".e2e":
+            img_array = image.image.astype(np.uint8)
+            img_array = img_array[:, :, ::-1]
+            is_vector = True
+        else:
+            img_array = image.image
+            is_vector = False
+
         yield create_itk_fundus_image(
-            file=file, image=img_array, eye_choice=eye_choice, is_vector=True
+            file=file,
+            image=img_array,
+            eye_choice=eye_choice,
+            is_vector=is_vector,
         )
 
 
@@ -130,20 +133,40 @@ def extract_slice_size(*, img: Union[FDS, FDA]) -> OctSliceSpacing:
         )
 
 
-def _get_image(*, file: Path) -> Tuple[OCT_CONVERTER_TYPE, OctSliceSpacing]:
+def _get_image(
+    *, file: Path
+) -> Tuple[
+    Iterable[OCTVolumeWithMetaData],
+    Iterable[FundusImageWithMetaData],
+    OctSliceSpacing,
+]:
     if file.suffix == ".fds":
         fds_img = FDS(file)
         oct_slice_size = extract_slice_size(img=fds_img)
-        return fds_img, oct_slice_size
+        return (
+            [fds_img.read_oct_volume()],
+            [fds_img.read_fundus_image()],
+            oct_slice_size,
+        )
     elif file.suffix == ".fda":
         fda_img = FDA(file)
         oct_slice_size = extract_slice_size(img=fda_img)
-        return fda_img, oct_slice_size
+        return (
+            [fda_img.read_oct_volume()],
+            [fda_img.read_fundus_image()],
+            oct_slice_size,
+        )
     elif file.suffix == ".e2e":
         e2e_img = E2E(file)
         # TODO Document these size choices
         oct_slice_size = OctSliceSpacing(x_mm=6, y_mm=0.0039, z_mm=4.5)
-        return e2e_img, oct_slice_size
+        # Note that the return types from oct_converter are different
+        # for e2e files
+        return (
+            e2e_img.read_oct_volume(),
+            e2e_img.read_fundus_image(),
+            oct_slice_size,
+        )
     else:
         raise ValueError
 
@@ -171,15 +194,12 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
 
     for file in files:
         try:
-            img, oct_slice_size = _get_image(file=file)
-
-            oct_volume = img.read_oct_volume()
-            fundus_image = img.read_fundus_image()
+            oct_volumes, fundus_images, oct_slice_size = _get_image(file=file)
 
             yield from create_itk_images(
                 file=file,
-                oct_volume=oct_volume,
-                fundus_image=fundus_image,
+                oct_volumes=oct_volumes,
+                fundus_images=fundus_images,
                 oct_slice_size=oct_slice_size,
             )
 
