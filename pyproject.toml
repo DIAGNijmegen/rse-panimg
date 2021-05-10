@@ -54,8 +54,8 @@ Pillow = "*"
 openslide-python = "*"
 pyvips = "*"
 tifffile = "*"
-oct-converter = "*"
 construct = "*"
+oct-converter = {git = "https://github.com/DIAGNijmegen/OCT-Converter.git"}
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
