@@ -37,12 +37,12 @@ class OctSliceSpacing(BaseModel):
 
 
 def create_itk_images(
-    *, file, oct_volume, fundus_image, oct_slice_size,
-):
+    *, file: Path, oct_volume, fundus_image, oct_slice_size: OctSliceSpacing,
+) -> Iterator[SimpleITKImage]:
     if file.suffix == ".e2e":
         for volume in oct_volume:
             eye_choice = LATERALITY_TO_EYE_CHOICE[volume.laterality]
-            itk_oct = create_itk_oct_volume(
+            yield create_itk_oct_volume(
                 file=file,
                 volume=volume.volume,
                 oct_slice_size=oct_slice_size,
@@ -50,7 +50,7 @@ def create_itk_images(
             )
         for image in fundus_image:
             eye_choice = LATERALITY_TO_EYE_CHOICE[image.laterality]
-            itk_fundus = create_itk_fundus_image(
+            yield create_itk_fundus_image(
                 file=file,
                 image=image.image,
                 eye_choice=eye_choice,
@@ -60,19 +60,24 @@ def create_itk_images(
         eye_choice = LATERALITY_TO_EYE_CHOICE[oct_volume.laterality]
         img_array = fundus_image.image.astype(np.uint8)
         img_array = img_array[:, :, ::-1]
-        itk_oct = create_itk_oct_volume(
+        yield create_itk_oct_volume(
             file=file,
             volume=oct_volume.volume,
             oct_slice_size=oct_slice_size,
             eye_choice=eye_choice,
         )
-        itk_fundus = create_itk_fundus_image(
+        yield create_itk_fundus_image(
             file=file, image=img_array, eye_choice=eye_choice, is_vector=True
         )
-    return itk_oct, itk_fundus
 
 
-def create_itk_oct_volume(*, file, volume, oct_slice_size, eye_choice):
+def create_itk_oct_volume(
+    *,
+    file: Path,
+    volume: List[np.array],
+    oct_slice_size: OctSliceSpacing,
+    eye_choice: EyeChoice,
+) -> SimpleITKImage:
     img_array = np.array(volume)
     img = SimpleITK.GetImageFromArray(img_array, isVector=False)
     [st, _, sl] = img_array.shape
@@ -92,7 +97,9 @@ def create_itk_oct_volume(*, file, volume, oct_slice_size, eye_choice):
     )
 
 
-def create_itk_fundus_image(*, file, image, eye_choice, is_vector):
+def create_itk_fundus_image(
+    *, file: Path, image: np.array, eye_choice: EyeChoice, is_vector: bool
+) -> SimpleITKImage:
     img = SimpleITK.GetImageFromArray(image, isVector=is_vector)
     return SimpleITKImage(
         image=img,
@@ -169,14 +176,12 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
             oct_volume = img.read_oct_volume()
             fundus_image = img.read_fundus_image()
 
-            itk_images = create_itk_images(
+            yield from create_itk_images(
                 file=file,
                 oct_volume=oct_volume,
                 fundus_image=fundus_image,
                 oct_slice_size=oct_slice_size,
             )
-
-            yield from itk_images
 
         except (OSError, ValidationError, StreamError, ValueError, IndexError):
             file_errors[file].append(
