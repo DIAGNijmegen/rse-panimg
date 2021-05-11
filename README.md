@@ -19,6 +19,7 @@ Under the hood we use:
 * `Pillow`
 * `openslide-python`
 * `pyvips`
+* `oct-converter`
 
 ## Usage
 
@@ -47,8 +48,11 @@ result = convert(
 | `.dcm`                              | `.mha`  | `dicom`    | <sup>[1](#footnote1)</sup> |
 | `.nii`                              | `.mha`  | `nifti`    |                            |
 | `.nii.gz`                           | `.mha`  | `nifti`    |                            |
-| `.png`                              | `.mha`  | `fallback` | <sup>[2](#footnote2)</sup> |
-| `.jpeg`                             | `.mha`  | `fallback` | <sup>[2](#footnote2)</sup> |
+| `.e2e`                              | `.mha`  | `oct`      | <sup>[2](#footnote2)</sup> |
+| `.fds`                              | `.mha`  | `oct`      | <sup>[2](#footnote2)</sup> |
+| `.fda`                              | `.mha`  | `oct`      | <sup>[2](#footnote2)</sup> |
+| `.png`                              | `.mha`  | `fallback` | <sup>[3](#footnote3)</sup> |
+| `.jpeg`                             | `.mha`  | `fallback` | <sup>[3](#footnote3)</sup> |
 | `.tiff`                             | `.tiff` | `tiff`     |                            |
 | `.svs` (Aperio)                     | `.tiff` | `tiff`     |                            |
 | `.vms`, `.vmu`, `.ndpi` (Hamamatsu) | `.tiff` | `tiff`     |                            |
@@ -58,7 +62,9 @@ result = convert(
 
 <a name="footnote1">1</a>: Compressed DICOM requires `gdcm`
 
-<a name="footnote2">2</a>: 2D only, unitary dimensions
+<a name="footnote2">2</a>: Both OCT volume(s) and fundus image(s) will be extracted.
+
+<a name="footnote3">3</a>: 2D only, unitary dimensions
 
 #### Post Processors
 

@@ -19,17 +19,24 @@ class ColorSpace(str, Enum):
     YCBCR = "YCBCR"
 
 
+ITK_COLOR_SPACE_MAP = {
+    1: ColorSpace.GRAY,
+    3: ColorSpace.RGB,
+    4: ColorSpace.RGBA,
+}
+
+
 class ImageType(str, Enum):
     MHD = "MHD"
     TIFF = "TIFF"
     DZI = "DZI"
 
 
-ITK_COLOR_SPACE_MAP = {
-    1: ColorSpace.GRAY,
-    3: ColorSpace.RGB,
-    4: ColorSpace.RGBA,
-}
+class EyeChoice(str, Enum):
+    OCULUS_DEXTER = "OD"
+    OCULUS_SINISTER = "OS"
+    UNKNOWN = "U"
+    NOT_APPLICABLE = "NA"
 
 
 @dataclass(frozen=True)
@@ -47,6 +54,7 @@ class PanImg:
     window_center: Optional[float]
     window_width: Optional[float]
     color_space: ColorSpace
+    eye_choice: EyeChoice
 
 
 @dataclass(frozen=True)
@@ -84,6 +92,7 @@ class SimpleITKImage(BaseModel):
     consumed_files: Set[Path]
 
     spacing_valid: bool
+    eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
 
     class Config:
         arbitrary_types_allowed = True
@@ -182,6 +191,7 @@ class SimpleITKImage(BaseModel):
             voxel_width_mm=self.voxel_width_mm,
             voxel_height_mm=self.voxel_height_mm,
             voxel_depth_mm=self.voxel_depth_mm,
+            eye_choice=self.eye_choice,
         )
 
         WriteImage(
@@ -212,6 +222,7 @@ class TIFFImage(BaseModel):
     voxel_height_mm: float
     resolution_levels: int
     color_space: ColorSpace
+    eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
 
     class Config:
         allow_mutation = False
@@ -236,6 +247,7 @@ class TIFFImage(BaseModel):
             timepoints=None,
             window_center=None,
             window_width=None,
+            eye_choice=self.eye_choice,
         )
 
         shutil.copy(src=self.file, dst=output_file)

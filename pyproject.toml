@@ -54,6 +54,8 @@ Pillow = "*"
 openslide-python = "*"
 pyvips = "*"
 tifffile = "*"
+construct = "*"
+pylibjpeg = "*" # Required by oct-converter
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
