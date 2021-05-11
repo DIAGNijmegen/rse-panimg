@@ -19,7 +19,7 @@ Under the hood we use:
 * `Pillow`
 * `openslide-python`
 * `pyvips`
-* 'oct-converter'
+* `oct-converter`
 
 ## Usage
 
