@@ -122,41 +122,6 @@ class FDA:
         )
         return oct_volume
 
-    def read_oct_volume_2(self):
-        """ Reads OCT data.
-
-            Returns:
-                obj:OCTVolumeWithMetaData
-        """
-
-        if b"@IMG_MOT_COMP_03" not in self.chunk_dict:
-            raise ValueError(
-                "Could not find OCT header @IMG_MOT_COMP_03 in chunk list"
-            )
-        with open(self.filepath, "rb") as f:
-            chunk_location, chunk_size = self.chunk_dict[b"@IMG_MOT_COMP_03"]
-            f.seek(chunk_location)  # Set the chunk’s current position.
-            raw = f.read(22)
-            oct_header = self.oct_header_2.parse(raw)
-            number_pixels = (
-                oct_header.width * oct_header.height * oct_header.number_slices
-            )
-            raw_volume = np.frombuffer(
-                f.read(number_pixels * 2), dtype=np.uint16
-            )
-            volume = np.array(raw_volume)
-            volume = volume.reshape(
-                oct_header.width,
-                oct_header.height,
-                oct_header.number_slices,
-                order="F",
-            )
-            volume = np.transpose(volume, [1, 0, 2])
-        oct_volume = OCTVolumeWithMetaData(
-            [volume[:, :, i] for i in range(volume.shape[2])]
-        )
-        return oct_volume
-
     def read_fundus_image(self):
         """ Reads fundus image.
 
