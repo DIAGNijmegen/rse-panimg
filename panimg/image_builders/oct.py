@@ -34,10 +34,10 @@ LATERALITY_TO_EYE_CHOICE = defaultdict(
 OCT_CONVERTER_TYPE = Union[FDS, FDA, E2E]
 
 
-class OctSliceSpacing(BaseModel):
-    x_mm: float
-    y_mm: float
-    z_mm: float
+class OctDimensions(BaseModel):
+    extent_x_mm: float
+    resolution_y_mm: float
+    extent_z_mm: float
 
 
 def _create_itk_images(
@@ -45,7 +45,7 @@ def _create_itk_images(
     file: Path,
     oct_volumes: Iterable[OCTVolumeWithMetaData],
     fundus_images: Iterable[FundusImageWithMetaData],
-    oct_slice_size: OctSliceSpacing,
+    oct_slice_size: OctDimensions,
 ) -> Iterator[SimpleITKImage]:
     for volume in oct_volumes:
         eye_choice = LATERALITY_TO_EYE_CHOICE[volume.laterality]
@@ -78,7 +78,7 @@ def _create_itk_oct_volume(
     *,
     file: Path,
     volume: List[np.ndarray],
-    oct_slice_size: OctSliceSpacing,
+    oct_slice_size: OctDimensions,
     eye_choice: EyeChoice,
 ) -> SimpleITKImage:
     img_array = np.array(volume)
@@ -86,9 +86,9 @@ def _create_itk_oct_volume(
     [st, _, sl] = img_array.shape
     img.SetSpacing(
         [
-            oct_slice_size.x_mm / sl,
-            oct_slice_size.y_mm,
-            oct_slice_size.z_mm / st,
+            oct_slice_size.extent_x_mm / sl,
+            oct_slice_size.resolution_y_mm,
+            oct_slice_size.extent_z_mm / st,
         ]
     )
     return SimpleITKImage(
@@ -113,7 +113,7 @@ def _create_itk_fundus_image(
     )
 
 
-def _extract_slice_size(*, img: Union[FDS, FDA]) -> OctSliceSpacing:
+def _extract_slice_size(*, img: Union[FDS, FDA]) -> OctDimensions:
     slice_size_meta_data = Struct(
         "unknown" / PaddedString(12, "utf16"),
         "xmm" / Float64l,
@@ -128,8 +128,10 @@ def _extract_slice_size(*, img: Union[FDS, FDA]) -> OctSliceSpacing:
         f.seek(chunk_location)
         raw = f.read(chunk_size)
         spacing = slice_size_meta_data.parse(raw)
-        return OctSliceSpacing(
-            x_mm=spacing.xmm, y_mm=spacing.y / 1000.0, z_mm=spacing.zmm
+        return OctDimensions(
+            extent_x_mm=spacing.xmm,
+            resolution_y_mm=spacing.y / 1000.0,
+            extent_z_mm=spacing.zmm,
         )
 
 
@@ -138,7 +140,7 @@ def _get_image(
 ) -> Tuple[
     Iterable[OCTVolumeWithMetaData],
     Iterable[FundusImageWithMetaData],
-    OctSliceSpacing,
+    OctDimensions,
 ]:
     if file.suffix == ".fds":
         fds_img = FDS(file)
@@ -161,7 +163,9 @@ def _get_image(
         # We were unable to retrieve slice size information from the e2e files.
         # The following default values are taken from:
         # https://bitbucket.org/uocte/uocte/wiki/Heidelberg%20File%20Format
-        oct_slice_size = OctSliceSpacing(x_mm=6, y_mm=0.0039, z_mm=4.5)
+        oct_slice_size = OctDimensions(
+            extent_x_mm=6, resolution_y_mm=0.0039, extent_z_mm=4.5
+        )
         # Note that the return types from oct_converter are different
         # for e2e files
         return (
