@@ -40,7 +40,7 @@ class OctSliceSpacing(BaseModel):
     z_mm: float
 
 
-def create_itk_images(
+def _create_itk_images(
     *,
     file: Path,
     oct_volumes: Iterable[OCTVolumeWithMetaData],
@@ -49,7 +49,7 @@ def create_itk_images(
 ) -> Iterator[SimpleITKImage]:
     for volume in oct_volumes:
         eye_choice = LATERALITY_TO_EYE_CHOICE[volume.laterality]
-        yield create_itk_oct_volume(
+        yield _create_itk_oct_volume(
             file=file,
             volume=volume.volume,
             oct_slice_size=oct_slice_size,
@@ -66,7 +66,7 @@ def create_itk_images(
             img_array = image.image
             is_vector = False
 
-        yield create_itk_fundus_image(
+        yield _create_itk_fundus_image(
             file=file,
             image=img_array,
             eye_choice=eye_choice,
@@ -74,7 +74,7 @@ def create_itk_images(
         )
 
 
-def create_itk_oct_volume(
+def _create_itk_oct_volume(
     *,
     file: Path,
     volume: List[np.array],
@@ -100,7 +100,7 @@ def create_itk_oct_volume(
     )
 
 
-def create_itk_fundus_image(
+def _create_itk_fundus_image(
     *, file: Path, image: np.array, eye_choice: EyeChoice, is_vector: bool
 ) -> SimpleITKImage:
     img = SimpleITK.GetImageFromArray(image, isVector=is_vector)
@@ -113,7 +113,7 @@ def create_itk_fundus_image(
     )
 
 
-def extract_slice_size(*, img: Union[FDS, FDA]) -> OctSliceSpacing:
+def _extract_slice_size(*, img: Union[FDS, FDA]) -> OctSliceSpacing:
     slice_size_meta_data = Struct(
         "unknown" / PaddedString(12, "utf16"),
         "xmm" / Float64l,
@@ -142,7 +142,7 @@ def _get_image(
 ]:
     if file.suffix == ".fds":
         fds_img = FDS(file)
-        oct_slice_size = extract_slice_size(img=fds_img)
+        oct_slice_size = _extract_slice_size(img=fds_img)
         return (
             [fds_img.read_oct_volume()],
             [fds_img.read_fundus_image()],
@@ -150,7 +150,7 @@ def _get_image(
         )
     elif file.suffix == ".fda":
         fda_img = FDA(file)
-        oct_slice_size = extract_slice_size(img=fda_img)
+        oct_slice_size = _extract_slice_size(img=fda_img)
         return (
             [fda_img.read_oct_volume()],
             [fda_img.read_fundus_image()],
@@ -158,7 +158,9 @@ def _get_image(
         )
     elif file.suffix == ".e2e":
         e2e_img = E2E(file)
-        # TODO Document these size choices
+        # We were unable to retrieve slice size information from the e2e files.
+        # The following default values are taken from:
+        # https://bitbucket.org/uocte/uocte/wiki/Heidelberg%20File%20Format
         oct_slice_size = OctSliceSpacing(x_mm=6, y_mm=0.0039, z_mm=4.5)
         # Note that the return types from oct_converter are different
         # for e2e files
@@ -196,7 +198,7 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
         try:
             oct_volumes, fundus_images, oct_slice_size = _get_image(file=file)
 
-            yield from create_itk_images(
+            yield from _create_itk_images(
                 file=file,
                 oct_volumes=oct_volumes,
                 fundus_images=fundus_images,
