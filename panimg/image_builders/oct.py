@@ -77,7 +77,7 @@ def _create_itk_images(
 def _create_itk_oct_volume(
     *,
     file: Path,
-    volume: List[np.array],
+    volume: List[np.ndarray],
     oct_slice_size: OctSliceSpacing,
     eye_choice: EyeChoice,
 ) -> SimpleITKImage:
@@ -101,7 +101,7 @@ def _create_itk_oct_volume(
 
 
 def _create_itk_fundus_image(
-    *, file: Path, image: np.array, eye_choice: EyeChoice, is_vector: bool
+    *, file: Path, image: np.ndarray, eye_choice: EyeChoice, is_vector: bool
 ) -> SimpleITKImage:
     img = SimpleITK.GetImageFromArray(image, isVector=is_vector)
     return SimpleITKImage(
