@@ -57,13 +57,11 @@ def _create_itk_images(
         )
     for image in fundus_images:
         eye_choice = LATERALITY_TO_EYE_CHOICE[image.laterality]
+        img_array = image.image
 
         if file.suffix != ".e2e":
-            img_array = image.image.astype(np.uint8)
-            img_array = img_array[:, :, ::-1]
             is_vector = True
         else:
-            img_array = image.image
             is_vector = False
 
         yield _create_itk_fundus_image(

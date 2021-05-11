@@ -139,6 +139,6 @@ class FDS:
                 3, fundus_header.width, fundus_header.height, order="F"
             )
             image = np.transpose(image, [2, 1, 0])
-            image = image.astype(np.float32)
+            image = image[:, :, ::-1]
         fundus_image = FundusImageWithMetaData(image)
         return fundus_image

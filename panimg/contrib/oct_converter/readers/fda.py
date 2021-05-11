@@ -140,5 +140,6 @@ class FDA:
             number_pixels = fundus_header.width * fundus_header.height * 3
             raw_image = f.read(fundus_header.size)
             image = decode(raw_image)
+            image = image[:, :, ::-1]
         fundus_image = FundusImageWithMetaData(image)
         return fundus_image
