@@ -44,6 +44,9 @@ classifiers = [
     "Operating System :: POSIX",
 ]
 
+[tool.poetry.scripts]
+panimg = "panimg.cli:cli"
+
 [tool.poetry.dependencies]
 python = "^3.7"
 pydantic = "*"
@@ -54,6 +57,7 @@ Pillow = "*"
 openslide-python = "*"
 pyvips = "*"
 tifffile = "*"
+click = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
