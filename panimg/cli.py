@@ -6,7 +6,6 @@ import click
 from panimg import __version__, convert, logger
 
 
-
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
 @click.version_option(__version__, "-v", "--version")
 def cli():
@@ -14,7 +13,7 @@ def cli():
 
 
 @cli.command(name="convert", short_help="Convert a directory of image files")
-@click.option('-v', '--verbose', count=True)
+@click.option("-v", "--verbose", count=True)
 @click.argument(
     "input",
     type=click.Path(

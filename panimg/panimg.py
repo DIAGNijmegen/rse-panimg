@@ -33,7 +33,7 @@ def convert(
 
     builders = builders if builders is not None else DEFAULT_IMAGE_BUILDERS
 
-    builder_names = ", ".join(b.__name__ for b in builders)
+    builder_names = ", ".join(str(b) for b in builders)
     logger.info(f"Using builders {builder_names}")
 
     _convert_directory(
@@ -107,9 +107,7 @@ def _convert_directory(
         if len(builder_files) == 0:
             return
 
-        logger.debug(
-            f"Processing {len(builder_files)} file(s) with {builder.__name__}"
-        )
+        logger.debug(f"Processing {len(builder_files)} file(s) with {builder}")
 
         builder_result = _build_files(
             builder=builder,
@@ -124,11 +122,11 @@ def _convert_directory(
 
         if builder_result.consumed_files:
             logger.info(
-                f"{builder.__name__} created {len(builder_result.new_images)} "
+                f"{builder} created {len(builder_result.new_images)} "
                 f"new images(s) from {len(builder_result.consumed_files)} file(s)"
             )
         else:
-            logger.debug(f"No files consumed by {builder.__name__}")
+            logger.debug(f"No files consumed by {builder}")
 
         for filepath, errors in builder_result.file_errors.items():
             file_errors[filepath].extend(errors)
