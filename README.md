@@ -23,7 +23,7 @@ Under the hood we use:
 
 ## Usage
 
-`panimg` takes a folder full of files and tries to covert them to MHA or TIFF.
+`panimg` takes a folder and tries to covert the containing files to MHA or TIFF.
 For each subdirectory of files it will try several strategies for loading the contained files, and if an image is found it will output it to the output folder.
 It will return a structure containing information about what images were produced, what images were used to form the new images, image metadata, and any errors from any of the strategies.
 
@@ -38,6 +38,19 @@ result = convert(
     output_directory=Path("/where/files/will/go/"),
 )
 ```
+
+### Command Line Interface
+
+`panimg` is also accessible from the command line.
+Install the package from pip as before, then you can use:
+
+**NOTE: Alpha software, do not run this on folders you do not have a backup of.**
+
+```shell
+panimg convert /path/to/files/ /where/files/will/go/
+```
+
+To access the help test you can use `panimg -h`.
 
 ### Supported Formats
 

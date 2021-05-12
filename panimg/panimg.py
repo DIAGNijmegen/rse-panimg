@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Dict, Iterable, List, Optional, Set
@@ -14,6 +15,8 @@ from panimg.models import (
 from panimg.post_processors import DEFAULT_POST_PROCESSORS
 from panimg.types import ImageBuilder, PostProcessor
 
+logger = logging.getLogger(__name__)
+
 
 def convert(
     *,
@@ -28,10 +31,15 @@ def convert(
     consumed_files: Set[Path] = set()
     file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
+    builders = builders if builders is not None else DEFAULT_IMAGE_BUILDERS
+
+    builder_names = ", ".join(str(b) for b in builders)
+    logger.info(f"Using builders {builder_names}")
+
     _convert_directory(
         input_directory=input_directory,
         output_directory=output_directory,
-        builders=builders if builders is not None else DEFAULT_IMAGE_BUILDERS,
+        builders=builders,
         consumed_files=consumed_files,
         new_images=new_images,
         new_image_files=new_image_files,
@@ -77,8 +85,10 @@ def _convert_directory(
     for o in Path(input_directory).iterdir():
         if o.is_dir():
             _convert_directory(
-                input_directory=input_directory / o,
-                output_directory=output_directory / o,
+                input_directory=input_directory
+                / o.relative_to(input_directory),
+                output_directory=output_directory
+                / o.relative_to(input_directory),
                 builders=builders,
                 consumed_files=consumed_files,
                 new_images=new_images,
@@ -89,10 +99,19 @@ def _convert_directory(
         elif o.is_file():
             files.add(o)
 
+    logger.info(f"Converting directory {input_directory}")
+
     for builder in builders:
+        builder_files = files - consumed_files
+
+        if len(builder_files) == 0:
+            return
+
+        logger.debug(f"Processing {len(builder_files)} file(s) with {builder}")
+
         builder_result = _build_files(
             builder=builder,
-            files=files - consumed_files,
+            files=builder_files,
             output_directory=output_directory,
         )
 
@@ -100,6 +119,14 @@ def _convert_directory(
         new_image_files |= builder_result.new_image_files
         new_folders |= builder_result.new_folders
         consumed_files |= builder_result.consumed_files
+
+        if builder_result.consumed_files:
+            logger.info(
+                f"{builder} created {len(builder_result.new_images)} "
+                f"new images(s) from {len(builder_result.consumed_files)} file(s)"
+            )
+        else:
+            logger.debug(f"No files consumed by {builder}")
 
         for filepath, errors in builder_result.file_errors.items():
             file_errors[filepath].extend(errors)
@@ -140,6 +167,8 @@ def _post_process(
 ) -> PostProcessorResult:
     new_image_files: Set[PanImgFile] = set()
     new_folders: Set[PanImgFolder] = set()
+
+    logger.info(f"Post processing {len(image_files)} image(s)")
 
     for processor in post_processors:
         result = processor(image_files=image_files)

@@ -31,7 +31,7 @@ commands =
 
 [tool.poetry]
 name = "panimg"
-version = "0.2.1"
+version = "0.2.2"
 description = "Conversion of medical images to MHA and TIFF."
 license = "Apache-2.0"
 authors = ["James Meakin <12661555+jmsmkn@users.noreply.github.com>"]
@@ -43,6 +43,9 @@ classifiers = [
     "Intended Audience :: Healthcare Industry",
     "Operating System :: POSIX",
 ]
+
+[tool.poetry.scripts]
+panimg = "panimg.cli:cli"
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -56,6 +59,7 @@ pyvips = "*"
 tifffile = "*"
 construct = "*"
 pylibjpeg = "*" # Required by oct-converter
+click = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
