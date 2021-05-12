@@ -1,8 +1,10 @@
+import logging
 from pathlib import Path
 
 import click
 
-from panimg import __version__, convert
+from panimg import __version__, convert, logger
+
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -11,7 +13,8 @@ def cli():
     pass
 
 
-@cli.command(name="convert", short_help="Convert a directory")
+@cli.command(name="convert", short_help="Convert a directory of image files")
+@click.option('-v', '--verbose', count=True)
 @click.argument(
     "input",
     type=click.Path(
@@ -34,9 +37,23 @@ def cli():
         resolve_path=True,
     ),
 )
-def convert_cli(input: str, output: str):
+def convert_cli(input: str, output: str, verbose: int):
     input_directory = Path(input)
     output_directory = Path(output)
+
+    ch = logging.StreamHandler()
+
+    if verbose == 0:
+        logger.setLevel(logging.WARNING)
+        ch.setLevel(logging.WARNING)
+    elif verbose == 1:
+        logger.setLevel(logging.INFO)
+        ch.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.DEBUG)
+        ch.setLevel(logging.DEBUG)
+
+    logger.addHandler(ch)
 
     if output_directory.exists():
         raise click.exceptions.UsageError(
