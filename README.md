@@ -38,6 +38,19 @@ result = convert(
 )
 ```
 
+### Command Line Interface
+
+`panimg` is also accessible from the command line.
+Install the package from pip as before, then you can use:
+
+**NOTE: Alpha software, do not run this on folders you do not have a backup of.**
+
+```shell
+panimg convert /path/to/files/ /where/files/will/go/
+```
+
+To access the help test you can use `panimg -h`.
+
 ### Supported Formats
 
 | Input                               | Output  | Strategy   | Notes                      |
