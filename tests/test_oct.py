@@ -14,7 +14,7 @@ from tests import RESOURCE_PATH
 
 
 @pytest.mark.parametrize(
-    "src,expected_fundus_properties,expected_oct_properties",
+    "src,expected_oct_properties",
     (
         # TODO retrieve publicly usable E2E file and minimize it
         # RESOURCE_PATH / "oct/BRVO_O4003_baseline.e2e",
@@ -25,15 +25,6 @@ from tests import RESOURCE_PATH
             #   - OCT volume (@IMG_JPEG) to 512x650x1 J2C encoded,
             #   - Fundus (@IMG_FUNDUS) to 2x3x1 J2C encoded
             RESOURCE_PATH / "oct/fda_minimized.fda",
-            {
-                "width": 2,
-                "height": 3,
-                "depth": None,
-                "voxel_width_mm": None,
-                "voxel_height_mm": None,
-                "voxel_depth_mm": None,
-                "eye_choice": "U",
-            },
             {
                 "width": 512,
                 "height": 650,
@@ -56,15 +47,6 @@ from tests import RESOURCE_PATH
             {
                 "width": 2,
                 "height": 3,
-                "depth": None,
-                "voxel_width_mm": None,
-                "voxel_height_mm": None,
-                "voxel_depth_mm": None,
-                "eye_choice": "U",
-            },
-            {
-                "width": 2,
-                "height": 3,
                 "depth": 4,
                 "voxel_width_mm": 3.0,
                 "voxel_height_mm": 0.0035,
@@ -74,9 +56,7 @@ from tests import RESOURCE_PATH
         ),
     ),
 )
-def test_image_builder_oct(
-    tmpdir, src, expected_fundus_properties, expected_oct_properties
-):
+def test_image_builder_oct(tmpdir, src, expected_oct_properties):
     dest = Path(tmpdir) / src.name
     shutil.copy(str(src), str(dest))
     files = {Path(d[0]).joinpath(f) for d in os.walk(tmpdir) for f in d[2]}
@@ -86,12 +66,9 @@ def test_image_builder_oct(
         )
 
     assert result.consumed_files == {dest}
-    assert len(result.new_images) == 1  # only OCT volume is extracted
+    assert len(result.new_images) == 1
     for result in result.new_images:
         expected_values = expected_oct_properties
-        if "fundus" in result.name:
-            expected_values = expected_fundus_properties
-
         for k, v in expected_values.items():
             assert getattr(result, k) == v
 
