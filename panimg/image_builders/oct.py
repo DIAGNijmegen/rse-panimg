@@ -14,7 +14,7 @@ from construct.core import (
 from pydantic import BaseModel
 
 from panimg.contrib.oct_converter.image_types import (
-    FundusImageWithMetaData,
+    # FundusImageWithMetaData,
     OCTVolumeWithMetaData,
 )
 from panimg.contrib.oct_converter.readers import E2E, FDA, FDS
@@ -44,7 +44,7 @@ def _create_itk_images(
     *,
     file: Path,
     oct_volumes: Iterable[OCTVolumeWithMetaData],
-    fundus_images: Iterable[FundusImageWithMetaData],
+    # fundus_images: Iterable[FundusImageWithMetaData],
     oct_slice_size: OctDimensions,
 ) -> Iterator[SimpleITKImage]:
     for volume in oct_volumes:
@@ -55,23 +55,26 @@ def _create_itk_images(
             oct_slice_size=oct_slice_size,
             eye_choice=eye_choice,
         )
-    for image in fundus_images:
-        eye_choice = LATERALITY_TO_EYE_CHOICE[image.laterality]
-
-        if file.suffix != ".e2e":
-            img_array = image.image.astype(np.uint8)
-            img_array = img_array[:, :, ::-1]
-            is_vector = True
-        else:
-            img_array = image.image
-            is_vector = False
-
-        yield _create_itk_fundus_image(
-            file=file,
-            image=img_array,
-            eye_choice=eye_choice,
-            is_vector=is_vector,
-        )
+    # Fundus extraction is currently not desirable.
+    # For fundus extraction to be useful, there first needs to be a way to link
+    # the fundus and the oct image together on grand challenge.
+    # for image in fundus_images:
+    #     eye_choice = LATERALITY_TO_EYE_CHOICE[image.laterality]
+    #
+    #     if file.suffix != ".e2e":
+    #         img_array = image.image.astype(np.uint8)
+    #         img_array = img_array[:, :, ::-1]
+    #         is_vector = True
+    #     else:
+    #         img_array = image.image
+    #         is_vector = False
+    #
+    #     yield _create_itk_fundus_image(
+    #         file=file,
+    #         image=img_array,
+    #         eye_choice=eye_choice,
+    #         is_vector=is_vector,
+    #     )
 
 
 def _create_itk_oct_volume(
@@ -139,7 +142,7 @@ def _get_image(
     *, file: Path
 ) -> Tuple[
     Iterable[OCTVolumeWithMetaData],
-    Iterable[FundusImageWithMetaData],
+    # Iterable[FundusImageWithMetaData],
     OctDimensions,
 ]:
     if file.suffix == ".fds":
@@ -147,7 +150,7 @@ def _get_image(
         oct_slice_size = _extract_slice_size(img=fds_img)
         return (
             [fds_img.read_oct_volume()],
-            [fds_img.read_fundus_image()],
+            # [fds_img.read_fundus_image()],
             oct_slice_size,
         )
     elif file.suffix == ".fda":
@@ -155,7 +158,7 @@ def _get_image(
         oct_slice_size = _extract_slice_size(img=fda_img)
         return (
             [fda_img.read_oct_volume()],
-            [fda_img.read_fundus_image()],
+            # [fda_img.read_fundus_image()],
             oct_slice_size,
         )
     elif file.suffix == ".e2e":
@@ -170,7 +173,7 @@ def _get_image(
         # for e2e files
         return (
             e2e_img.read_oct_volume(),
-            e2e_img.read_fundus_image(),
+            # e2e_img.read_fundus_image(),
             oct_slice_size,
         )
     else:
@@ -200,12 +203,13 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
 
     for file in files:
         try:
-            oct_volumes, fundus_images, oct_slice_size = _get_image(file=file)
+            # oct_volumes, fundus_images, oct_slice_size = _get_image(file=file)
+            oct_volumes, oct_slice_size = _get_image(file=file)
 
             yield from _create_itk_images(
                 file=file,
                 oct_volumes=oct_volumes,
-                fundus_images=fundus_images,
+                # fundus_images=fundus_images,
                 oct_slice_size=oct_slice_size,
             )
 

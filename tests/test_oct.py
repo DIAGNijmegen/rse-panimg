@@ -86,7 +86,7 @@ def test_image_builder_oct(
         )
 
     assert result.consumed_files == {dest}
-    assert len(result.new_images) == 2
+    assert len(result.new_images) == 1  # only OCT volume is extracted
     for result in result.new_images:
         expected_values = expected_oct_properties
         if "fundus" in result.name:
