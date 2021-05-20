@@ -1,9 +1,6 @@
 from construct import PaddedString, Struct, Int32un
 import numpy as np
-from panimg.contrib.oct_converter.image_types import (
-    OCTVolumeWithMetaData,
-    FundusImageWithMetaData,
-)
+from panimg.contrib.oct_converter.image_types import OCTVolumeWithMetaData
 from pathlib import Path
 
 
@@ -113,32 +110,3 @@ class FDS:
             [volume[:, :, i] for i in range(volume.shape[2])]
         )
         return oct_volume
-
-    def read_fundus_image(self):
-        """ Reads fundus image.
-
-            Returns:
-                obj:FundusImageWithMetaData
-        """
-        if b"@IMG_OBS" not in self.chunk_dict:
-            raise ValueError(
-                "Could not find fundus header @IMG_OBS in chunk list"
-            )
-        with open(self.filepath, "rb") as f:
-            chunk_location, chunk_size = self.chunk_dict[b"@IMG_OBS"]
-            f.seek(chunk_location)
-            raw = f.read(21)
-            fundus_header = self.fundus_header.parse(raw)
-            # number_pixels = fundus_header.width * fundus_header.height * fundus_header.number_slices
-            raw_image = np.frombuffer(
-                f.read(fundus_header.size), dtype=np.uint8
-            )
-            # raw_image = [struct.unpack('B', f.read(1)) for pixel in range(fundus_header.size)]
-            image = np.array(raw_image)
-            image = image.reshape(
-                3, fundus_header.width, fundus_header.height, order="F"
-            )
-            image = np.transpose(image, [2, 1, 0])
-            image = image.astype(np.float32)
-        fundus_image = FundusImageWithMetaData(image)
-        return fundus_image

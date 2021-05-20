@@ -8,10 +8,7 @@ from construct import (
     Int8un,
     Array,
 )
-from panimg.contrib.oct_converter.image_types import (
-    OCTVolumeWithMetaData,
-    FundusImageWithMetaData,
-)
+from panimg.contrib.oct_converter.image_types import OCTVolumeWithMetaData
 from pathlib import Path
 
 
@@ -220,88 +217,6 @@ class E2E:
                 )
 
         return oct_volumes
-
-    def read_fundus_image(self):
-        """ Reads fundus data.
-
-            Returns:
-                obj:FundusImageWithMetaData
-        """
-        with open(self.filepath, "rb") as f:
-            raw = f.read(36)
-            header = self.header_structure.parse(raw)
-
-            raw = f.read(52)
-            main_directory = self.main_directory_structure.parse(raw)
-
-            # traverse list of main directories in first pass
-            directory_stack = []
-
-            current = main_directory.current
-            while current != 0:
-                directory_stack.append(current)
-                f.seek(current)
-                raw = f.read(52)
-                directory_chunk = self.main_directory_structure.parse(raw)
-                current = directory_chunk.prev
-
-            # traverse in second pass and  get all subdirectories
-            chunk_stack = []
-            for position in directory_stack:
-                f.seek(position)
-                raw = f.read(52)
-                directory_chunk = self.main_directory_structure.parse(raw)
-
-                for ii in range(directory_chunk.num_entries):
-                    raw = f.read(44)
-                    chunk = self.sub_directory_structure.parse(raw)
-                    if chunk.start > chunk.pos:
-                        chunk_stack.append([chunk.start, chunk.size])
-
-            # initalise dict to hold all the image volumes
-            image_array_dict = {}
-
-            # traverse all chunks and extract slices
-            for start, pos in chunk_stack:
-                f.seek(start)
-                raw = f.read(60)
-                chunk = self.chunk_structure.parse(raw)
-
-                if chunk.type == 11:  # laterality data
-                    raw = f.read(20)
-                    try:
-                        laterality_data = self.lat_structure.parse(raw)
-                        if laterality_data.laterality == 82:
-                            self.laterality = "R"
-                        elif laterality_data.laterality == 76:
-                            self.laterality = "L"
-                    except:
-                        self.laterality = None
-
-                if chunk.type == 1073741824:  # image data
-                    raw = f.read(20)
-                    image_data = self.image_structure.parse(raw)
-
-                    if chunk.ind == 0:  # fundus data
-                        raw_volume = np.frombuffer(
-                            f.read(image_data.height * image_data.width),
-                            dtype=np.uint8,
-                        )
-                        image = np.array(raw_volume).reshape(
-                            image_data.height, image_data.width
-                        )
-                        image_string = f"{chunk.patient_id}_{chunk.study_id}_{chunk.series_id}"
-                        image_array_dict[image_string] = image
-
-            fundus_images = []
-            for key, image in image_array_dict.items():
-                fundus_images.append(
-                    FundusImageWithMetaData(
-                        image=image, patient_id=key, laterality=self.laterality
-                    )
-                )
-
-        return fundus_images
 
     def read_custom_float(self, bytes):
         """ Implementation of bespoke float type used in .e2e files.
