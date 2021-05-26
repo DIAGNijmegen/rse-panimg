@@ -49,7 +49,7 @@ pycparser = "*"
 
 [[package]]
 name = "click"
-version = "8.0.0"
+version = "8.0.1"
 description = "Composable command line interface toolkit"
 category = "main"
 optional = false
@@ -57,6 +57,7 @@ python-versions = ">=3.6"
 
 [package.dependencies]
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
+importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "colorama"
@@ -85,12 +86,15 @@ category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 
+[package.dependencies]
+toml = {version = "*", optional = true, markers = "extra == \"toml\""}
+
 [package.extras]
 toml = ["toml"]
 
 [[package]]
 name = "distlib"
-version = "0.3.1"
+version = "0.3.2"
 description = "Distribution utilities"
 category = "dev"
 optional = false
@@ -98,7 +102,7 @@ python-versions = "*"
 
 [[package]]
 name = "execnet"
-version = "1.8.0"
+version = "1.8.1"
 description = "execnet: rapid multi-Python deployment"
 category = "dev"
 optional = false
@@ -120,9 +124,9 @@ python-versions = "*"
 
 [[package]]
 name = "importlib-metadata"
-version = "4.0.1"
+version = "4.3.1"
 description = "Read metadata from Python packages"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -255,6 +259,17 @@ pylibjpeg-openjpeg = "*"
 pylibjpeg-rle = "*"
 
 [[package]]
+name = "pylibjpeg-libjpeg"
+version = "1.2.0"
+description = "A Python wrapper for libjpeg, with a focus on use as a plugin for for pylibjpeg"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+numpy = ">=1.16.0"
+
+[[package]]
 name = "pylibjpeg-openjpeg"
 version = "1.1.1"
 description = "A Python wrapper for openjpeg, with a focus on use as a plugin for for pylibjpeg"
@@ -312,14 +327,14 @@ testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xm
 
 [[package]]
 name = "pytest-cov"
-version = "2.11.1"
+version = "2.12.0"
 description = "Pytest plugin for measuring coverage."
 category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [package.dependencies]
-coverage = ">=5.2.1"
+coverage = {version = ">=5.2.1", extras = ["toml"]}
 pytest = ">=4.6"
 
 [package.extras]
@@ -453,7 +468,7 @@ python-versions = "*"
 
 [[package]]
 name = "virtualenv"
-version = "20.4.6"
+version = "20.4.7"
 description = "Virtual Python Environment builder"
 category = "dev"
 optional = false
@@ -474,7 +489,7 @@ testing = ["coverage (>=4)", "coverage-enable-subprocess (>=1)", "flaky (>=3)", 
 name = "zipp"
 version = "3.4.1"
 description = "Backport of pathlib-compatible object wrapper for zip files"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -485,7 +500,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "1e0f3081e6a12b213b2ee26905c38e774a8bc8ab92b3ff3b292556cc5077b459"
+content-hash = "971da2edcdb767108764d3302aaed5d2b428746345fcd0bbb1580e798f13f85e"
 
 [metadata.files]
 apipkg = [
@@ -544,8 +559,8 @@ cffi = [
     {file = "cffi-1.14.5.tar.gz", hash = "sha256:fd78e5fee591709f32ef6edb9a015b4aa1a5022598e36227500c8f4e02328d9c"},
 ]
 click = [
-    {file = "click-8.0.0-py3-none-any.whl", hash = "sha256:e90e62ced43dc8105fb9a26d62f0d9340b5c8db053a814e25d95c19873ae87db"},
-    {file = "click-8.0.0.tar.gz", hash = "sha256:7d8c289ee437bcb0316820ccee14aefcb056e58d31830ecab8e47eda6540e136"},
+    {file = "click-8.0.1-py3-none-any.whl", hash = "sha256:fba402a4a47334742d782209a7c79bc448911afe1149d07bdabdf480b3e2f4b6"},
+    {file = "click-8.0.1.tar.gz", hash = "sha256:8c04c11192119b1ef78ea049e0a6f0463e4c48ef00a30160c704337586f3ad7a"},
 ]
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
@@ -609,20 +624,20 @@ coverage = [
     {file = "coverage-5.5.tar.gz", hash = "sha256:ebe78fe9a0e874362175b02371bdfbee64d8edc42a044253ddf4ee7d3c15212c"},
 ]
 distlib = [
-    {file = "distlib-0.3.1-py2.py3-none-any.whl", hash = "sha256:8c09de2c67b3e7deef7184574fc060ab8a793e7adbb183d942c389c8b13c52fb"},
-    {file = "distlib-0.3.1.zip", hash = "sha256:edf6116872c863e1aa9d5bb7cb5e05a022c519a4594dc703843343a9ddd9bff1"},
+    {file = "distlib-0.3.2-py2.py3-none-any.whl", hash = "sha256:23e223426b28491b1ced97dc3bbe183027419dfc7982b4fa2f05d5f3ff10711c"},
+    {file = "distlib-0.3.2.zip", hash = "sha256:106fef6dc37dd8c0e2c0a60d3fca3e77460a48907f335fa28420463a6f799736"},
 ]
 execnet = [
-    {file = "execnet-1.8.0-py2.py3-none-any.whl", hash = "sha256:7a13113028b1e1cc4c6492b28098b3c6576c9dccc7973bfe47b342afadafb2ac"},
-    {file = "execnet-1.8.0.tar.gz", hash = "sha256:b73c5565e517f24b62dea8a5ceac178c661c4309d3aa0c3e420856c072c411b4"},
+    {file = "execnet-1.8.1-py2.py3-none-any.whl", hash = "sha256:e840ce25562e414ee5684864d510dbeeb0bce016bc89b22a6e5ce323b5e6552f"},
+    {file = "execnet-1.8.1.tar.gz", hash = "sha256:7e3c2cdb6389542a91e9855a9cc7545fbed679e96f8808bcbb1beb325345b189"},
 ]
 filelock = [
     {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},
     {file = "filelock-3.0.12.tar.gz", hash = "sha256:18d82244ee114f543149c66a6e0c14e9c4f8a1044b5cdaadd0f82159d6a6ff59"},
 ]
 importlib-metadata = [
-    {file = "importlib_metadata-4.0.1-py3-none-any.whl", hash = "sha256:d7eb1dea6d6a6086f8be21784cc9e3bcfa55872b52309bc5fad53a8ea444465d"},
-    {file = "importlib_metadata-4.0.1.tar.gz", hash = "sha256:8c501196e49fb9df5df43833bdb1e4328f64847763ec8a50703148b73784d581"},
+    {file = "importlib_metadata-4.3.1-py3-none-any.whl", hash = "sha256:c2e27fa8b6c8b34ebfcd4056ae2ca290e36250d1fbeceec85c1c67c711449fac"},
+    {file = "importlib_metadata-4.3.1.tar.gz", hash = "sha256:2d932ea08814f745863fd20172fe7de4794ad74567db78f2377343e24520a5b6"},
 ]
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
@@ -758,6 +773,29 @@ pylibjpeg = [
     {file = "pylibjpeg-1.3.0-py3-none-any.whl", hash = "sha256:0436dfbe1141e9ef360b9e94546d95352257f96eabdcdab638fde31c0f816e18"},
     {file = "pylibjpeg-1.3.0.tar.gz", hash = "sha256:5115ee908301737874312d28804db5891bb8e96ea8f9caf90d34621e8ca67879"},
 ]
+pylibjpeg-libjpeg = [
+    {file = "pylibjpeg-libjpeg-1.2.0.tar.gz", hash = "sha256:c88f32f8ef75ff0aae254da4ca5e8580f45e40ab1347b5e198ac7b1d66b49383"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:01f427527a17ef75c0ddbe8c87b5d4c34d03d741b8310bf75c421bcddf8c1934"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp36-cp36m-manylinux2010_i686.whl", hash = "sha256:91e4109f8ddf7544e2241cee03d984091e3f8311aedfb85e88cad8e3a4a564e8"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:09782aac63c05edf0c906189dfe32b91b8d00fc603e1ca5c734bc5ff55672677"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp36-cp36m-win32.whl", hash = "sha256:eed34aff30b87d9384d7840701d8ebde46825c4a60190d23e38150702624a654"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp36-cp36m-win_amd64.whl", hash = "sha256:da78b3880f3fe448b862d51c7f3f0415fe55ec1bce624b5b854fde69ef7d7573"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:fefac98521569f55b449544d902359fc12948362c6333e4b87a31a7ab50026f7"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp37-cp37m-manylinux2010_i686.whl", hash = "sha256:8e9a4ad8b7e2db448e426cac57c0f420bed270b2a73197f12a5dbae4c02ea94d"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:345cd0468ba65a4cc609848a0e2d758d765c75c7b0249d34baa1f900e0f8c683"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp37-cp37m-win32.whl", hash = "sha256:3c386ccabf1d416f059a7c6e41a44789d39b0ebe937b73a636108d078e7ba066"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp37-cp37m-win_amd64.whl", hash = "sha256:2e16532e1a33b6aa19f3c6842e9f27015f16172ab4773ced86dcb60406b22c54"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:87df58e71fd310217e753604a3059494411997eb22ecd608550d52f097ee8985"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp38-cp38-manylinux2010_i686.whl", hash = "sha256:4067d751d0a69e406e61b3262fdbd9387f95d76c65fdc8db9fd63451fd2c0b10"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:04f21e74903d6ead2fff9cc59b8e755e4ad1b88143e4d79ce4afdf7a60d04574"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp38-cp38-win32.whl", hash = "sha256:d66c78a9ca24576d3fcf755c4fecf651fae6daac8c46dc20e0dda2ae68519ecb"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp38-cp38-win_amd64.whl", hash = "sha256:ae60ca5251d0f740176142182285f597f6c564014cac038c7457b015612bc2d8"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:a188e72025929938a1efb02b2b2d068dc05abd9986209e2a537c04fb3bef9319"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp39-cp39-manylinux2010_i686.whl", hash = "sha256:984be91d4e861c31ad9f0425495c74963e73d7aa1b933edc3a2aadab8a822a05"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:c278ec57788b3751353e1c588da29d4ec52089e331265246297f4762961dd7ae"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp39-cp39-win32.whl", hash = "sha256:e31655aa29e0ea715cecb1bf3b43b5db66bf8d8a12e0117f526193033f635289"},
+    {file = "pylibjpeg_libjpeg-1.2.0-cp39-cp39-win_amd64.whl", hash = "sha256:282208df3ceb344174761a5d19c3bdea98385fac5a76e1a8bb624f165365c67f"},
+]
 pylibjpeg-openjpeg = [
     {file = "pylibjpeg-openjpeg-1.1.1.tar.gz", hash = "sha256:e7adfd8e2c63661b75219d5ae381ac50381054df41ca94d0d01ddfbe362a66cc"},
     {file = "pylibjpeg_openjpeg-1.1.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:a56cecea6a2b369c710d7c94e3e1bc04cb22cd47a2b73ae4e3e4e6f2e54a90c0"},
@@ -837,8 +875,8 @@ pytest = [
     {file = "pytest-6.2.4.tar.gz", hash = "sha256:50bcad0a0b9c5a72c8e4e7c9855a3ad496ca6a881a3641b4260605450772c54b"},
 ]
 pytest-cov = [
-    {file = "pytest-cov-2.11.1.tar.gz", hash = "sha256:359952d9d39b9f822d9d29324483e7ba04a3a17dd7d05aa6beb7ea01e359e5f7"},
-    {file = "pytest_cov-2.11.1-py2.py3-none-any.whl", hash = "sha256:bdb9fdb0b85a7cc825269a4c56b48ccaa5c7e365054b6038772c32ddcdc969da"},
+    {file = "pytest-cov-2.12.0.tar.gz", hash = "sha256:8535764137fecce504a49c2b742288e3d34bc09eed298ad65963616cc98fd45e"},
+    {file = "pytest_cov-2.12.0-py2.py3-none-any.whl", hash = "sha256:95d4933dcbbacfa377bb60b29801daa30d90c33981ab2a79e9ab4452c165066e"},
 ]
 pytest-forked = [
     {file = "pytest-forked-1.3.0.tar.gz", hash = "sha256:6aa9ac7e00ad1a539c41bec6d21011332de671e938c7637378ec9710204e37ca"},
@@ -899,8 +937,8 @@ typing-extensions = [
     {file = "typing_extensions-3.10.0.0.tar.gz", hash = "sha256:50b6f157849174217d0656f99dc82fe932884fb250826c18350e159ec6cdf342"},
 ]
 virtualenv = [
-    {file = "virtualenv-20.4.6-py2.py3-none-any.whl", hash = "sha256:307a555cf21e1550885c82120eccaf5acedf42978fd362d32ba8410f9593f543"},
-    {file = "virtualenv-20.4.6.tar.gz", hash = "sha256:72cf267afc04bf9c86ec932329b7e94db6a0331ae9847576daaa7ca3c86b29a4"},
+    {file = "virtualenv-20.4.7-py2.py3-none-any.whl", hash = "sha256:2b0126166ea7c9c3661f5b8e06773d28f83322de7a3ff7d06f0aed18c9de6a76"},
+    {file = "virtualenv-20.4.7.tar.gz", hash = "sha256:14fdf849f80dbb29a4eb6caa9875d476ee2a5cf76a5f5415fa2f1606010ab467"},
 ]
 zipp = [
     {file = "zipp-3.4.1-py3-none-any.whl", hash = "sha256:51cb66cc54621609dd593d1787f286ee42a5c0adbb4b29abea5a63edc3e03098"},

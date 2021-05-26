@@ -58,8 +58,11 @@ openslide-python = "*"
 pyvips = "*"
 tifffile = "*"
 construct = "*"
-pylibjpeg = "*" # Required by oct-converter
 click = "*"
+pylibjpeg = "*"
+pylibjpeg-libjpeg = "*"
+pylibjpeg-openjpeg = "*"
+pylibjpeg-rle = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
