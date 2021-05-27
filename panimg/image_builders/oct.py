@@ -205,7 +205,8 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
             yield from _create_itk_images(
                 file=file,
                 oct_volumes=oct_volumes,
-                fundus_images=fundus_images,
+                # Skip fundus_images until we decide how to handle these
+                fundus_images=[],  # fundus_images,
                 oct_slice_size=oct_slice_size,
             )
 
