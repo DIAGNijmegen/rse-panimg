@@ -53,7 +53,6 @@ def test_number_of_images_consumed_by_each_builder(tmp_path, builder):
         RESOURCE_PATH / "image10x10x10.mha",
         RESOURCE_PATH / "image10x11x12.nii.gz",
         RESOURCE_PATH / "valid_tiff.tif",
-        # RESOURCE_PATH / "oct/BRVO_O4003_baseline.e2e",
         RESOURCE_PATH / "oct/fda_minimized.fda",
         RESOURCE_PATH / "oct/fds_minimized.fds",
     }

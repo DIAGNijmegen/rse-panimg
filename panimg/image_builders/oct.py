@@ -159,6 +159,9 @@ def _get_image(
             oct_slice_size,
         )
     elif file.suffix == ".e2e":
+        # support for E2E files is disabled until we have a proper E2E file to
+        # test with
+        raise ValueError
         e2e_img = E2E(file)
         # We were unable to retrieve slice size information from the e2e files.
         # The following default values are taken from:

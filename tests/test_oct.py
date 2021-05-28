@@ -16,8 +16,6 @@ from tests import RESOURCE_PATH
 @pytest.mark.parametrize(
     "src,expected_fundus_properties,expected_oct_properties",
     (
-        # TODO retrieve publicly usable E2E file and minimize it
-        # RESOURCE_PATH / "oct/BRVO_O4003_baseline.e2e",
         (
             # Minimized .fda OCT file was created by taking example OCT file at
             # biobank.ndph.ox.ac.uk/showcase/showcase/examples/eg_oct_fda.fda
