@@ -1,5 +1,10 @@
 # History
 
+## 0.3.0 (2021-05-31)
+
+* Added support for fds and fda images
+* Added a CLI
+
 ## 0.2.2 (2021-05-05)
 
 * Fix imports in subdirectories
