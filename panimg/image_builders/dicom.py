@@ -364,7 +364,7 @@ def image_builder_dicom(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
     if not gdcm_is_available():
         logger.warning(
             "GDCM is unavailable, conversion of DICOM with compressed "
-            "transfer syntax will fail to convert. To correct this, install"
+            "transfer syntax will fail to convert. To correct this, install "
             "GDCM."
         )
 
