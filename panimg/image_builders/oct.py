@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, Iterable, Iterator, List, Set, Tuple, Union
+from typing import DefaultDict, Dict, Iterable, Iterator, List, Set, Tuple, Union
 
 import SimpleITK
 import numpy as np
@@ -42,7 +42,7 @@ class OctDimensions(BaseModel):
 
 def _create_itk_images(
     *,
-    file: Path,
+    file: Dict[Path, str],
     oct_volumes: Iterable[OCTVolumeWithMetaData],
     fundus_images: Iterable[FundusImageWithMetaData],
     oct_slice_size: OctDimensions,
@@ -50,7 +50,7 @@ def _create_itk_images(
     for volume in oct_volumes:
         eye_choice = LATERALITY_TO_EYE_CHOICE[volume.laterality]
         yield _create_itk_oct_volume(
-            file=file,
+            file=file['filepath'],
             volume=volume.volume,
             oct_slice_size=oct_slice_size,
             eye_choice=eye_choice,
@@ -58,7 +58,7 @@ def _create_itk_images(
     for image in fundus_images:
         eye_choice = LATERALITY_TO_EYE_CHOICE[image.laterality]
 
-        if file.suffix != ".e2e":
+        if file['type'] != "e2e":
             img_array = image.image.astype(np.uint8)
             img_array = img_array[:, :, ::-1]
             is_vector = True
@@ -67,7 +67,7 @@ def _create_itk_images(
             is_vector = False
 
         yield _create_itk_fundus_image(
-            file=file,
+            file=file['filepath'],
             image=img_array,
             eye_choice=eye_choice,
             is_vector=is_vector,
@@ -104,6 +104,7 @@ def _create_itk_fundus_image(
     *, file: Path, image: np.ndarray, eye_choice: EyeChoice, is_vector: bool
 ) -> SimpleITKImage:
     img = SimpleITK.GetImageFromArray(image, isVector=is_vector)
+
     return SimpleITKImage(
         image=img,
         name=file.stem + "_fundus" + file.suffix,
@@ -142,42 +143,48 @@ def _get_image(
     Iterable[FundusImageWithMetaData],
     OctDimensions,
 ]:
-    if file.suffix == ".fds":
-        fds_img = FDS(file)
-        oct_slice_size = _extract_slice_size(img=fds_img)
-        return (
-            [fds_img.read_oct_volume()],
-            [fds_img.read_fundus_image()],
-            oct_slice_size,
-        )
-    elif file.suffix == ".fda":
-        fda_img = FDA(file)
-        oct_slice_size = _extract_slice_size(img=fda_img)
-        return (
-            [fda_img.read_oct_volume()],
-            [fda_img.read_fundus_image()],
-            oct_slice_size,
-        )
-    elif file.suffix == ".e2e":
-        # support for E2E files is disabled until we have a proper E2E file to
-        # test with
-        raise ValueError
-        e2e_img = E2E(file)
-        # We were unable to retrieve slice size information from the e2e files.
-        # The following default values are taken from:
-        # https://bitbucket.org/uocte/uocte/wiki/Heidelberg%20File%20Format
-        oct_slice_size = OctDimensions(
-            extent_x_mm=6, resolution_y_mm=0.0039, extent_z_mm=4.5
-        )
-        # Note that the return types from oct_converter are different
-        # for e2e files
-        return (
-            e2e_img.read_oct_volume(),
-            e2e_img.read_fundus_image(),
-            oct_slice_size,
-        )
-    else:
-        raise ValueError
+    with open(file, "rb") as f:
+        header = f.read(7)
+
+        if b"FDS" in header:
+            fds_img = FDS(file)
+            file = {"filepath": file, "type": "fds"}
+            oct_slice_size = _extract_slice_size(img=fds_img)
+            return (
+                [fds_img.read_oct_volume()],
+                [fds_img.read_fundus_image()],
+                oct_slice_size,
+                file,
+            )
+        elif b"FDA" in header:
+            fda_img = FDA(file)
+            file = {"filepath": file, "type": "fda"}
+            oct_slice_size = _extract_slice_size(img=fda_img)
+            return (
+                [fda_img.read_oct_volume()],
+                [fda_img.read_fundus_image()],
+                oct_slice_size,
+                file,
+            )
+        elif b"CMD" in header:
+            e2e_img = E2E(file)
+            file = {"filepath": file, "type": "e2e"}
+            # We were unable to retrieve slice size information from the e2e files.
+            # The following default values are taken from:
+            # https://bitbucket.org/uocte/uocte/wiki/Heidelberg%20File%20Format
+            oct_slice_size = OctDimensions(
+                extent_x_mm=6, resolution_y_mm=0.0039, extent_z_mm=4.5
+            )
+            # Note that the return types from oct_converter are different
+            # for e2e files
+            return (
+                e2e_img.read_oct_volume(),
+                e2e_img.read_fundus_image(),
+                oct_slice_size,
+                file,
+            )
+        else:
+            raise ValueError
 
 
 def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
@@ -203,7 +210,7 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
 
     for file in files:
         try:
-            oct_volumes, fundus_images, oct_slice_size = _get_image(file=file)
+            oct_volumes, fundus_images, oct_slice_size, file = _get_image(file=file)
 
             yield from _create_itk_images(
                 file=file,

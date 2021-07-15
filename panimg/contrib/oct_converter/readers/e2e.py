@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 from construct import (
     PaddedString,
@@ -93,61 +95,26 @@ class E2E:
         )
 
     def read_oct_volume(self):
-        """ Reads OCT data.
 
-            Returns:
-                obj:OCTVolumeWithMetaData
-        """
         with open(self.filepath, "rb") as f:
-            raw = f.read(36)
-            header = self.header_structure.parse(raw)
+            """ Reads oct data.
 
-            raw = f.read(52)
-            main_directory = self.main_directory_structure.parse(raw)
+                Returns:
+                    obj:OCTVolumeWithMetaData
+            """
+            # read the file
+            data = f.read()
+            # find all 'MDbData' chunks
+            regexPattern = re.compile(b"MDbData")
+            iteratorOfMatchObs = regexPattern.finditer(data)
+            indexPositions = []
+            for matchObj in iteratorOfMatchObs:
+                indexPositions.append(matchObj.start())
 
-            # traverse list of main directories in first pass
-            directory_stack = []
-
-            current = main_directory.current
-            while current != 0:
-                directory_stack.append(current)
-                f.seek(current)
-                raw = f.read(52)
-                directory_chunk = self.main_directory_structure.parse(raw)
-                current = directory_chunk.prev
-
-            # traverse in second pass and  get all subdirectories
-            chunk_stack = []
-            volume_dict = {}
-            for position in directory_stack:
-                f.seek(position)
-                raw = f.read(52)
-                directory_chunk = self.main_directory_structure.parse(raw)
-
-                for ii in range(directory_chunk.num_entries):
-                    raw = f.read(44)
-                    chunk = self.sub_directory_structure.parse(raw)
-                    volume_string = f"{chunk.patient_id}_{chunk.study_id}_{chunk.series_id}"
-                    if volume_string not in volume_dict.keys():
-                        volume_dict[volume_string] = chunk.slice_id / 2
-                    elif chunk.slice_id / 2 > volume_dict[volume_string]:
-                        volume_dict[volume_string] = chunk.slice_id / 2
-
-                    if chunk.start > chunk.pos:
-                        chunk_stack.append([chunk.start, chunk.size])
-
-            # initalise dict to hold all the image volumes
+            # extract OCT image data and laterality data from all MDbData chunks
             volume_array_dict = {}
-            volume_array_dict_additional = (
-                {}
-            )  # for storage of slices not caught by extraction
-            for volume, num_slices in volume_dict.items():
-                if num_slices > 0:
-                    # num_slices + 1 here due to evidence that a slice was being missed off the end in extraction
-                    volume_array_dict[volume] = [0] * int(num_slices + 1)
-
-            # traverse all chunks and extract slices
-            for start, pos in chunk_stack:
+            volume_array_dict_additional = {}
+            for start in indexPositions:
                 f.seek(start)
                 raw = f.read(60)
                 chunk = self.chunk_structure.parse(raw)
@@ -168,6 +135,7 @@ class E2E:
                     image_data = self.image_structure.parse(raw)
 
                     if chunk.ind == 1:  # oct data
+
                         all_bits = [
                             f.read(2)
                             for i in range(
@@ -199,7 +167,6 @@ class E2E:
                                 volume_array_dict_additional[volume_string] = [
                                     image
                                 ]
-                            # print('Failed to save image data for volume {}'.format(volume_string))
 
             oct_volumes = []
             for key, volume in volume_array_dict.items():
@@ -221,6 +188,7 @@ class E2E:
 
         return oct_volumes
 
+
     def read_fundus_image(self):
         """ Reads fundus data.
 
@@ -228,41 +196,22 @@ class E2E:
                 obj:FundusImageWithMetaData
         """
         with open(self.filepath, "rb") as f:
-            raw = f.read(36)
-            header = self.header_structure.parse(raw)
 
-            raw = f.read(52)
-            main_directory = self.main_directory_structure.parse(raw)
+            # read the file
+            data = f.read()
 
-            # traverse list of main directories in first pass
-            directory_stack = []
-
-            current = main_directory.current
-            while current != 0:
-                directory_stack.append(current)
-                f.seek(current)
-                raw = f.read(52)
-                directory_chunk = self.main_directory_structure.parse(raw)
-                current = directory_chunk.prev
-
-            # traverse in second pass and  get all subdirectories
-            chunk_stack = []
-            for position in directory_stack:
-                f.seek(position)
-                raw = f.read(52)
-                directory_chunk = self.main_directory_structure.parse(raw)
-
-                for ii in range(directory_chunk.num_entries):
-                    raw = f.read(44)
-                    chunk = self.sub_directory_structure.parse(raw)
-                    if chunk.start > chunk.pos:
-                        chunk_stack.append([chunk.start, chunk.size])
+            # find all 'MDbData' chunks
+            regexPattern = re.compile(b"MDbData")
+            iteratorOfMatchObs = regexPattern.finditer(data)
+            indexPositions = []
+            for matchObj in iteratorOfMatchObs:
+                indexPositions.append(matchObj.start())
 
             # initalise dict to hold all the image volumes
             image_array_dict = {}
 
             # traverse all chunks and extract slices
-            for start, pos in chunk_stack:
+            for start in indexPositions:
                 f.seek(start)
                 raw = f.read(60)
                 chunk = self.chunk_structure.parse(raw)
