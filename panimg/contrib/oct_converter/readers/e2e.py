@@ -168,7 +168,7 @@ class E2E:
                 )
                 image = 256 * pow(image, 1.0 / 2.4)
                 volume_string = f"{chunk.patient_id}_{chunk.study_id}_{chunk.series_id}"
-                volume_array_dict[volume_string][int(chunk.slice_id / 2)] = image
+                volume_array_dict[volume_string][int(chunk.slice_id / 2)-1] = image
 
             oct_volumes = []
             for key, volume in volume_array_dict.items():
