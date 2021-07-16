@@ -111,9 +111,12 @@ class E2E:
             for matchObj in iteratorOfMatchObs:
                 indexPositions.append(matchObj.start())
 
-            # extract OCT image data and laterality data from all MDbData chunks
-            volume_array_dict = {}
-            volume_array_dict_additional = {}
+            # first pass through MDbData chunks:
+            # - save volume names
+            # - save all oct data chunk start positions for second pass
+            # - extract laterality info
+            chunk_stack = []
+            volume_dict = []
             for start in indexPositions:
                 f.seek(start)
                 raw = f.read(60)
@@ -131,53 +134,44 @@ class E2E:
                         self.laterality = None
 
                 if chunk.type == 1073741824:  # image data
-                    raw = f.read(20)
-                    image_data = self.image_structure.parse(raw)
-
                     if chunk.ind == 1:  # oct data
-
-                        all_bits = [
-                            f.read(2)
-                            for i in range(
-                                image_data.height * image_data.width
-                            )
-                        ]
-                        raw_volume = list(
-                            map(self.read_custom_float, all_bits)
-                        )
-                        image = np.array(raw_volume).reshape(
-                            image_data.width, image_data.height
-                        )
-                        image = 256 * pow(image, 1.0 / 2.4)
                         volume_string = f"{chunk.patient_id}_{chunk.study_id}_{chunk.series_id}"
-                        if volume_string in volume_array_dict.keys():
-                            volume_array_dict[volume_string][
-                                int(chunk.slice_id / 2) - 1
-                            ] = image
-                        else:
-                            # try to capture these additional images
-                            if (
-                                volume_string
-                                in volume_array_dict_additional.keys()
-                            ):
-                                volume_array_dict_additional[
-                                    volume_string
-                                ].append(image)
-                            else:
-                                volume_array_dict_additional[volume_string] = [
-                                    image
-                                ]
+                        volume_dict.append(volume_string)
+                        chunk_stack.append(chunk.pos)
+
+            # second pass through MDbData chunks:
+            # - extract OCT image data
+            volume_array_dict = {}
+            for volume in set(volume_dict):
+                if volume not in volume_array_dict.keys():
+                    volume_array_dict[volume] = [0] * len([slice for slice in volume_dict if slice == volume])
+
+            for pos in chunk_stack:
+                f.seek(pos)
+                raw = f.read(60)
+                chunk = self.chunk_structure.parse(raw)
+
+                raw = f.read(20)
+                image_data = self.image_structure.parse(raw)
+
+                all_bits = [
+                    f.read(2)
+                    for i in range(
+                        image_data.height * image_data.width
+                    )
+                ]
+                raw_volume = list(
+                    map(self.read_custom_float, all_bits)
+                )
+                image = np.array(raw_volume).reshape(
+                    image_data.width, image_data.height
+                )
+                image = 256 * pow(image, 1.0 / 2.4)
+                volume_string = f"{chunk.patient_id}_{chunk.study_id}_{chunk.series_id}"
+                volume_array_dict[volume_string][int(chunk.slice_id / 2)] = image
 
             oct_volumes = []
             for key, volume in volume_array_dict.items():
-                oct_volumes.append(
-                    OCTVolumeWithMetaData(
-                        volume=volume,
-                        patient_id=key,
-                        laterality=self.laterality,
-                    )
-                )
-            for key, volume in volume_array_dict_additional.items():
                 oct_volumes.append(
                     OCTVolumeWithMetaData(
                         volume=volume,
