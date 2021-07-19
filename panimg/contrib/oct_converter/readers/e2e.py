@@ -8,7 +8,6 @@ from construct import (
     Int32sn,
     Int32un,
     Int8un,
-    Array,
 )
 from panimg.contrib.oct_converter.image_types import (
     OCTVolumeWithMetaData,
@@ -37,34 +36,7 @@ class E2E:
         self.filepath = Path(filepath)
         if not self.filepath.exists():
             raise FileNotFoundError(self.filepath)
-        self.header_structure = Struct(
-            "magic" / PaddedString(12, "ascii"),
-            "version" / Int32un,
-            "unknown" / Array(10, Int16un),
-        )
-        self.main_directory_structure = Struct(
-            "magic" / PaddedString(12, "ascii"),
-            "version" / Int32un,
-            "unknown" / Array(10, Int16un),
-            "num_entries" / Int32un,
-            "current" / Int32un,
-            "prev" / Int32un,
-            "unknown3" / Int32un,
-        )
-        self.sub_directory_structure = Struct(
-            "pos" / Int32un,
-            "start" / Int32un,
-            "size" / Int32un,
-            "unknown" / Int32un,
-            "patient_id" / Int32un,
-            "study_id" / Int32un,
-            "series_id" / Int32un,
-            "slice_id" / Int32sn,
-            "unknown2" / Int16un,
-            "unknown3" / Int16un,
-            "type" / Int32un,
-            "unknown4" / Int32un,
-        )
+
         self.chunk_structure = Struct(
             "magic" / PaddedString(12, "ascii"),
             "unknown" / Int32un,
@@ -105,6 +77,7 @@ class E2E:
             # read the file
             data = f.read()
             # find all 'MDbData' chunks
+
             regexPattern = re.compile(b"MDbData")
             iteratorOfMatchObs = regexPattern.finditer(data)
             indexPositions = []
@@ -113,7 +86,7 @@ class E2E:
 
             # first pass through MDbData chunks:
             # - save volume names
-            # - save all oct data chunk start positions for second pass
+            # - save all oct data start positions for second pass
             # - extract laterality info
             chunk_stack = []
             volume_dict = []
@@ -143,8 +116,9 @@ class E2E:
             # - extract OCT image data
             volume_array_dict = {}
             for volume in set(volume_dict):
-                if volume not in volume_array_dict.keys():
-                    volume_array_dict[volume] = [0] * len([slice for slice in volume_dict if slice == volume])
+                volume_array_dict[volume] = [0] * len(
+                    [slice for slice in volume_dict if slice == volume]
+                )
 
             for pos in chunk_stack:
                 f.seek(pos)
@@ -156,19 +130,19 @@ class E2E:
 
                 all_bits = [
                     f.read(2)
-                    for i in range(
-                        image_data.height * image_data.width
-                    )
+                    for i in range(image_data.height * image_data.width)
                 ]
-                raw_volume = list(
-                    map(self.read_custom_float, all_bits)
-                )
+                raw_volume = list(map(self.read_custom_float, all_bits))
                 image = np.array(raw_volume).reshape(
                     image_data.width, image_data.height
                 )
                 image = 256 * pow(image, 1.0 / 2.4)
-                volume_string = f"{chunk.patient_id}_{chunk.study_id}_{chunk.series_id}"
-                volume_array_dict[volume_string][int(chunk.slice_id / 2)-1] = image
+                volume_string = (
+                    f"{chunk.patient_id}_{chunk.study_id}_{chunk.series_id}"
+                )
+                volume_array_dict[volume_string][
+                    int(chunk.slice_id / 2) - 1
+                ] = image
 
             oct_volumes = []
             for key, volume in volume_array_dict.items():
@@ -181,7 +155,6 @@ class E2E:
                 )
 
         return oct_volumes
-
 
     def read_fundus_image(self):
         """ Reads fundus data.

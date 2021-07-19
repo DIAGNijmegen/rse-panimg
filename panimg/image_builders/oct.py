@@ -1,6 +1,14 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, Dict, Iterable, Iterator, List, Set, Tuple, Union
+from typing import (
+    DefaultDict,
+    Iterable,
+    Iterator,
+    List,
+    Set,
+    Tuple,
+    Union,
+)
 
 import SimpleITK
 import numpy as np
@@ -42,15 +50,20 @@ class OctDimensions(BaseModel):
 
 def _create_itk_images(
     *,
-    file: Dict[Path, str],
+    file: Tuple[Path, str],
     oct_volumes: Iterable[OCTVolumeWithMetaData],
     fundus_images: Iterable[FundusImageWithMetaData],
     oct_slice_size: OctDimensions,
 ) -> Iterator[SimpleITKImage]:
+
+    filepath = file[0]
+    filetype = file[1]
+
     for volume in oct_volumes:
         eye_choice = LATERALITY_TO_EYE_CHOICE[volume.laterality]
+
         yield _create_itk_oct_volume(
-            file=file['filepath'],
+            file=filepath,
             volume=volume.volume,
             oct_slice_size=oct_slice_size,
             eye_choice=eye_choice,
@@ -58,7 +71,7 @@ def _create_itk_images(
     for image in fundus_images:
         eye_choice = LATERALITY_TO_EYE_CHOICE[image.laterality]
 
-        if file['type'] != "e2e":
+        if filetype != "e2e":
             img_array = image.image.astype(np.uint8)
             img_array = img_array[:, :, ::-1]
             is_vector = True
@@ -67,7 +80,7 @@ def _create_itk_images(
             is_vector = False
 
         yield _create_itk_fundus_image(
-            file=file['filepath'],
+            file=filepath,
             image=img_array,
             eye_choice=eye_choice,
             is_vector=is_vector,
@@ -101,7 +114,7 @@ def _create_itk_oct_volume(
 
 
 def _create_itk_fundus_image(
-    *, file: Path, image: np.ndarray, eye_choice: EyeChoice, is_vector: bool
+    *, file: Path, image: np.ndarray, eye_choice: EyeChoice, is_vector: bool,
 ) -> SimpleITKImage:
     img = SimpleITK.GetImageFromArray(image, isVector=is_vector)
 
@@ -142,33 +155,34 @@ def _get_image(
     Iterable[OCTVolumeWithMetaData],
     Iterable[FundusImageWithMetaData],
     OctDimensions,
+    Tuple[Path, str],
 ]:
     with open(file, "rb") as f:
         header = f.read(7)
 
         if b"FDS" in header:
             fds_img = FDS(file)
-            file = {"filepath": file, "type": "fds"}
+            file_info = file, "fds"
             oct_slice_size = _extract_slice_size(img=fds_img)
             return (
                 [fds_img.read_oct_volume()],
                 [fds_img.read_fundus_image()],
                 oct_slice_size,
-                file,
+                file_info,
             )
         elif b"FDA" in header:
             fda_img = FDA(file)
-            file = {"filepath": file, "type": "fda"}
+            file_info = file, "fda"
             oct_slice_size = _extract_slice_size(img=fda_img)
             return (
                 [fda_img.read_oct_volume()],
                 [fda_img.read_fundus_image()],
                 oct_slice_size,
-                file,
+                file_info,
             )
         elif b"CMD" in header:
             e2e_img = E2E(file)
-            file = {"filepath": file, "type": "e2e"}
+            file_info = file, "e2e"
             # We were unable to retrieve slice size information from the e2e files.
             # The following default values are taken from:
             # https://bitbucket.org/uocte/uocte/wiki/Heidelberg%20File%20Format
@@ -181,7 +195,7 @@ def _get_image(
                 e2e_img.read_oct_volume(),
                 e2e_img.read_fundus_image(),
                 oct_slice_size,
-                file,
+                file_info,
             )
         else:
             raise ValueError
@@ -210,10 +224,12 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
 
     for file in files:
         try:
-            oct_volumes, fundus_images, oct_slice_size, file = _get_image(file=file)
+            oct_volumes, fundus_images, oct_slice_size, file_out = _get_image(
+                file=file
+            )
 
             yield from _create_itk_images(
-                file=file,
+                file=file_out,
                 oct_volumes=oct_volumes,
                 # Skip fundus_images until we decide how to handle these
                 fundus_images=[],  # fundus_images,
