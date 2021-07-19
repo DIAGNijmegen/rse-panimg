@@ -66,23 +66,36 @@ class E2E:
             "unknown2" / Int8un,
         )
 
-    def read_oct_volume(self):
+    def find_data_chunks(self, f):
+        data = f.read()
+        # find all 'MDbData' chunks
+        regex_pattern = re.compile(b"MDbData")
+        matches = regex_pattern.finditer(data)
+        positions = []
+        for match in matches:
+            positions.append(match.start())
+        return positions
 
+    def extract_laterality_data(self, f):
+        raw = f.read(20)
+        try:
+            laterality_data = self.lat_structure.parse(raw)
+            if laterality_data.laterality == 82:
+                laterality = "R"
+            elif laterality_data.laterality == 76:
+                laterality = "L"
+        except:
+            laterality = None
+        return laterality
+
+    def read_oct_volume(self):
         with open(self.filepath, "rb") as f:
             """ Reads oct data.
 
                 Returns:
                     obj:OCTVolumeWithMetaData
             """
-            # read the file
-            data = f.read()
-            # find all 'MDbData' chunks
-
-            regexPattern = re.compile(b"MDbData")
-            iteratorOfMatchObs = regexPattern.finditer(data)
-            indexPositions = []
-            for matchObj in iteratorOfMatchObs:
-                indexPositions.append(matchObj.start())
+            chunk_positions = self.find_data_chunks(f)
 
             # first pass through MDbData chunks:
             # - save volume names
@@ -90,21 +103,13 @@ class E2E:
             # - extract laterality info
             chunk_stack = []
             volume_dict = []
-            for start in indexPositions:
+            for start in chunk_positions:
                 f.seek(start)
                 raw = f.read(60)
                 chunk = self.chunk_structure.parse(raw)
 
                 if chunk.type == 11:  # laterality data
-                    raw = f.read(20)
-                    try:
-                        laterality_data = self.lat_structure.parse(raw)
-                        if laterality_data.laterality == 82:
-                            self.laterality = "R"
-                        elif laterality_data.laterality == 76:
-                            self.laterality = "L"
-                    except:
-                        self.laterality = None
+                    self.laterality = self.extract_laterality_data(f)
 
                 if chunk.type == 1073741824:  # image data
                     if chunk.ind == 1:  # oct data
@@ -163,36 +168,17 @@ class E2E:
                 obj:FundusImageWithMetaData
         """
         with open(self.filepath, "rb") as f:
-
-            # read the file
-            data = f.read()
-
-            # find all 'MDbData' chunks
-            regexPattern = re.compile(b"MDbData")
-            iteratorOfMatchObs = regexPattern.finditer(data)
-            indexPositions = []
-            for matchObj in iteratorOfMatchObs:
-                indexPositions.append(matchObj.start())
-
+            chunk_positions = self.find_data_chunks(f)
             # initalise dict to hold all the image volumes
             image_array_dict = {}
-
             # traverse all chunks and extract slices
-            for start in indexPositions:
+            for start in chunk_positions:
                 f.seek(start)
                 raw = f.read(60)
                 chunk = self.chunk_structure.parse(raw)
 
                 if chunk.type == 11:  # laterality data
-                    raw = f.read(20)
-                    try:
-                        laterality_data = self.lat_structure.parse(raw)
-                        if laterality_data.laterality == 82:
-                            self.laterality = "R"
-                        elif laterality_data.laterality == 76:
-                            self.laterality = "L"
-                    except:
-                        self.laterality = None
+                    self.laterality = self.extract_laterality_data(f)
 
                 if chunk.type == 1073741824:  # image data
                     raw = f.read(20)
