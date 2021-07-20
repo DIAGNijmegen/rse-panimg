@@ -116,7 +116,7 @@ class E2E:
                     if chunk.ind == 1:  # oct data
                         volume_string = f"{chunk.patient_id}_{chunk.study_id}_{chunk.series_id}"
                         volume_dict.append(volume_string)
-                        chunk_stack.append(chunk.pos)
+                        chunk_stack.append(start)
 
             # second pass through MDbData chunks:
             # - extract OCT image data
