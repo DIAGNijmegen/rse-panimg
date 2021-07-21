@@ -142,7 +142,7 @@ class E2E:
                 image = np.array(raw_volume).reshape(
                     image_data.width, image_data.height
                 )
-                image = (image * 255).astype(np.uint8)
+                image = (image * 255).astype(np.uint16)
                 image = 256 * pow(image, 1.0 / 2.4)
                 volume_string = (
                     f"{chunk.patient_id}_{chunk.study_id}_{chunk.series_id}"
