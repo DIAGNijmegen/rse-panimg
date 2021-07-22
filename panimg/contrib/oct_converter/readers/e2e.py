@@ -90,20 +90,15 @@ class E2E:
         return laterality
 
     def read_oct_volume(self):
+        """ Reads oct data.
+            Returns:
+                obj:OCTVolumeWithMetaData
+        """
         with open(self.filepath, "rb") as f:
-            """ Reads oct data.
 
-                Returns:
-                    obj:OCTVolumeWithMetaData
-            """
             chunk_positions = self.find_data_chunks(f)
 
-            # first pass through MDbData chunks:
-            # - save volume names
-            # - save all oct data start positions for second pass
-            # - extract laterality info
-            chunk_stack = []
-            volume_dict = []
+            volume_dict = {}
             for start in chunk_positions:
                 f.seek(start)
                 raw = f.read(60)
@@ -115,47 +110,44 @@ class E2E:
                 if chunk.type == 1073741824:  # image data
                     if chunk.ind == 1:  # oct data
                         volume_string = f"{chunk.patient_id}_{chunk.study_id}_{chunk.series_id}"
-                        volume_dict.append(volume_string)
-                        chunk_stack.append(start)
-
-            # second pass through MDbData chunks:
-            # - extract OCT image data
-            volume_array_dict = {}
-            for volume in set(volume_dict):
-                volume_array_dict[volume] = [0] * len(
-                    [slice for slice in volume_dict if slice == volume]
-                )
-
-            for pos in chunk_stack:
-                f.seek(pos)
-                raw = f.read(60)
-                chunk = self.chunk_structure.parse(raw)
-
-                raw = f.read(20)
-                image_data = self.image_structure.parse(raw)
-
-                all_bits = [
-                    f.read(2)
-                    for i in range(image_data.height * image_data.width)
-                ]
-                raw_volume = list(map(self.read_custom_float, all_bits))
-                image = np.array(raw_volume).reshape(
-                    image_data.width, image_data.height
-                )
-                image = (image * 255).astype(np.uint16)
-                image = 256 * pow(image, 1.0 / 2.4)
-                volume_string = (
-                    f"{chunk.patient_id}_{chunk.study_id}_{chunk.series_id}"
-                )
-                volume_array_dict[volume_string][
-                    int(chunk.slice_id / 2) - 1
-                ] = image
+                        # read data
+                        raw = f.read(20)
+                        image_data = self.image_structure.parse(raw)
+                        all_bits = [
+                            f.read(2)
+                            for i in range(
+                                image_data.height * image_data.width
+                            )
+                        ]
+                        raw_volume = list(
+                            map(self.read_custom_float, all_bits)
+                        )
+                        image = np.array(raw_volume).reshape(
+                            image_data.width, image_data.height
+                        )
+                        normalized_float = pow(image, 1.0 / 2.4) / pow(
+                            2, 1.0 / 2.4
+                        )
+                        image = (normalized_float * (256 * 256 - 1)).astype(
+                            np.uint16
+                        )
+                        if volume_string not in volume_dict.keys():
+                            volume_dict[volume_string] = {}
+                            volume_dict[volume_string][
+                                int(chunk.slice_id / 2)
+                            ] = image
+                        else:
+                            volume_dict[volume_string][
+                                int(chunk.slice_id / 2)
+                            ] = image
 
             oct_volumes = []
-            for key, volume in volume_array_dict.items():
+            for key, volume in volume_dict.items():
+                slice_order = sorted([id for id in volume.keys()])
+                ordered_volume = [volume[id] for id in slice_order]
                 oct_volumes.append(
                     OCTVolumeWithMetaData(
-                        volume=volume,
+                        volume=ordered_volume,
                         patient_id=key,
                         laterality=self.laterality,
                     )
