@@ -131,15 +131,11 @@ class E2E:
                         image = (normalized_float * (256 * 256 - 1)).astype(
                             np.uint16
                         )
-                        if volume_string not in volume_dict.keys():
+                        if volume_string not in volume_dict:
                             volume_dict[volume_string] = {}
-                            volume_dict[volume_string][
-                                int(chunk.slice_id / 2)
-                            ] = image
-                        else:
-                            volume_dict[volume_string][
-                                int(chunk.slice_id / 2)
-                            ] = image
+                        volume_dict[volume_string][
+                            int(chunk.slice_id / 2)
+                        ] = image
 
             oct_volumes = []
             for key, volume in volume_dict.items():
