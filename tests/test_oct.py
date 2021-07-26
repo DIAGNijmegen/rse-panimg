@@ -70,6 +70,33 @@ from tests import RESOURCE_PATH
                 "eye_choice": "U",
             },
         ),
+        (
+            # Minimized .e2e OCT file was created by taking example OCT file from RUMC
+            # and downsizing:
+            #   - OCT volume (chunk type = 1073741824, chunk ind = 1) to 512x496x1
+            #   - Fundus image (chunk type = 1073741824, chunk ind = 0) to 2x3x1
+            #   - deleting all MDbData chunks other than the OCT slice, the fundus
+            #     image and the laterality information (chunk type = 11)
+            RESOURCE_PATH / "oct/e2e_minimized.E2E",
+            {
+                "width": 2,
+                "height": 3,
+                "depth": None,
+                "voxel_width_mm": None,
+                "voxel_height_mm": None,
+                "voxel_depth_mm": None,
+                "eye_choice": "U",
+            },
+            {
+                "width": 512,
+                "height": 496,
+                "depth": 1,
+                "voxel_width_mm": 0.01171875,
+                "voxel_height_mm": 0.0039,
+                "voxel_depth_mm": 4.5,
+                "eye_choice": "U",
+            },
+        ),
     ),
 )
 def test_image_builder_oct(
