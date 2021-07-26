@@ -1,5 +1,9 @@
 # History
 
+## 0.3.1 (2021-07-26)
+
+* Added support for e2e files
+
 ## 0.3.0 (2021-05-31)
 
 * Added support for fds and fda images
