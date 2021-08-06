@@ -61,6 +61,7 @@ To access the help test you can use `panimg -h`.
 | `.dcm`                              | `.mha`  | `dicom`    |                            |
 | `.nii`                              | `.mha`  | `nifti`    |                            |
 | `.nii.gz`                           | `.mha`  | `nifti`    |                            |
+| `.e2e`                              | `.mha`  | `oct`      | <sup>[1](#footnote1)</sup> |
 | `.fds`                              | `.mha`  | `oct`      | <sup>[1](#footnote1)</sup> |
 | `.fda`                              | `.mha`  | `oct`      | <sup>[1](#footnote1)</sup> |
 | `.png`                              | `.mha`  | `fallback` | <sup>[2](#footnote2)</sup> |
