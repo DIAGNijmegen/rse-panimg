@@ -140,3 +140,33 @@ def test_mhd_file_annotation_creation(tmpdir_factory):
     assert image.height == 6
     assert image.width == 5
     assert image.color_space == ColorSpace.GRAY
+
+
+def test_subdirectory_traverse_setting(tmpdir_factory):
+    input_dir = tmpdir_factory.mktemp("input")
+    sub_dir = input_dir / "sub"
+    sub_dir.mkdir()
+
+    image = RESOURCE_PATH / "image10x11x12.nii"
+    image_sub = RESOURCE_PATH / "image10x10x10.mha"
+
+    shutil.copy(image, input_dir)
+    shutil.copy(image_sub, sub_dir)
+    output_dir = tmpdir_factory.mktemp("output")
+
+    result = convert(
+        input_directory=input_dir,
+        output_directory=output_dir,
+        recurse_subdirectories=True,
+    )
+
+    assert len(result.new_images) == 2
+
+    output_dir = tmpdir_factory.mktemp("output2")
+    result = convert(
+        input_directory=input_dir,
+        output_directory=output_dir,
+        recurse_subdirectories=False,
+    )
+
+    assert len(result.new_images) == 1
