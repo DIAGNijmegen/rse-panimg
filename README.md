@@ -24,7 +24,8 @@ Under the hood we use:
 ## Usage
 
 `panimg` takes a folder and tries to convert the containing files to MHA or TIFF.
-By default, it will try to convert files from subdirectories as well. To only convert files in the top level directory, set `recurse_subdirectories` to `False`.
+By default, it will try to convert files from subdirectories as well.
+To only convert files in the top level directory, set `recurse_subdirectories` to `False`.
 It will try several strategies for loading the contained files, and if an image is found it will output it to the output folder.
 It will return a structure containing information about what images were produced, what images were used to form the new images, image metadata, and any errors from any of the strategies.
 

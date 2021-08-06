@@ -1,5 +1,9 @@
 # History
 
+## 0.3.2 (2021-08-06)
+
+* Added `recurse_subdirectories` option to `convert`
+
 ## 0.3.1 (2021-07-26)
 
 * Added support for e2e files
