@@ -10,12 +10,12 @@
 Conversion of medical images to MHA and TIFF. 
 Requires Python 3.7, 3.8 or 3.9.
 `libvips-dev` and `libopenslide-dev` must be installed on your system.
-For compressed DICOM support ensure that `gdcm` is installed.
 
 Under the hood we use:
 
 * `SimpleITK`
 * `pydicom`
+* `pylibjpeg`  
 * `Pillow`
 * `openslide-python`
 * `pyvips`
@@ -61,14 +61,14 @@ To access the help test you can use `panimg -h`.
 | ----------------------------------- | --------| ---------- | -------------------------- |
 | `.mha`                              | `.mha`  | `metaio`   |                            |
 | `.mhd` with `.raw` or `.zraw`       | `.mha`  | `metaio`   |                            |
-| `.dcm`                              | `.mha`  | `dicom`    | <sup>[1](#footnote1)</sup> |
+| `.dcm`                              | `.mha`  | `dicom`    |                            |
 | `.nii`                              | `.mha`  | `nifti`    |                            |
 | `.nii.gz`                           | `.mha`  | `nifti`    |                            |
-| `.e2e`                              | `.mha`  | `oct`      | <sup>[2](#footnote2)</sup> |
-| `.fds`                              | `.mha`  | `oct`      | <sup>[2](#footnote2)</sup> |
-| `.fda`                              | `.mha`  | `oct`      | <sup>[2](#footnote2)</sup> |
-| `.png`                              | `.mha`  | `fallback` | <sup>[3](#footnote3)</sup> |
-| `.jpeg`                             | `.mha`  | `fallback` | <sup>[3](#footnote3)</sup> |
+| `.e2e`                              | `.mha`  | `oct`      | <sup>[1](#footnote1)</sup> |
+| `.fds`                              | `.mha`  | `oct`      | <sup>[1](#footnote1)</sup> |
+| `.fda`                              | `.mha`  | `oct`      | <sup>[1](#footnote1)</sup> |
+| `.png`                              | `.mha`  | `fallback` | <sup>[2](#footnote2)</sup> |
+| `.jpeg`                             | `.mha`  | `fallback` | <sup>[2](#footnote2)</sup> |
 | `.tiff`                             | `.tiff` | `tiff`     |                            |
 | `.svs` (Aperio)                     | `.tiff` | `tiff`     |                            |
 | `.vms`, `.vmu`, `.ndpi` (Hamamatsu) | `.tiff` | `tiff`     |                            |
@@ -76,11 +76,9 @@ To access the help test you can use `panimg -h`.
 | `.mrxs` (MIRAX)                     | `.tiff` | `tiff`     |                            |
 | `.biff` (Ventana)                   | `.tiff` | `tiff`     |                            |
 
-<a name="footnote1">1</a>: Compressed DICOM requires `gdcm`
+<a name="footnote1">1</a>: Only OCT volume(s), no fundus image(s) will be extracted.
 
-<a name="footnote2">2</a>: Only OCT volume(s), no fundus image(s) will be extracted.
-
-<a name="footnote3">3</a>: 2D only, unitary dimensions
+<a name="footnote2">2</a>: 2D only, unitary dimensions
 
 #### Post Processors
 
