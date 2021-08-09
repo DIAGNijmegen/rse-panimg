@@ -1,5 +1,10 @@
 # History
 
+## 0.4.0 (2021-08-09)
+
+* Removed dependency on `gdcm`
+* `panimg` now requires `pydicom>=2.2`
+
 ## 0.3.2 (2021-08-06)
 
 * Added `recurse_subdirectories` option to `convert`
