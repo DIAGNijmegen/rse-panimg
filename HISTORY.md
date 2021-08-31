@@ -1,5 +1,9 @@
 # History
 
+## 0.4.1 (2021-08-31)
+
+* Added support for vips 8.10
+
 ## 0.4.0 (2021-08-09)
 
 * Removed dependency on `gdcm`
