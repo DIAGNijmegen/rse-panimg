@@ -11,6 +11,10 @@ from panimg.models import SimpleITKImage
 MAGIC_REGEX = re.compile("NRRD([0-9]{4})")
 DATAFILE_REGEX = re.compile(r"data\s?file:", flags=re.IGNORECASE)
 
+# Arbitrary maximum lengths to prevent overflow attacks
+MAX_HEADER_LINES = 10000
+MAX_HEADER_LINE_LENGTH = 10000
+
 
 class InvalidNrrdFileError(Exception):
     def __init__(self, message: str = "Not a NRRD image file"):
@@ -41,12 +45,14 @@ def verify_single_file_nrrd(file: Path) -> bool:
             raise InvalidNrrdFileError("File format not supported")
 
         # Discard rest of preamble line
-        fp.readline(1000)
+        fp.readline(MAX_HEADER_LINE_LENGTH)
 
         # Read rest of the header, searching for external data files
-        for _ in range(1000):
+        for _ in range(MAX_HEADER_LINES):
             try:
-                line = fp.readline(1000).decode("ASCII").strip()
+                line = (
+                    fp.readline(MAX_HEADER_LINE_LENGTH).decode("ASCII").strip()
+                )
             except UnicodeDecodeError:
                 break  # header cannot contain non-ASCII content
 
