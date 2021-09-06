@@ -1,5 +1,9 @@
 # History
 
+## 0.4.2 (2021-09-06)
+
+* Added support for nrrd files
+
 ## 0.4.1 (2021-08-31)
 
 * Added support for vips 8.10
