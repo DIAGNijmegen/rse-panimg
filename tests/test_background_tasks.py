@@ -147,7 +147,7 @@ def test_subdirectory_traverse_setting(tmpdir_factory):
     sub_dir = input_dir / "sub"
     sub_dir.mkdir()
 
-    image = RESOURCE_PATH / "image10x11x12.nii"
+    image = RESOURCE_PATH / "nifti" / "image10x11x12.nii"
     image_sub = RESOURCE_PATH / "image10x10x10.mha"
 
     shutil.copy(image, input_dir)

@@ -14,8 +14,8 @@ from tests import RESOURCE_PATH
 @pytest.mark.parametrize(
     "src",
     (
-        RESOURCE_PATH / "image10x11x12.nii",
-        RESOURCE_PATH / "image10x11x12.nii.gz",
+        RESOURCE_PATH / "nifti" / "image10x11x12.nii",
+        RESOURCE_PATH / "nifti" / "image10x11x12.nii.gz",
     ),
 )
 def test_image_builder_nifti(tmpdir_factory, src: Path):

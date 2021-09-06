@@ -18,6 +18,7 @@ EXPECTED_ERROR_MESSAGE = {
     ],
     "image_builder_mhd": ["Mhd image builder: Not an ITK file"],
     "image_builder_nifti": ["NifTI image builder: Not a NifTI image file"],
+    "image_builder_nrrd": ["NRRD image builder: Not a NRRD image file"],
     "image_builder_oct": [
         "OCT image builder: Not a valid OCT file "
         "(supported formats: .fds,.fda,.e2e)",
@@ -51,7 +52,8 @@ def test_number_of_images_consumed_by_each_builder(tmp_path, builder):
         *(RESOURCE_PATH / "dicom").glob("*.dcm"),
         RESOURCE_PATH / "test_rgb.png",
         RESOURCE_PATH / "image10x10x10.mha",
-        RESOURCE_PATH / "image10x11x12.nii.gz",
+        RESOURCE_PATH / "nifti" / "image10x11x12.nii.gz",
+        RESOURCE_PATH / "nrrd" / "image10x11x12.nrrd",
         RESOURCE_PATH / "valid_tiff.tif",
         RESOURCE_PATH / "oct/fda_minimized.fda",
         RESOURCE_PATH / "oct/fds_minimized.fds",

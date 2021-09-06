@@ -64,11 +64,12 @@ To access the help test you can use `panimg -h`.
 | `.dcm`                              | `.mha`  | `dicom`    |                            |
 | `.nii`                              | `.mha`  | `nifti`    |                            |
 | `.nii.gz`                           | `.mha`  | `nifti`    |                            |
-| `.e2e`                              | `.mha`  | `oct`      | <sup>[1](#footnote1)</sup> |
-| `.fds`                              | `.mha`  | `oct`      | <sup>[1](#footnote1)</sup> |
-| `.fda`                              | `.mha`  | `oct`      | <sup>[1](#footnote1)</sup> |
-| `.png`                              | `.mha`  | `fallback` | <sup>[2](#footnote2)</sup> |
-| `.jpeg`                             | `.mha`  | `fallback` | <sup>[2](#footnote2)</sup> |
+| `.nrrd`                             | `.mha`  | `nrrd`     | <sup>[1](#footnote1)</sup> |
+| `.e2e`                              | `.mha`  | `oct`      | <sup>[2](#footnote2)</sup> |
+| `.fds`                              | `.mha`  | `oct`      | <sup>[2](#footnote2)</sup> |
+| `.fda`                              | `.mha`  | `oct`      | <sup>[2](#footnote2)</sup> |
+| `.png`                              | `.mha`  | `fallback` | <sup>[3](#footnote3)</sup> |
+| `.jpeg`                             | `.mha`  | `fallback` | <sup>[3](#footnote3)</sup> |
 | `.tiff`                             | `.tiff` | `tiff`     |                            |
 | `.svs` (Aperio)                     | `.tiff` | `tiff`     |                            |
 | `.vms`, `.vmu`, `.ndpi` (Hamamatsu) | `.tiff` | `tiff`     |                            |
@@ -76,9 +77,11 @@ To access the help test you can use `panimg -h`.
 | `.mrxs` (MIRAX)                     | `.tiff` | `tiff`     |                            |
 | `.biff` (Ventana)                   | `.tiff` | `tiff`     |                            |
 
-<a name="footnote1">1</a>: Only OCT volume(s), no fundus image(s) will be extracted.
+<a name="footnote1">1</a>: Detached headers are not supported.
 
-<a name="footnote2">2</a>: 2D only, unitary dimensions
+<a name="footnote2">2</a>: Only OCT volume(s), no fundus image(s) will be extracted.
+
+<a name="footnote3">3</a>: 2D only, unitary dimensions
 
 #### Post Processors
 
