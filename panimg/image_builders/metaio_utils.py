@@ -74,6 +74,13 @@ ADDITIONAL_HEADERS = {
 
 HEADERS_MATCHING_NUM_TIMEPOINTS: List[str] = ["Exposures", "ContentTimes"]
 
+HEADERS_WITH_LISTING: List[str] = [
+    "TransformMatrix",
+    "Offset",
+    "CenterOfRotation",
+    "ElementSpacing",
+]
+
 EXPECTED_HEADERS: List[str] = [
     "ObjectType",
     "NDims",
@@ -161,30 +168,6 @@ def extract_header_listing(
     property: str, headers: Dict[str, str], dtype: type = float
 ) -> List[Any]:
     return [dtype(e) for e in headers[property].strip().split(" ")]
-
-
-def load_sitk_image_with_nd_support(mhd_file: Path,) -> SimpleITK.Image:
-    headers = parse_mh_header(mhd_file)
-    is_mha = headers["ElementDataFile"].strip() == "LOCAL"
-    data_file_path = resolve_mh_data_file_path(headers, is_mha, mhd_file)
-
-    shape = extract_header_listing("DimSize", headers=headers, dtype=int)
-
-    dtype, num_components = determine_mh_components_and_dtype(headers)
-
-    sitk_image = create_sitk_img_from_mh_data(
-        data_file_path, dtype, headers, is_mha, num_components, shape
-    )
-
-    sitk_image.SetDirection(
-        extract_header_listing("TransformMatrix", headers=headers)
-    )
-    sitk_image.SetSpacing(
-        extract_header_listing("ElementSpacing", headers=headers)
-    )
-    sitk_image.SetOrigin(extract_header_listing("Offset", headers=headers))
-
-    return sitk_image
 
 
 def determine_mh_components_and_dtype(
@@ -299,13 +282,13 @@ def load_sitk_image(mhd_file: Path) -> SimpleITK.Image:
     headers = parse_mh_header(mhd_file)
     headers = validate_and_clean_additional_mh_headers(headers=headers)
     ndims = int(headers["NDims"])
-    if ndims < 4:
+    if ndims <= 4:
         sitk_image = SimpleITK.ReadImage(str(mhd_file))
         for key in sitk_image.GetMetaDataKeys():
             if key not in ADDITIONAL_HEADERS:
                 sitk_image.EraseMetaData(key)
-    elif ndims <= 4:
-        sitk_image = load_sitk_image_with_nd_support(mhd_file=mhd_file)
+    # elif ndims <= 4:
+    #     sitk_image = load_sitk_image_with_nd_support(mhd_file=mhd_file)
     else:
         error_msg = (
             "SimpleITK images with more than 4 dimensions are not supported"

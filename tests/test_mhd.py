@@ -8,7 +8,6 @@ import pytest
 from panimg.image_builders.metaio_utils import (
     ADDITIONAL_HEADERS,
     load_sitk_image,
-    load_sitk_image_with_nd_support,
     parse_mh_header,
 )
 from tests import RESOURCE_PATH
@@ -79,6 +78,7 @@ def assert_sitk_img_equivalence(
     img: SimpleITK.Image, img_ref: SimpleITK.Image
 ):
     assert img.GetDimension() == img_ref.GetDimension()
+    assert img.GetDirection() == img.GetDirection()
     assert img.GetSize() == img_ref.GetSize()
     assert img.GetOrigin() == img_ref.GetOrigin()
     assert img.GetSpacing() == img_ref.GetSpacing()
@@ -118,7 +118,7 @@ def test_4d_mh_loader_without_datafile_fails(tmpdir):
     src = RESOURCE_PATH / "image10x11x12x13.mhd"
     dest = Path(tmpdir) / src.name
     shutil.copy(str(src), str(dest))
-    with pytest.raises(IOError):
+    with pytest.raises(RuntimeError, match="File cannot be read"):
         load_sitk_image(dest)
 
 
@@ -137,7 +137,7 @@ def test_4d_mh_loader_with_invalid_data_type_fails(tmpdir):
         modified_header = f.read().replace("MET_UCHAR", "MET_OTHER")
     with open(str(tmp_header_file), "w") as f:
         f.write(modified_header)
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(RuntimeError, match="Unknown PixelType"):
         load_sitk_image(tmp_header_file)
 
 
@@ -218,21 +218,6 @@ def test_load_sitk_image_with_corrupt_additional_meta_data_fails(
         f.writelines(lines)
     with pytest.raises(ValueError):
         load_sitk_image(dest)
-
-
-@pytest.mark.parametrize(
-    "image",
-    (
-        RESOURCE_PATH / "image3x4.mhd",
-        RESOURCE_PATH / "image5x6x7.mhd",
-        RESOURCE_PATH / "image128x256x4RGB.mhd",
-        RESOURCE_PATH / "image10x10x10-extra-stuff.mhd",
-    ),
-)
-def test_4dloader_reproduces_normal_sitk_loader_results(image: Path):
-    img_ref = SimpleITK.ReadImage(str(image))
-    img = load_sitk_image_with_nd_support(mhd_file=image)
-    assert_sitk_img_equivalence(img, img_ref)
 
 
 def test_fail_on_invalid_utf8():
