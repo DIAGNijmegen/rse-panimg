@@ -170,23 +170,6 @@ def extract_header_listing(
     return [dtype(e) for e in headers[property].strip().split(" ")]
 
 
-def determine_mh_components_and_dtype(
-    headers: Dict[str, str]
-) -> Tuple[int, int]:
-    num_components = 1
-    if "ElementNumberOfChannels" in headers:
-        num_components = int(headers["ElementNumberOfChannels"])
-        if "_ARRAY" not in headers["ElementType"] and num_components > 1:
-            headers["ElementType"] = headers["ElementType"] + "_ARRAY"
-    dtype = METAIO_IMAGE_TYPES[headers["ElementType"]]
-    if dtype is None:
-        error_msg = (
-            f"MetaIO datatype: {headers['ElementType']} is not supported"
-        )
-        raise NotImplementedError(error_msg)
-    return dtype, num_components
-
-
 def resolve_mh_data_file_path(
     headers: Dict[str, str], is_mha: bool, mhd_file: Path
 ) -> Path:
@@ -199,29 +182,6 @@ def resolve_mh_data_file_path(
     if not data_file_path.exists():
         raise OSError("cannot find data file")
     return data_file_path
-
-
-def create_sitk_img_from_mh_data(
-    data_file_path: Path,
-    dtype: int,
-    headers: Mapping[str, Union[str, None]],
-    is_mha: bool,
-    num_components: int,
-    shape,
-) -> SimpleITK.Image:
-    is_compressed = headers["CompressedData"] == "True"
-    with open(str(data_file_path), "rb") as f:
-        if is_mha:
-            line = b""
-            while "ElementDataFile = LOCAL" not in str(line):
-                line = f.readline()
-        if not is_compressed:
-            s = f.read()
-        else:
-            s = zlib.decompress(f.read())
-    sitk_image = SimpleITK.Image(shape, dtype, num_components)
-    _SimpleITK._SetImageFromArray(s, sitk_image)
-    return sitk_image
 
 
 def validate_and_clean_additional_mh_headers(
