@@ -6,8 +6,8 @@ from panimg import convert
 from panimg.image_builders.metaio_utils import (
     ADDITIONAL_HEADERS,
     EXPECTED_HEADERS,
-    HEADERS_WITH_LISTING,
     HEADERS_MATCHING_NUM_TIMEPOINTS,
+    HEADERS_WITH_LISTING,
     extract_header_listing,
     parse_mh_header,
 )
@@ -105,7 +105,7 @@ def test_staged_mhd_upload_with_additional_headers(
     assert "Bogus" not in headers.keys()
 
     original_headers = parse_mh_header(RESOURCE_PATH / images[0])
-    EXEMPT_HEADERS = {
+    exempt_headers = {
         "CompressedDataSize",  # Expected to change between mha/(mhd+.zraw)
         "ElementDataFile",  # Expected to change between mha/(mhd+.zraw)
         "AnatomicalOrientation",  # Isn't read but only writen based on direction
@@ -113,7 +113,7 @@ def test_staged_mhd_upload_with_additional_headers(
     }
     for key in (
         set(ADDITIONAL_HEADERS.keys()) | set(EXPECTED_HEADERS)
-    ) - EXEMPT_HEADERS:
+    ) - exempt_headers:
         if key in HEADERS_WITH_LISTING:
             for original, new in zip(
                 extract_header_listing(key, original_headers),
