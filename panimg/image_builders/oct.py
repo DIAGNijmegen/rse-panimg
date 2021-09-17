@@ -1,6 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
 from typing import (
+    Any,
     DefaultDict,
     Iterable,
     Iterator,
@@ -12,6 +13,7 @@ from typing import (
 
 import SimpleITK
 import numpy as np
+import numpy.typing as npt
 from construct.core import (
     Float64l,
     Int8ul,
@@ -90,7 +92,7 @@ def _create_itk_images(
 def _create_itk_oct_volume(
     *,
     file: Path,
-    volume: List[np.ndarray],
+    volume: List[npt.NDArray[Any]],
     oct_slice_size: OctDimensions,
     eye_choice: EyeChoice,
 ) -> SimpleITKImage:
@@ -114,7 +116,11 @@ def _create_itk_oct_volume(
 
 
 def _create_itk_fundus_image(
-    *, file: Path, image: np.ndarray, eye_choice: EyeChoice, is_vector: bool,
+    *,
+    file: Path,
+    image: npt.NDArray[Any],
+    eye_choice: EyeChoice,
+    is_vector: bool,
 ) -> SimpleITKImage:
     img = SimpleITK.GetImageFromArray(image, isVector=is_vector)
 

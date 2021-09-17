@@ -1,10 +1,8 @@
 import re
-import zlib
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Tuple, Union
+from typing import Any, Dict, List
 
 import SimpleITK
-import SimpleITK._SimpleITK as _SimpleITK
 
 METAIO_IMAGE_TYPES = {
     "MET_NONE": None,
@@ -144,8 +142,8 @@ def parse_mh_header(file: Path) -> Dict[str, str]:
 
             try:
                 line = bin_line.decode("utf-8")
-            except UnicodeDecodeError:
-                raise ValueError("Header contains invalid UTF-8")
+            except UnicodeDecodeError as e:
+                raise ValueError("Header contains invalid UTF-8") from e
             else:
                 result.update(extract_key_value_pairs(line))
 

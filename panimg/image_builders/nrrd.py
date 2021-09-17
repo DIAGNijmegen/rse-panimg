@@ -32,8 +32,8 @@ def verify_single_file_nrrd(file: Path) -> bool:
         # Read first 8 characters to check whether this is a NRRD file
         try:
             preamble = fp.read(8).decode("ASCII")
-        except UnicodeDecodeError:
-            raise InvalidNrrdFileError
+        except UnicodeDecodeError as e:
+            raise InvalidNrrdFileError from e
 
         match = MAGIC_REGEX.fullmatch(preamble)
         if match is None:
