@@ -1,16 +1,20 @@
 import shutil
 import zlib
 from pathlib import Path
+from typing import List, Union
 
 import SimpleITK
 import pytest
 
 from panimg.image_builders.metaio_utils import (
     ADDITIONAL_HEADERS,
+    FLOAT_OR_FLOAT_ARRAY_MATCH_REGEX,
     load_sitk_image,
     parse_mh_header,
 )
 from tests import RESOURCE_PATH
+
+MHD_WINDOW_DIR = RESOURCE_PATH / "mhd_window"
 
 
 def test_parse_header_valid_4d_mhd():
@@ -190,6 +194,44 @@ def test_load_sitk_image_with_additional_meta_data(tmpdir, test_img: str):
     assert "Bogus" not in sitk_image.GetMetaDataKeys()
 
 
+@pytest.mark.parametrize(
+    "test_img, center, width",
+    [
+        ("image3x4.mhd", "20.5", "200.5"),
+        ("image3x4-len-1.mhd", "[20.5]", "[200.5]"),
+        ("image3x4-len-2.mhd", "[10.5, 20.5]", "[100.5, 200.5]"),
+    ],
+)
+def test_load_sitk_image_with_various_window_formats(
+    test_img: str,
+    center: Union[float, List[float]],
+    width: Union[float, List[float]],
+):
+    src = MHD_WINDOW_DIR / test_img
+    sitk_image = load_sitk_image(src)
+
+    assert center == sitk_image.GetMetaData("WindowCenter")
+    assert width == sitk_image.GetMetaData("WindowWidth")
+
+
+@pytest.mark.parametrize(
+    "test_img, error_msg",
+    [
+        ("image3x4-center-gt-width.mhd", "equal number"),
+        ("image3x4-width-gt-center.mhd", "equal number"),
+        ("image3x4-only-width-array.mhd", "different format"),
+        ("image3x4-only-center-array.mhd", "different format"),
+        ("image3x4-len-0.mhd", "Invalid data type found"),
+    ],
+)
+def test_load_sitk_image_with_faulty_window_formats(
+    test_img: str, error_msg: str
+):
+    src = MHD_WINDOW_DIR / test_img
+    with pytest.raises(ValueError, match=error_msg):
+        load_sitk_image(src)
+
+
 @pytest.mark.parametrize("test_img", ["image10x11x12x13.mhd", "image3x4.mhd"])
 @pytest.mark.parametrize(
     ["key", "value"],
@@ -255,3 +297,47 @@ def test_does_not_choke_on_empty_file(tmpdir):
         f.write("\n")
 
     assert parse_mh_header(test_file_path) == {}
+
+
+@pytest.mark.parametrize(
+    "string",
+    [
+        "1",
+        "1.001",
+        "-1e10",
+        "+1e10",
+        "[1]",
+        "[1.1]",
+        "[1, 1]",
+        "[1.1, 0]",
+        "[0, 1.1]",
+        "[-1e10, +100]",
+        "[1, 2, 3, 4]",
+        "[1,2,3,4]",
+    ],
+)
+def test_regex_matching_float_arrays(string: str):
+    assert FLOAT_OR_FLOAT_ARRAY_MATCH_REGEX.match(string)
+
+
+@pytest.mark.parametrize(
+    "string",
+    [
+        "",
+        ".",
+        "[]",
+        "1,",
+        "1,  ",
+        "[1  ]",
+        "[  1]",
+        "[1",
+        "1]",
+        "[1,]",
+        "[ 1]",
+        "[ , ]",
+        "[,]",
+        "[1, 2, 3, 4,]",
+    ],
+)
+def test_regex_non_matching_faulty_array_and_floats(string: str):
+    assert not FLOAT_OR_FLOAT_ARRAY_MATCH_REGEX.match(string)
