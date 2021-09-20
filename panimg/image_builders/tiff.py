@@ -113,8 +113,8 @@ def _get_voxel_spacing_mm(tags, tag):
         raise ValidationError(
             f"Invalid resolution unit {resolution_unit}" f" in tiff file"
         )
-    except (ZeroDivisionError, TypeError, IndexError):
-        raise ValidationError("Invalid resolution in tiff file")
+    except (ZeroDivisionError, TypeError, IndexError) as e:
+        raise ValidationError("Invalid resolution in tiff file") from e
 
 
 def _extract_openslide_properties(

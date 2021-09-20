@@ -68,9 +68,9 @@ def image_builder_mhd(  # noqa: C901
     for file in files:
         try:
             parsed_headers = parse_mh_header(file)
-        except ValueError:
+        except ValueError as e:
             file_errors[file].append(
-                format_error("Could not parse ITK header")
+                format_error(f"Could not parse ITK header. {e}")
             )
             continue
 

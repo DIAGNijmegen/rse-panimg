@@ -7,6 +7,8 @@ from panimg.image_builders.metaio_utils import (
     ADDITIONAL_HEADERS,
     EXPECTED_HEADERS,
     HEADERS_MATCHING_NUM_TIMEPOINTS,
+    HEADERS_WITH_LISTING,
+    extract_header_listing,
     parse_mh_header,
 )
 from panimg.models import ColorSpace
@@ -87,7 +89,6 @@ def test_staged_mhd_upload_with_additional_headers(
     assert len(result.new_image_files) == 1
 
     image_file = result.new_image_files.pop()
-
     headers = parse_mh_header(image_file.file)
 
     for key in headers.keys():
@@ -102,6 +103,25 @@ def test_staged_mhd_upload_with_additional_headers(
                 assert len(headers[key].split(" ")) == 1
 
     assert "Bogus" not in headers.keys()
+
+    original_headers = parse_mh_header(RESOURCE_PATH / images[0])
+    exempt_headers = {
+        "CompressedDataSize",  # Expected to change between mha/(mhd+.zraw)
+        "ElementDataFile",  # Expected to change between mha/(mhd+.zraw)
+        "AnatomicalOrientation",  # Isn't read but only writen based on direction
+        "ElementNumberOfChannels",  # Not applicable
+    }
+    for key in (
+        set(ADDITIONAL_HEADERS.keys()) | set(EXPECTED_HEADERS)
+    ) - exempt_headers:
+        if key in HEADERS_WITH_LISTING:
+            for original, new in zip(
+                extract_header_listing(key, original_headers),
+                extract_header_listing(key, headers),
+            ):
+                assert original == new, key
+        else:
+            assert original_headers[key] == headers[key], key
 
 
 def test_no_convertible_file(tmpdir_factory):

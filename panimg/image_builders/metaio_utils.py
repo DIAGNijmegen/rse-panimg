@@ -1,10 +1,8 @@
 import re
-import zlib
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Tuple, Union
+from typing import Any, Dict, List
 
 import SimpleITK
-import SimpleITK._SimpleITK as _SimpleITK
 
 METAIO_IMAGE_TYPES = {
     "MET_NONE": None,
@@ -74,6 +72,13 @@ ADDITIONAL_HEADERS = {
 
 HEADERS_MATCHING_NUM_TIMEPOINTS: List[str] = ["Exposures", "ContentTimes"]
 
+HEADERS_WITH_LISTING: List[str] = [
+    "TransformMatrix",
+    "Offset",
+    "CenterOfRotation",
+    "ElementSpacing",
+]
+
 EXPECTED_HEADERS: List[str] = [
     "ObjectType",
     "NDims",
@@ -137,8 +142,8 @@ def parse_mh_header(file: Path) -> Dict[str, str]:
 
             try:
                 line = bin_line.decode("utf-8")
-            except UnicodeDecodeError:
-                raise ValueError("Header contains invalid UTF-8")
+            except UnicodeDecodeError as e:
+                raise ValueError("Header contains invalid UTF-8") from e
             else:
                 result.update(extract_key_value_pairs(line))
 
@@ -163,47 +168,6 @@ def extract_header_listing(
     return [dtype(e) for e in headers[property].strip().split(" ")]
 
 
-def load_sitk_image_with_nd_support(mhd_file: Path,) -> SimpleITK.Image:
-    headers = parse_mh_header(mhd_file)
-    is_mha = headers["ElementDataFile"].strip() == "LOCAL"
-    data_file_path = resolve_mh_data_file_path(headers, is_mha, mhd_file)
-
-    shape = extract_header_listing("DimSize", headers=headers, dtype=int)
-
-    dtype, num_components = determine_mh_components_and_dtype(headers)
-
-    sitk_image = create_sitk_img_from_mh_data(
-        data_file_path, dtype, headers, is_mha, num_components, shape
-    )
-
-    sitk_image.SetDirection(
-        extract_header_listing("TransformMatrix", headers=headers)
-    )
-    sitk_image.SetSpacing(
-        extract_header_listing("ElementSpacing", headers=headers)
-    )
-    sitk_image.SetOrigin(extract_header_listing("Offset", headers=headers))
-
-    return sitk_image
-
-
-def determine_mh_components_and_dtype(
-    headers: Dict[str, str]
-) -> Tuple[int, int]:
-    num_components = 1
-    if "ElementNumberOfChannels" in headers:
-        num_components = int(headers["ElementNumberOfChannels"])
-        if "_ARRAY" not in headers["ElementType"] and num_components > 1:
-            headers["ElementType"] = headers["ElementType"] + "_ARRAY"
-    dtype = METAIO_IMAGE_TYPES[headers["ElementType"]]
-    if dtype is None:
-        error_msg = (
-            f"MetaIO datatype: {headers['ElementType']} is not supported"
-        )
-        raise NotImplementedError(error_msg)
-    return dtype, num_components
-
-
 def resolve_mh_data_file_path(
     headers: Dict[str, str], is_mha: bool, mhd_file: Path
 ) -> Path:
@@ -216,29 +180,6 @@ def resolve_mh_data_file_path(
     if not data_file_path.exists():
         raise OSError("cannot find data file")
     return data_file_path
-
-
-def create_sitk_img_from_mh_data(
-    data_file_path: Path,
-    dtype: int,
-    headers: Mapping[str, Union[str, None]],
-    is_mha: bool,
-    num_components: int,
-    shape,
-) -> SimpleITK.Image:
-    is_compressed = headers["CompressedData"] == "True"
-    with open(str(data_file_path), "rb") as f:
-        if is_mha:
-            line = b""
-            while "ElementDataFile = LOCAL" not in str(line):
-                line = f.readline()
-        if not is_compressed:
-            s = f.read()
-        else:
-            s = zlib.decompress(f.read())
-    sitk_image = SimpleITK.Image(shape, dtype, num_components)
-    _SimpleITK._SetImageFromArray(s, sitk_image)
-    return sitk_image
 
 
 def validate_and_clean_additional_mh_headers(
@@ -299,13 +240,11 @@ def load_sitk_image(mhd_file: Path) -> SimpleITK.Image:
     headers = parse_mh_header(mhd_file)
     headers = validate_and_clean_additional_mh_headers(headers=headers)
     ndims = int(headers["NDims"])
-    if ndims < 4:
+    if ndims <= 4:
         sitk_image = SimpleITK.ReadImage(str(mhd_file))
         for key in sitk_image.GetMetaDataKeys():
             if key not in ADDITIONAL_HEADERS:
                 sitk_image.EraseMetaData(key)
-    elif ndims <= 4:
-        sitk_image = load_sitk_image_with_nd_support(mhd_file=mhd_file)
     else:
         error_msg = (
             "SimpleITK images with more than 4 dimensions are not supported"
