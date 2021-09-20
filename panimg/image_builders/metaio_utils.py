@@ -210,7 +210,9 @@ def validate_and_clean_additional_mh_headers(
                     headers=headers, key=key, value=value
                 )
             if key in HEADERS_MATCHING_WINDOW_SETTINGS:
-                validate_center_matches_width_setting(headers, key, value)
+                validate_center_matches_width_setting(
+                    headers=headers, key=key, value=value
+                )
             cleaned_headers[key] = value
 
     return cleaned_headers
