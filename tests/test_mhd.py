@@ -228,7 +228,7 @@ def test_load_sitk_image_with_various_window_formats(
 def test_load_sitk_image_with_faulty_window_formats(
     test_img: str, error_msg: str
 ):
-    src = MHD_WINDOW_DIR / test_img
+    src = MHD_WINDOW_DIR / "errors" / test_img
     with pytest.raises(ValidationError, match=error_msg):
         load_sitk_image(src)
 
