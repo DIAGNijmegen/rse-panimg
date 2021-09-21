@@ -4,6 +4,8 @@ from typing import Any, Dict, List
 
 import SimpleITK
 
+from panimg.exceptions import ValidationError
+
 METAIO_IMAGE_TYPES = {
     "MET_NONE": None,
     "MET_ASCII_CHAR": None,
@@ -122,7 +124,7 @@ def parse_mh_header(file: Path) -> Dict[str, str]:
 
     Raises
     ------
-    ValueError
+    ValidationError
         Raised when the file contains problems making it impossible to
         read.
     """
@@ -136,7 +138,7 @@ def parse_mh_header(file: Path) -> Dict[str, str]:
         while lines:
             read_line_limit -= 1
             if read_line_limit < 0:
-                raise ValueError("Files contains too many header lines")
+                raise ValidationError("Files contains too many header lines")
 
             bin_line = f.readline(10000)
 
@@ -145,12 +147,12 @@ def parse_mh_header(file: Path) -> Dict[str, str]:
                 continue
 
             if len(bin_line) >= 10000:
-                raise ValueError("Line length is too long")
+                raise ValidationError("Line length is too long")
 
             try:
                 line = bin_line.decode("utf-8")
             except UnicodeDecodeError as e:
-                raise ValueError("Header contains invalid UTF-8") from e
+                raise ValidationError("Header contains invalid UTF-8") from e
             else:
                 result.update(extract_key_value_pairs(line))
 
@@ -199,7 +201,7 @@ def validate_and_clean_additional_mh_headers(
         elif key in ADDITIONAL_HEADERS:
             match_pattern = ADDITIONAL_HEADERS[key]
             if not re.match(match_pattern, value):
-                raise ValueError(
+                raise ValidationError(
                     f"Invalid data type found for "
                     f"additional header key: {key}"
                 )
@@ -227,12 +229,12 @@ def validate_center_matches_width_setting(
 
     counter_key = window_keys[0] if key == window_keys[1] else window_keys[1]
     if not re.match(FLOAT_ARRAY_MATCH_REGEXP, headers[counter_key]):
-        raise ValueError(
-            f"Header key '{key}' is of a different format than '{counter_key}'"
+        raise ValidationError(
+            f"Header '{key}' is of a different format than '{counter_key}'"
         )
     if len(value.split(",")) != len(headers[counter_key].split(",")):
-        raise ValueError(
-            f"Header keys '{key}' and '{counter_key}' should "
+        raise ValidationError(
+            f"Headers '{key}' and '{counter_key}' should "
             f"contain an equal number of values"
         )
 
@@ -247,7 +249,7 @@ def validate_list_data_matches_num_timepoints(
         else 1
     )
     if num_timepoints != expected_timepoints:
-        raise ValueError(
+        raise ValidationError(
             f"Found {num_timepoints} values for {key}, "
             f"but expected {expected_timepoints} (1/timepoint)"
         )

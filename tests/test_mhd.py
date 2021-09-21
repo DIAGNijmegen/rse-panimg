@@ -6,6 +6,7 @@ from typing import List, Union
 import SimpleITK
 import pytest
 
+from panimg.exceptions import ValidationError
 from panimg.image_builders.metaio_utils import (
     ADDITIONAL_HEADERS,
     FLOAT_OR_FLOAT_ARRAY_MATCH_REGEX,
@@ -228,7 +229,7 @@ def test_load_sitk_image_with_faulty_window_formats(
     test_img: str, error_msg: str
 ):
     src = MHD_WINDOW_DIR / test_img
-    with pytest.raises(ValueError, match=error_msg):
+    with pytest.raises(ValidationError, match=error_msg):
         load_sitk_image(src)
 
 
@@ -258,12 +259,12 @@ def test_load_sitk_image_with_corrupt_additional_meta_data_fails(
     lines.insert(-1, f"{key} = {value}\n")
     with open(str(dest), "w") as f:
         f.writelines(lines)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         load_sitk_image(dest)
 
 
 def test_fail_on_invalid_utf8():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         parse_mh_header(RESOURCE_PATH / "invalid_utf8.mhd")
 
 
@@ -274,7 +275,7 @@ def test_too_many_headers_file(tmpdir):
         for i in range(1000000):
             f.write(f"key{i} = {i}\n")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         parse_mh_header(test_file_path)
 
 
@@ -286,7 +287,7 @@ def test_line_too_long(tmpdir):
         for i in range(1000000):
             f.write(f"{i}")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         parse_mh_header(test_file_path)
 
 
