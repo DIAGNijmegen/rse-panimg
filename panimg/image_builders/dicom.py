@@ -258,7 +258,7 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
         img.SetMetaData("Exposures", " ".join(exposures))
 
     for f in OPTIONAL_METADATA_FIELDS:
-        if getattr(ref_file, f, False):
+        if hasattr(ref_file, f):
             img.SetMetaData(f, str(getattr(ref_file, f)))
 
     return SimpleITKImage(
