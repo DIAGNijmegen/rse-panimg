@@ -1,8 +1,10 @@
+import datetime
 import logging
+import re
 import shutil
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
 from SimpleITK import Image, WriteImage
@@ -39,6 +41,54 @@ class EyeChoice(str, Enum):
     NOT_APPLICABLE = "NA"
 
 
+class PatientSex(str, Enum):
+    MALE = "M"
+    FEMALE = "F"
+    OTHER = "O"
+    EMTPY = None
+
+
+PATIENT_SEX_CHOICES = "".join([s.value for s in PatientSex])
+DICOM_VR_TO_VALIDATION_REGEXP = {
+    "AS": re.compile(r"^\d{3}[DWMY]$"),
+    "CS(PatientSex)": re.compile(f"^[{PATIENT_SEX_CHOICES}]$"),
+    "DA": re.compile(r"^\d{8}$"),
+    "LO": re.compile(r"^[^\\]{0,64}$"),
+    "PN": re.compile(r"^[^\\]{0,324}$"),
+    "UI": re.compile(r"^[\d.]{0,64}$"),
+}
+DICOM_VR_TO_VALUE_CAST = {
+    "DA": lambda v: datetime.date(int(v[:4]), int(v[4:6]), int(v[6:8]))
+}
+
+
+class ExtraMetaData(NamedTuple):
+    keyword: str  # DICOM tag keyword (eg. 'PatientID')
+    vr: str  # DICOM Value Representation (eg. 'LO')
+    field_name: str  # Name of field on PanImg model (eg. 'patient_id')
+
+    @property
+    def match_pattern(self):
+        return DICOM_VR_TO_VALIDATION_REGEXP[self.vr]
+
+    def cast_value(self, value):
+        cast_function = DICOM_VR_TO_VALUE_CAST.get(self.vr, lambda v: v)
+        return cast_function(value)
+
+
+EXTRA_METADATA = (
+    ExtraMetaData("PatientID", "LO", "patient_id"),
+    ExtraMetaData("PatientName", "PN", "patient_name"),
+    ExtraMetaData("PatientBirthDate", "DA", "patient_birth_date"),
+    ExtraMetaData("PatientAge", "AS", "patient_age"),
+    ExtraMetaData("PatientSex", "CS(PatientSex)", "patient_sex"),
+    ExtraMetaData("StudyDate", "DA", "study_date"),
+    ExtraMetaData("StudyInstanceUID", "UI", "study_instance_uid"),
+    ExtraMetaData("SeriesInstanceUID", "UI", "series_instance_uid"),
+    ExtraMetaData("StudyDescription", "LO", "study_description"),
+)
+
+
 @dataclass(frozen=True)
 class PanImg:
     pk: UUID
@@ -55,6 +105,15 @@ class PanImg:
     window_width: Optional[float]
     color_space: ColorSpace
     eye_choice: EyeChoice
+    patient_id: Optional[str]
+    patient_name: Optional[str]
+    patient_birth_date: Optional[datetime.date]
+    patient_age: Optional[str]
+    patient_sex: Optional[PatientSex]
+    study_date: Optional[datetime.date]
+    study_instance_uid: Optional[str]
+    series_instance_uid: Optional[str]
+    study_description: Optional[str]
 
 
 @dataclass(frozen=True)
@@ -171,6 +230,18 @@ class SimpleITKImage(BaseModel):
         else:
             return None
 
+    def generate_extra_metadata(self,) -> Dict[str, Any]:
+        extra_metadata = {md.field_name: None for md in EXTRA_METADATA}
+        for md in EXTRA_METADATA:
+            try:
+                value = str(self.image.GetMetaData(md.keyword))
+            except (RuntimeError, ValueError):
+                pass
+            else:
+                if re.match(md.match_pattern, value):
+                    extra_metadata[md.field_name] = md.cast_value(value)
+        return extra_metadata
+
     def save(self, output_directory: Path) -> Tuple[PanImg, Set[PanImgFile]]:
         pk = uuid4()
 
@@ -192,6 +263,7 @@ class SimpleITKImage(BaseModel):
             voxel_height_mm=self.voxel_height_mm,
             voxel_depth_mm=self.voxel_depth_mm,
             eye_choice=self.eye_choice,
+            **self.generate_extra_metadata(),
         )
 
         WriteImage(
@@ -248,6 +320,7 @@ class TIFFImage(BaseModel):
             window_center=None,
             window_width=None,
             eye_choice=self.eye_choice,
+            **{md.field_name: None for md in EXTRA_METADATA},
         )
 
         shutil.copy(src=self.file, dst=output_file)
