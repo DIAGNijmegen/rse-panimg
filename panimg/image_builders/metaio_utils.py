@@ -4,6 +4,8 @@ from typing import Any, Dict, List
 
 import SimpleITK
 
+from panimg.models import EXTRA_METADATA
+
 METAIO_IMAGE_TYPES = {
     "MET_NONE": None,
     "MET_ASCII_CHAR": None,
@@ -48,19 +50,8 @@ CONTENT_TIMES_LIST_MATCH_REGEXP = re.compile(
 
 LENGTH_LIMIT_MATCH_REGEXP = re.compile(r"^.{0,128}$")
 
-STUDYDATE_MATCH_REGEXP = re.compile(r"^\d{4}\d{1,2}\d{1,2}$")
-
 ADDITIONAL_HEADERS = {
     "Laterality": LENGTH_LIMIT_MATCH_REGEXP,
-    "PatientID": LENGTH_LIMIT_MATCH_REGEXP,
-    "PatientName": LENGTH_LIMIT_MATCH_REGEXP,
-    "PatientBirthDate": LENGTH_LIMIT_MATCH_REGEXP,
-    "PatientAge": LENGTH_LIMIT_MATCH_REGEXP,
-    "PatientSex": LENGTH_LIMIT_MATCH_REGEXP,
-    "StudyDate": STUDYDATE_MATCH_REGEXP,
-    "StudyInstanceUID": LENGTH_LIMIT_MATCH_REGEXP,
-    "SeriesInstanceUID": LENGTH_LIMIT_MATCH_REGEXP,
-    "StudyDescription": LENGTH_LIMIT_MATCH_REGEXP,
     "SliceThickness": FLOAT_MATCH_REGEXP,
     "Exposures": FLOAT_LIST_MATCH_REGEXP,
     "ContentTimes": CONTENT_TIMES_LIST_MATCH_REGEXP,
@@ -68,6 +59,7 @@ ADDITIONAL_HEADERS = {
     "WindowWidth": FLOAT_MATCH_REGEXP,
     "t0": FLOAT_MATCH_REGEXP,
     "t1": FLOAT_MATCH_REGEXP,
+    **{md.keyword: md.match_pattern for md in EXTRA_METADATA},
 }
 
 HEADERS_MATCHING_NUM_TIMEPOINTS: List[str] = ["Exposures", "ContentTimes"]
