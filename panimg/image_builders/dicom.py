@@ -1,4 +1,5 @@
 import logging
+import re
 from collections import defaultdict, namedtuple
 from math import isclose
 from pathlib import Path
@@ -8,8 +9,8 @@ import SimpleITK
 import numpy as np
 import pydicom
 
-from panimg.exceptions import UnconsumedFilesException
-from panimg.models import SimpleITKImage
+from panimg.exceptions import UnconsumedFilesException, ValidationError
+from panimg.models import EXTRA_METADATA, SimpleITKImage
 
 logger = logging.getLogger(__name__)
 
@@ -30,18 +31,10 @@ NUMPY_IMAGE_TYPES = {
 OPTIONAL_METADATA_FIELDS = (
     # These fields will be included in the output mha file
     "Laterality",
-    "PatientID",
-    "PatientName",
-    "PatientBirthDate",
-    "PatientAge",
-    "PatientSex",
-    "StudyDate",
-    "StudyInstanceUID",
-    "SeriesInstanceUID",
-    "StudyDescription",
     "SliceThickness",
     "WindowCenter",
     "WindowWidth",
+    *[md.keyword for md in EXTRA_METADATA],
 )
 
 
@@ -259,7 +252,16 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
 
     for f in OPTIONAL_METADATA_FIELDS:
         if hasattr(ref_file, f):
-            img.SetMetaData(f, str(getattr(ref_file, f)))
+            value = str(getattr(ref_file, f))
+            key_to_md = {md.keyword: md for md in EXTRA_METADATA}
+            if f in key_to_md:
+                pattern = key_to_md[f].match_pattern
+                if value != "" and not re.match(pattern, value):
+                    raise ValidationError(
+                        f"Value '{value}' for field {f} does not match "
+                        f"pattern {pattern}"
+                    )
+            img.SetMetaData(f, value)
 
     return SimpleITKImage(
         image=img,
