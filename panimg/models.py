@@ -91,7 +91,7 @@ class ExtraMetaData(NamedTuple):
         try:
             self.cast_func(value)
         except ValueError as e:
-            raise ValidationError(str(e))
+            raise ValidationError from e
 
 
 EXTRA_METADATA = (
