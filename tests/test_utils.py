@@ -60,7 +60,7 @@ def test_convert_itk_to_internal(image: Path):
         for md in EXTRA_METADATA:
             value = metadata[md.field_name]
             if md.keyword in md_keys:
-                assert value == md.cast_value(img.GetMetaData(md.keyword))
+                assert value == md.cast_func(img.GetMetaData(md.keyword))
             else:
                 assert value is None
 

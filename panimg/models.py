@@ -11,6 +11,8 @@ from SimpleITK import Image, WriteImage
 from pydantic import BaseModel, validator
 from pydantic.dataclasses import dataclass
 
+from panimg.exceptions import ValidationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,10 +49,11 @@ class PatientSex(str, Enum):
     OTHER = "O"
 
 
-PATIENT_SEX_CHOICES = "".join([s.value for s in PatientSex])
 DICOM_VR_TO_VALIDATION_REGEXP = {
     "AS": re.compile(r"^\d{3}[DWMY]$"),
-    "CS(PatientSex)": re.compile(f"^[{PATIENT_SEX_CHOICES}]$"),
+    "CS(PatientSex)": re.compile(
+        f"^[{''.join([s.value for s in PatientSex])}]$"
+    ),
     "DA": re.compile(r"^\d{8}$"),
     "LO": re.compile(r"^[^\\]{0,64}$"),
     "PN": re.compile(r"^[^\\]{0,324}$"),
@@ -70,9 +73,25 @@ class ExtraMetaData(NamedTuple):
     def match_pattern(self):
         return DICOM_VR_TO_VALIDATION_REGEXP[self.vr]
 
-    def cast_value(self, value):
-        cast_function = DICOM_VR_TO_VALUE_CAST.get(self.vr, lambda v: v)
-        return cast_function(value)
+    @property
+    def cast_func(self):
+        def default_func(v):
+            return None if v == "" else v
+
+        return DICOM_VR_TO_VALUE_CAST.get(self.vr, default_func)
+
+    def validate_value(self, value):
+        if value is None or str(value) == "":
+            return
+        if not re.match(self.match_pattern, str(value)):
+            raise ValidationError(
+                f"Value '{value}' for field {self.keyword} does not match "
+                f"pattern {self.match_pattern.pattern}"
+            )
+        try:
+            self.cast_func(value)
+        except ValueError as e:
+            raise ValidationError(str(e))
 
 
 EXTRA_METADATA = (
@@ -238,7 +257,7 @@ class SimpleITKImage(BaseModel):
                 pass
             else:
                 if re.match(md.match_pattern, value):
-                    extra_metadata[md.field_name] = md.cast_value(value)
+                    extra_metadata[md.field_name] = md.cast_func(value)
         return extra_metadata
 
     def save(self, output_directory: Path) -> Tuple[PanImg, Set[PanImgFile]]:

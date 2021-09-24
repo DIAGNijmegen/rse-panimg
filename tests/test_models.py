@@ -1,8 +1,7 @@
-import re
-
 import pytest
 
-from panimg.models import DICOM_VR_TO_VALIDATION_REGEXP, DICOM_VR_TO_VALUE_CAST
+from panimg.exceptions import ValidationError
+from panimg.models import ExtraMetaData
 
 
 @pytest.mark.parametrize(
@@ -11,13 +10,24 @@ from panimg.models import DICOM_VR_TO_VALIDATION_REGEXP, DICOM_VR_TO_VALUE_CAST
         (
             "AS",
             ("000D", "123W", "456M", "789Y"),
-            ("1Y", "12D", "1234D", "123", ""),
+            ("1Y", "12D", "1234D", "123"),
         ),
-        ("CS(PatientSex)", ("M", "F", "O"), ("X", "MF", "")),
+        ("CS(PatientSex)", ("M", "F", "O"), ("X", "MF")),
         (
             "DA",
-            ("12345678", "20210923"),
-            ("1", "1234567", "2021923", "a", "123456789", ""),
+            ("20210923", "12341231", ""),
+            (
+                "12345678",
+                "a",
+                "1",
+                "1234567",
+                "2021923",
+                "2021010a",
+                "123456789",
+                "20210229",
+                "20210931",
+                "12341231123456",
+            ),
         ),
         (
             "LO",
@@ -37,29 +47,10 @@ from panimg.models import DICOM_VR_TO_VALIDATION_REGEXP, DICOM_VR_TO_VALUE_CAST
     ),
 )
 def test_dicom_vr_validation(vr, valid, invalid):
-    pattern = DICOM_VR_TO_VALIDATION_REGEXP[vr]
+    md = ExtraMetaData("Test", vr, "test")
     for t in valid:
-        assert re.match(pattern, t)
+        md.validate_value(t)
 
     for t in invalid:
-        assert not re.match(pattern, t)
-
-
-def test_date_casting():
-    cast_func = DICOM_VR_TO_VALUE_CAST["DA"]
-    for t in ("20210923", "12341231", "12341231123456"):
-        cast_func(t)
-
-    for t in (
-        "",
-        "12345678",
-        "1",
-        "1234567",
-        "2021923",
-        "2021010a",
-        "123456789",
-        "20210229",
-        "20210931",
-    ):
-        with pytest.raises(ValueError):
-            cast_func(t)
+        with pytest.raises(ValidationError):
+            md.validate_value(t)
