@@ -45,7 +45,6 @@ class PatientSex(str, Enum):
     MALE = "M"
     FEMALE = "F"
     OTHER = "O"
-    EMTPY = None
 
 
 PATIENT_SEX_CHOICES = "".join([s.value for s in PatientSex])
