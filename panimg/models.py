@@ -51,9 +51,7 @@ class PatientSex(str, Enum):
 
 DICOM_VR_TO_VALIDATION_REGEXP = {
     "AS": re.compile(r"^\d{3}[DWMY]$"),
-    "CS(PatientSex)": re.compile(
-        f"^[{''.join([s.value for s in PatientSex])}]$"
-    ),
+    "CS": re.compile(r"^[A-Z\d _]{0,16}$"),
     "DA": re.compile(r"^\d{8}$"),
     "LO": re.compile(r"^[^\\]{0,64}$"),
     "PN": re.compile(r"^[^\\]{0,324}$"),
@@ -99,7 +97,7 @@ EXTRA_METADATA = (
     ExtraMetaData("PatientName", "PN", "patient_name"),
     ExtraMetaData("PatientBirthDate", "DA", "patient_birth_date"),
     ExtraMetaData("PatientAge", "AS", "patient_age"),
-    ExtraMetaData("PatientSex", "CS(PatientSex)", "patient_sex"),
+    ExtraMetaData("PatientSex", "CS", "patient_sex"),
     ExtraMetaData("StudyDate", "DA", "study_date"),
     ExtraMetaData("StudyInstanceUID", "UI", "study_instance_uid"),
     ExtraMetaData("SeriesInstanceUID", "UI", "series_instance_uid"),
