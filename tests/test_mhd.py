@@ -5,6 +5,7 @@ from pathlib import Path
 import SimpleITK
 import pytest
 
+from panimg.exceptions import ValidationError
 from panimg.image_builders.metaio_utils import (
     ADDITIONAL_HEADERS,
     load_sitk_image,
@@ -216,7 +217,7 @@ def test_load_sitk_image_with_corrupt_additional_meta_data_fails(
     lines.insert(-1, f"{key} = {value}\n")
     with open(str(dest), "w") as f:
         f.writelines(lines)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         load_sitk_image(dest)
 
 

@@ -7,7 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Dict, Iterator, List, Mapping, Set, Union
 
-from panimg.exceptions import UnconsumedFilesException
+from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.image_builders.metaio_utils import (
     load_sitk_image,
     parse_mh_header,
@@ -101,6 +101,9 @@ def image_builder_mhd(  # noqa: C901
                 file_errors[file].append(
                     format_error("SimpleITK cannot open file")
                 )
+                continue
+            except ValidationError as e:
+                file_errors[file].append(format_error(str(e)))
                 continue
 
             consumed_files = {file}

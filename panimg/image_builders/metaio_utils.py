@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 
 import SimpleITK
 
+from panimg.exceptions import ValidationError
 from panimg.models import EXTRA_METADATA
 
 METAIO_IMAGE_TYPES = {
@@ -185,9 +186,9 @@ def validate_and_clean_additional_mh_headers(
             if key in ADDITIONAL_HEADERS:
                 match_pattern = ADDITIONAL_HEADERS[key]
                 if not re.match(match_pattern, value):
-                    raise ValueError(
-                        f"Invalid data type found for "
-                        f"additional header key: {key}"
+                    raise ValidationError(
+                        f"Value '{value}' for field {key} does not match "
+                        f"pattern {match_pattern}"
                     )
                 cleaned_headers[key] = value
         if key in HEADERS_MATCHING_NUM_TIMEPOINTS:
@@ -208,7 +209,7 @@ def validate_list_data_matches_num_timepoints(
         else 1
     )
     if num_timepoints != expected_timepoints:
-        raise ValueError(
+        raise ValidationError(
             f"Found {num_timepoints} values for {key}, "
             f"but expected {expected_timepoints} (1/timepoint)"
         )
