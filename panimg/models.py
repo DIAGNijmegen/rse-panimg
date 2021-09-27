@@ -115,17 +115,28 @@ class SimpleITKImage(BaseModel):
 
         return depth or None
 
+    @staticmethod
+    def _extract_first_float(value: str,) -> float:
+        if value.startswith("["):
+            return float(value[1:-1].split(",")[0])
+        else:
+            return float(value)
+
     @property
     def window_center(self) -> Optional[float]:
         try:
-            return float(self.image.GetMetaData("WindowCenter"))
+            return self._extract_first_float(
+                self.image.GetMetaData("WindowCenter")
+            )
         except (RuntimeError, ValueError):
             return None
 
     @property
     def window_width(self) -> Optional[float]:
         try:
-            return float(self.image.GetMetaData("WindowWidth"))
+            return self._extract_first_float(
+                self.image.GetMetaData("WindowWidth")
+            )
         except (RuntimeError, ValueError):
             return None
 

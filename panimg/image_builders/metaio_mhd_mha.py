@@ -7,7 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Dict, Iterator, List, Mapping, Set, Union
 
-from panimg.exceptions import UnconsumedFilesException
+from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.image_builders.metaio_utils import (
     load_sitk_image,
     parse_mh_header,
@@ -68,9 +68,9 @@ def image_builder_mhd(  # noqa: C901
     for file in files:
         try:
             parsed_headers = parse_mh_header(file)
-        except ValueError as e:
+        except ValidationError as e:
             file_errors[file].append(
-                format_error(f"Could not parse ITK header. {e}")
+                format_error(f"Could not validate or parse ITK header. {e}")
             )
             continue
 
@@ -97,9 +97,13 @@ def image_builder_mhd(  # noqa: C901
 
             try:
                 simple_itk_image = load_sitk_image(file.absolute())
+            except ValidationError as e:
+                file_errors[file].append(
+                    format_error(f"Could not validate file. {e}")
+                )
             except RuntimeError:
                 file_errors[file].append(
-                    format_error("SimpleITK cannot open file")
+                    format_error("SimpleITK could not open file.")
                 )
                 continue
 
