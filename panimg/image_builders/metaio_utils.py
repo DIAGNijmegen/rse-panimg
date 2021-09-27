@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 import SimpleITK
 
 from panimg.exceptions import ValidationError
-from panimg.models import EXTRA_METADATA
+from panimg.models import EXTRA_METADATA, validate_metadata_value
 
 METAIO_IMAGE_TYPES = {
     "MET_NONE": None,
@@ -184,16 +184,13 @@ def validate_and_clean_additional_mh_headers(
             cleaned_headers[key] = value
         else:
             if key in ADDITIONAL_HEADERS:
-                key_to_md = {md.keyword: md for md in EXTRA_METADATA}
-                if key in key_to_md:
-                    key_to_md[key].validate_value(value)
-                else:
-                    match_pattern = ADDITIONAL_HEADERS[key]
-                    if not re.match(match_pattern, value):
-                        raise ValidationError(
-                            f"Value '{value}' for field {key} does not match "
-                            f"pattern {match_pattern.pattern}"
-                        )
+                validate_metadata_value(key=key, value=value)
+                match_pattern = ADDITIONAL_HEADERS[key]
+                if not re.match(match_pattern, value):
+                    raise ValidationError(
+                        f"Value '{value}' for field {key} does not match "
+                        f"pattern {match_pattern.pattern}"
+                    )
                 cleaned_headers[key] = value
         if key in HEADERS_MATCHING_NUM_TIMEPOINTS:
             validate_list_data_matches_num_timepoints(

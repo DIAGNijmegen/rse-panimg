@@ -9,7 +9,11 @@ import numpy as np
 import pydicom
 
 from panimg.exceptions import UnconsumedFilesException
-from panimg.models import EXTRA_METADATA, SimpleITKImage
+from panimg.models import (
+    EXTRA_METADATA,
+    SimpleITKImage,
+    validate_metadata_value,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -252,9 +256,7 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
     for f in OPTIONAL_METADATA_FIELDS:
         if hasattr(ref_file, f):
             value = getattr(ref_file, f)
-            key_to_md = {md.keyword: md for md in EXTRA_METADATA}
-            if f in key_to_md:
-                key_to_md[f].validate_value(value)
+            validate_metadata_value(key=f, value=value)
             img.SetMetaData(f, str(value))
 
     return SimpleITKImage(

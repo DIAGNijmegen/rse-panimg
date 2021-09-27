@@ -92,6 +92,12 @@ class ExtraMetaData(NamedTuple):
             raise ValidationError from e
 
 
+def validate_metadata_value(*, key, value):
+    key_to_md = {md.keyword: md for md in EXTRA_METADATA}
+    if key in key_to_md:
+        key_to_md[key].validate_value(value)
+
+
 EXTRA_METADATA = (
     ExtraMetaData("PatientID", "LO", "patient_id"),
     ExtraMetaData("PatientName", "PN", "patient_name"),
