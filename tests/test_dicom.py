@@ -173,9 +173,9 @@ def test_dicom_rescaling(folder, element_type, tmpdir):
                 RESOURCE_PATH / "dicom_window_level" / "2.dcm",
             ],
             "[10.5, 20.5, 30.5]",
-            (10.5, 20.5, 30.5),
+            10.5,
             "[1.5, 2.5, 3.5]",
-            (1.5, 2.5, 3.5),
+            1.5,
         ),
     ],
 )
