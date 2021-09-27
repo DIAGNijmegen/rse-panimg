@@ -101,9 +101,9 @@ def image_builder_mhd(  # noqa: C901
                 file_errors[file].append(
                     format_error(f"Could not validate file. {e}")
                 )
-            except RuntimeError as e:
+            except RuntimeError:
                 file_errors[file].append(
-                    format_error(f"SimpleITK could not open file. {e}")
+                    format_error("SimpleITK could not open file.")
                 )
                 continue
 
