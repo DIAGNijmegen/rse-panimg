@@ -153,12 +153,30 @@ def test_dicom_rescaling(folder, element_type, tmpdir):
     assert headers["ElementType"] == element_type
 
 
-def test_dicom_window_level(tmpdir):
-    files = {
-        Path(d[0]).joinpath(f)
-        for d in os.walk(RESOURCE_PATH / "dicom")
-        for f in d[2]
-    }
+@pytest.mark.parametrize(
+    "files,center,center_ob,width,width_ob",
+    [
+        (
+            {
+                Path(d[0]).joinpath(f)
+                for d in os.walk(RESOURCE_PATH / "dicom")
+                for f in d[2]
+            },
+            "30",
+            30.0,
+            "200",
+            200.0,
+        ),
+        (
+            {RESOURCE_PATH / "dicom_window_level" / "1.dcm"},
+            "[10.5, 20.5, 30.5]",
+            (10.5, 20.5, 30.5),
+            "[1.5, 2.5, 3.5]",
+            (1.5, 2.5, 3.5),
+        ),
+    ],
+)
+def test_dicom_window_level(tmpdir, files, center, center_ob, width, width_ob):
     result = _build_files(
         builder=image_builder_dicom, files=files, output_directory=tmpdir
     )
@@ -169,10 +187,10 @@ def test_dicom_window_level(tmpdir):
     ][0]
 
     headers = parse_mh_header(mha_file_obj.file)
-    assert headers["WindowCenter"] == "30"
-    assert headers["WindowWidth"] == "200"
+    assert headers["WindowCenter"] == center
+    assert headers["WindowWidth"] == width
 
     assert len(result.new_images) == 1
     image_obj = result.new_images.pop()
-    assert image_obj.window_center == 30.0
-    assert image_obj.window_width == 200.0
+    assert image_obj.window_center == center_ob
+    assert image_obj.window_width == width_ob

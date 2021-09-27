@@ -2,7 +2,7 @@ import logging
 import shutil
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Union
 from uuid import UUID, uuid4
 
 from SimpleITK import Image, WriteImage
@@ -51,8 +51,8 @@ class PanImg:
     voxel_depth_mm: Optional[float]
     timepoints: Optional[int]
     resolution_levels: Optional[int]
-    window_center: Optional[float]
-    window_width: Optional[float]
+    window_center: Union[None, float, Tuple[float, ...]]
+    window_width: Union[None, float, Tuple[float, ...]]
     color_space: ColorSpace
     eye_choice: EyeChoice
 
@@ -115,17 +115,30 @@ class SimpleITKImage(BaseModel):
 
         return depth or None
 
+    @staticmethod
+    def _extract_one_or_more_floats(
+        value: str,
+    ) -> Union[float, Tuple[float, ...]]:
+        if value.startswith("["):
+            return tuple([float(f) for f in value[1:-1].split(",")])
+        else:
+            return float(value)
+
     @property
-    def window_center(self) -> Optional[float]:
+    def window_center(self) -> Union[None, float, Tuple[float, ...]]:
         try:
-            return float(self.image.GetMetaData("WindowCenter"))
+            return self._extract_one_or_more_floats(
+                self.image.GetMetaData("WindowCenter")
+            )
         except (RuntimeError, ValueError):
             return None
 
     @property
-    def window_width(self) -> Optional[float]:
+    def window_width(self) -> Union[None, float, Tuple[float, ...]]:
         try:
-            return float(self.image.GetMetaData("WindowWidth"))
+            return self._extract_one_or_more_floats(
+                self.image.GetMetaData("WindowWidth")
+            )
         except (RuntimeError, ValueError):
             return None
 
