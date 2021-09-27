@@ -108,6 +108,7 @@ EXTRA_METADATA = (
     ExtraMetaData("StudyInstanceUID", "UI", "study_instance_uid"),
     ExtraMetaData("SeriesInstanceUID", "UI", "series_instance_uid"),
     ExtraMetaData("StudyDescription", "LO", "study_description"),
+    ExtraMetaData("SeriesDescription", "LO", "series_description"),
 )
 
 
@@ -136,6 +137,7 @@ class PanImg:
     study_instance_uid: Optional[str]
     series_instance_uid: Optional[str]
     study_description: Optional[str]
+    series_description: Optional[str]
 
 
 @dataclass(frozen=True)
