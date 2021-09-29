@@ -262,8 +262,18 @@ class SimpleITKImage(BaseModel):
             except (RuntimeError, ValueError):
                 pass
             else:
-                if re.match(md.match_pattern, value):
-                    extra_metadata[md.field_name] = md.cast_func(value)
+                try:
+                    md.validate_value(value)
+                    if str(value) != "":
+                        extra_metadata[md.field_name] = md.cast_func(value)
+                except ValidationError as e:
+                    # Validation of metadata is already done in the builders so
+                    # that it only fails and skips the images with corrupt
+                    # metadata. This validation is done as an extra check.
+                    logger.warning(
+                        f"Value for metadata field {md.keyword} is stripped "
+                        f"because it produced a ValidationError: '{e}'"
+                    )
         return extra_metadata
 
     def save(self, output_directory: Path) -> Tuple[PanImg, Set[PanImgFile]]:

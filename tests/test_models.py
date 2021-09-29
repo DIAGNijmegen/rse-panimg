@@ -1,7 +1,11 @@
+import logging
+
 import pytest
 
 from panimg.exceptions import ValidationError
-from panimg.models import ExtraMetaData
+from panimg.image_builders.metaio_utils import load_sitk_image
+from panimg.models import ExtraMetaData, SimpleITKImage
+from tests import RESOURCE_PATH
 
 
 @pytest.mark.parametrize(
@@ -54,3 +58,35 @@ def test_dicom_vr_validation(vr, valid, invalid):
     for t in invalid:
         with pytest.raises(ValidationError):
             md.validate_value(t)
+
+
+@pytest.mark.parametrize(
+    ["key", "value"],
+    [
+        ("PatientID", "a" * 65),
+        ("PatientName", "a" * 325),
+        ("PatientBirthDate", "invalid date"),
+        ("PatientAge", "invalid age"),
+        ("PatientSex", "invalid sex"),
+        ("StudyDate", "invalid date"),
+        ("StudyInstanceUID", "invalid uid"),
+        ("SeriesInstanceUID", "invalid uid"),
+        ("StudyDescription", "a" * 65),
+        ("SeriesDescription", "a" * 65),
+    ],
+)
+def test_built_image_invalid_headers(tmpdir, caplog, key, value):
+    src = RESOURCE_PATH / "image3x4-extra-stuff.mhd"
+    sitk_image = load_sitk_image(src)
+    sitk_image.SetMetaData(key, value)
+    result = SimpleITKImage(
+        image=sitk_image,
+        name=src.name,
+        consumed_files={src},
+        spacing_valid=True,
+    )
+    result.save(output_directory=tmpdir)
+    assert len(caplog.records) == 1
+    warning = caplog.records[0]
+    assert warning.levelno == logging.WARNING
+    assert "ValidationError" in warning.msg
