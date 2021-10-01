@@ -1,5 +1,11 @@
 # History
 
+## 0.5.0 (2021-10-01)
+
+* Added extra metadata fields to PanImg object
+* Allow array-like window level values in MHA files
+* Simplified 4D ITK loading
+
 ## 0.4.2 (2021-09-06)
 
 * Added support for nrrd files
