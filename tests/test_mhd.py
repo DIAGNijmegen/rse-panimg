@@ -222,7 +222,7 @@ def test_load_sitk_image_with_various_window_formats(
         ("image3x4-width-gt-center.mhd", "equal number"),
         ("image3x4-only-width-array.mhd", "different format"),
         ("image3x4-only-center-array.mhd", "different format"),
-        ("image3x4-len-0.mhd", "Invalid data type found"),
+        ("image3x4-len-0.mhd", "does not match pattern"),
     ],
 )
 def test_load_sitk_image_with_faulty_window_formats(

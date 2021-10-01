@@ -9,7 +9,11 @@ import numpy as np
 import pydicom
 
 from panimg.exceptions import UnconsumedFilesException
-from panimg.models import SimpleITKImage
+from panimg.models import (
+    EXTRA_METADATA,
+    SimpleITKImage,
+    validate_metadata_value,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,18 +34,10 @@ NUMPY_IMAGE_TYPES = {
 OPTIONAL_METADATA_FIELDS = (
     # These fields will be included in the output mha file
     "Laterality",
-    "PatientID",
-    "PatientName",
-    "PatientBirthDate",
-    "PatientAge",
-    "PatientSex",
-    "StudyDate",
-    "StudyInstanceUID",
-    "SeriesInstanceUID",
-    "StudyDescription",
     "SliceThickness",
     "WindowCenter",
     "WindowWidth",
+    *[md.keyword for md in EXTRA_METADATA],
 )
 
 
@@ -259,7 +255,9 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
 
     for f in OPTIONAL_METADATA_FIELDS:
         if hasattr(ref_file, f):
-            img.SetMetaData(f, str(getattr(ref_file, f)))
+            value = getattr(ref_file, f)
+            validate_metadata_value(key=f, value=value)
+            img.SetMetaData(f, str(value))
 
     return SimpleITKImage(
         image=img,

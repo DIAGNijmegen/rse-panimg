@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 import SimpleITK
 
 from panimg.exceptions import ValidationError
+from panimg.models import EXTRA_METADATA, validate_metadata_value
 
 METAIO_IMAGE_TYPES = {
     "MET_NONE": None,
@@ -55,19 +56,8 @@ CONTENT_TIMES_LIST_MATCH_REGEXP = re.compile(
 
 LENGTH_LIMIT_MATCH_REGEXP = re.compile(r"^.{0,128}$")
 
-STUDYDATE_MATCH_REGEXP = re.compile(r"^\d{4}\d{1,2}\d{1,2}$")
-
 ADDITIONAL_HEADERS = {
     "Laterality": LENGTH_LIMIT_MATCH_REGEXP,
-    "PatientID": LENGTH_LIMIT_MATCH_REGEXP,
-    "PatientName": LENGTH_LIMIT_MATCH_REGEXP,
-    "PatientBirthDate": LENGTH_LIMIT_MATCH_REGEXP,
-    "PatientAge": LENGTH_LIMIT_MATCH_REGEXP,
-    "PatientSex": LENGTH_LIMIT_MATCH_REGEXP,
-    "StudyDate": STUDYDATE_MATCH_REGEXP,
-    "StudyInstanceUID": LENGTH_LIMIT_MATCH_REGEXP,
-    "SeriesInstanceUID": LENGTH_LIMIT_MATCH_REGEXP,
-    "StudyDescription": LENGTH_LIMIT_MATCH_REGEXP,
     "SliceThickness": FLOAT_MATCH_REGEXP,
     "Exposures": FLOAT_LIST_MATCH_REGEXP,
     "ContentTimes": CONTENT_TIMES_LIST_MATCH_REGEXP,
@@ -75,6 +65,7 @@ ADDITIONAL_HEADERS = {
     "WindowWidth": FLOAT_OR_FLOAT_ARRAY_MATCH_REGEX,
     "t0": FLOAT_MATCH_REGEXP,
     "t1": FLOAT_MATCH_REGEXP,
+    **{md.keyword: md.match_pattern for md in EXTRA_METADATA},
 }
 
 HEADERS_MATCHING_NUM_TIMEPOINTS: List[str] = ["Exposures", "ContentTimes"]
@@ -199,11 +190,12 @@ def validate_and_clean_additional_mh_headers(
         if key in EXPECTED_HEADERS:
             cleaned_headers[key] = value
         elif key in ADDITIONAL_HEADERS:
+            validate_metadata_value(key=key, value=value)
             match_pattern = ADDITIONAL_HEADERS[key]
             if not re.match(match_pattern, value):
                 raise ValidationError(
-                    f"Invalid data type found for "
-                    f"additional header key: {key}"
+                    f"Value '{value}' for field {key} does not match "
+                    f"pattern {match_pattern.pattern}"
                 )
             if key in HEADERS_MATCHING_NUM_TIMEPOINTS:
                 validate_list_data_matches_num_timepoints(
@@ -214,7 +206,6 @@ def validate_and_clean_additional_mh_headers(
                     headers=headers, key=key, value=value
                 )
             cleaned_headers[key] = value
-
     return cleaned_headers
 
 

@@ -106,6 +106,9 @@ def image_builder_mhd(  # noqa: C901
                     format_error("SimpleITK could not open file.")
                 )
                 continue
+            except ValidationError as e:
+                file_errors[file].append(format_error(str(e)))
+                continue
 
             consumed_files = {file}
             if file_dependency is not None:
