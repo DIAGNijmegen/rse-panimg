@@ -39,10 +39,15 @@ METAIO_IMAGE_TYPES = {
     "MET_OTHER": None,
 }
 
-FLOAT_MATCH_REGEXP = re.compile(r"^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$")
-FLOAT_LIST_MATCH_REGEXP = re.compile(
-    r"^([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)"
-    r"(\s[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)*$"
+
+FLOAT_REGEX = r"[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?"
+FLOAT_MATCH_REGEXP = re.compile(fr"^{FLOAT_REGEX}$")
+FLOAT_LIST_MATCH_REGEXP = re.compile(fr"^({FLOAT_REGEX})(\s{FLOAT_REGEX})*$")
+FLOAT_ARRAY_MATCH_REGEXP = re.compile(
+    fr"^\[({FLOAT_REGEX},\s?)*{FLOAT_REGEX}]$"
+)
+FLOAT_OR_FLOAT_ARRAY_MATCH_REGEX = re.compile(
+    fr"({FLOAT_MATCH_REGEXP.pattern})|({FLOAT_ARRAY_MATCH_REGEXP.pattern})"
 )
 CONTENT_TIMES_LIST_MATCH_REGEXP = re.compile(
     r"^((2[0-3]|[0-1]\d)[0-5]\d[0-5]\d(\.\d\d\d)?)"
@@ -56,14 +61,16 @@ ADDITIONAL_HEADERS = {
     "SliceThickness": FLOAT_MATCH_REGEXP,
     "Exposures": FLOAT_LIST_MATCH_REGEXP,
     "ContentTimes": CONTENT_TIMES_LIST_MATCH_REGEXP,
-    "WindowCenter": FLOAT_MATCH_REGEXP,
-    "WindowWidth": FLOAT_MATCH_REGEXP,
+    "WindowCenter": FLOAT_OR_FLOAT_ARRAY_MATCH_REGEX,
+    "WindowWidth": FLOAT_OR_FLOAT_ARRAY_MATCH_REGEX,
     "t0": FLOAT_MATCH_REGEXP,
     "t1": FLOAT_MATCH_REGEXP,
     **{md.keyword: md.match_pattern for md in EXTRA_METADATA},
 }
 
 HEADERS_MATCHING_NUM_TIMEPOINTS: List[str] = ["Exposures", "ContentTimes"]
+
+HEADERS_MATCHING_WINDOW_SETTINGS: List[str] = ["WindowCenter", "WindowWidth"]
 
 HEADERS_WITH_LISTING: List[str] = [
     "TransformMatrix",
@@ -108,7 +115,7 @@ def parse_mh_header(file: Path) -> Dict[str, str]:
 
     Raises
     ------
-    ValueError
+    ValidationError
         Raised when the file contains problems making it impossible to
         read.
     """
@@ -122,7 +129,7 @@ def parse_mh_header(file: Path) -> Dict[str, str]:
         while lines:
             read_line_limit -= 1
             if read_line_limit < 0:
-                raise ValueError("Files contains too many header lines")
+                raise ValidationError("Files contains too many header lines")
 
             bin_line = f.readline(10000)
 
@@ -131,12 +138,12 @@ def parse_mh_header(file: Path) -> Dict[str, str]:
                 continue
 
             if len(bin_line) >= 10000:
-                raise ValueError("Line length is too long")
+                raise ValidationError("Line length is too long")
 
             try:
                 line = bin_line.decode("utf-8")
             except UnicodeDecodeError as e:
-                raise ValueError("Header contains invalid UTF-8") from e
+                raise ValidationError("Header contains invalid UTF-8") from e
             else:
                 result.update(extract_key_value_pairs(line))
 
@@ -182,22 +189,45 @@ def validate_and_clean_additional_mh_headers(
     for key, value in headers.items():
         if key in EXPECTED_HEADERS:
             cleaned_headers[key] = value
-        else:
-            if key in ADDITIONAL_HEADERS:
-                validate_metadata_value(key=key, value=value)
-                match_pattern = ADDITIONAL_HEADERS[key]
-                if not re.match(match_pattern, value):
-                    raise ValidationError(
-                        f"Value '{value}' for field {key} does not match "
-                        f"pattern {match_pattern.pattern}"
-                    )
-                cleaned_headers[key] = value
-        if key in HEADERS_MATCHING_NUM_TIMEPOINTS:
-            validate_list_data_matches_num_timepoints(
-                headers=headers, key=key, value=value
-            )
-
+        elif key in ADDITIONAL_HEADERS:
+            validate_metadata_value(key=key, value=value)
+            match_pattern = ADDITIONAL_HEADERS[key]
+            if not re.match(match_pattern, value):
+                raise ValidationError(
+                    f"Value '{value}' for field {key} does not match "
+                    f"pattern {match_pattern.pattern}"
+                )
+            if key in HEADERS_MATCHING_NUM_TIMEPOINTS:
+                validate_list_data_matches_num_timepoints(
+                    headers=headers, key=key, value=value
+                )
+            if key in HEADERS_MATCHING_WINDOW_SETTINGS:
+                validate_center_matches_width_setting(
+                    headers=headers, key=key, value=value
+                )
+            cleaned_headers[key] = value
     return cleaned_headers
+
+
+def validate_center_matches_width_setting(
+    headers: Dict[str, str], key: str, value: str
+):
+    window_keys = ("WindowWidth", "WindowCenter")
+    if key not in window_keys:
+        return
+    if not re.match(FLOAT_ARRAY_MATCH_REGEXP, value):
+        return
+
+    counter_key = window_keys[0] if key == window_keys[1] else window_keys[1]
+    if not re.match(FLOAT_ARRAY_MATCH_REGEXP, headers[counter_key]):
+        raise ValidationError(
+            f"Header '{key}' is of a different format than '{counter_key}'"
+        )
+    if len(value.split(",")) != len(headers[counter_key].split(",")):
+        raise ValidationError(
+            f"Headers '{key}' and '{counter_key}' should "
+            f"contain an equal number of values"
+        )
 
 
 def validate_list_data_matches_num_timepoints(
