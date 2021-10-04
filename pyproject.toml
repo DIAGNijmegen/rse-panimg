@@ -31,7 +31,7 @@ commands =
 
 [tool.poetry]
 name = "panimg"
-version = "0.5.0"
+version = "0.5.1"
 description = "Conversion of medical images to MHA and TIFF."
 license = "Apache-2.0"
 authors = ["James Meakin <12661555+jmsmkn@users.noreply.github.com>"]

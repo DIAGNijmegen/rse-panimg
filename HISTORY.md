@@ -1,5 +1,9 @@
 # History
 
+## 0.5.1 (2021-10-04)
+
+* Fix default values for extra metadata fields
+
 ## 0.5.0 (2021-10-01)
 
 * Added extra metadata fields to PanImg object
