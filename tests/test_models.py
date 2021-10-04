@@ -4,7 +4,7 @@ import pytest
 
 from panimg.exceptions import ValidationError
 from panimg.image_builders.metaio_utils import load_sitk_image
-from panimg.models import ExtraMetaData, SimpleITKImage
+from panimg.models import EXTRA_METADATA, ExtraMetaData, SimpleITKImage
 from tests import RESOURCE_PATH
 
 
@@ -51,7 +51,7 @@ from tests import RESOURCE_PATH
     ),
 )
 def test_dicom_vr_validation(vr, valid, invalid):
-    md = ExtraMetaData("Test", vr, "test")
+    md = ExtraMetaData("Test", vr, "test", "default")
     for t in valid:
         md.validate_value(t)
 
@@ -90,3 +90,21 @@ def test_built_image_invalid_headers(tmpdir, caplog, key, value):
     warning = caplog.records[0]
     assert warning.levelno == logging.WARNING
     assert "ValidationError" in warning.msg
+
+
+def test_built_image_extra_metadata_defaults(tmpdir, caplog):
+    src = RESOURCE_PATH / "image3x4.mhd"
+    sitk_image = load_sitk_image(src)
+    result = SimpleITKImage(
+        image=sitk_image,
+        name=src.name,
+        consumed_files={src},
+        spacing_valid=True,
+    )
+    new_image, new_files = result.save(output_directory=tmpdir)
+    assert len(caplog.records) == 0
+    expected_default_values = {
+        md.field_name: md.default_value for md in EXTRA_METADATA
+    }
+    for key, val in expected_default_values.items():
+        assert getattr(new_image, key) == val

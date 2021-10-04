@@ -62,7 +62,7 @@ def test_convert_itk_to_internal(image: Path):
             if md.keyword in md_keys:
                 assert value == md.cast_func(img.GetMetaData(md.keyword))
             else:
-                assert value is None
+                assert value is md.default_value
 
     img_ref = load_sitk_image(image)
     internal_image = SimpleITKImage(
