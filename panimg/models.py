@@ -47,6 +47,7 @@ class PatientSex(str, Enum):
     MALE = "M"
     FEMALE = "F"
     OTHER = "O"
+    EMPTY = ""
 
 
 DICOM_VR_TO_VALIDATION_REGEXP = {
@@ -66,6 +67,7 @@ class ExtraMetaData(NamedTuple):
     keyword: str  # DICOM tag keyword (eg. 'PatientID')
     vr: str  # DICOM Value Representation (eg. 'LO')
     field_name: str  # Name of field on PanImg model (eg. 'patient_id')
+    default_value: Any  # Default value for field
 
     @property
     def match_pattern(self):
@@ -99,16 +101,16 @@ def validate_metadata_value(*, key, value):
 
 
 EXTRA_METADATA = (
-    ExtraMetaData("PatientID", "LO", "patient_id"),
-    ExtraMetaData("PatientName", "PN", "patient_name"),
-    ExtraMetaData("PatientBirthDate", "DA", "patient_birth_date"),
-    ExtraMetaData("PatientAge", "AS", "patient_age"),
-    ExtraMetaData("PatientSex", "CS", "patient_sex"),
-    ExtraMetaData("StudyDate", "DA", "study_date"),
-    ExtraMetaData("StudyInstanceUID", "UI", "study_instance_uid"),
-    ExtraMetaData("SeriesInstanceUID", "UI", "series_instance_uid"),
-    ExtraMetaData("StudyDescription", "LO", "study_description"),
-    ExtraMetaData("SeriesDescription", "LO", "series_description"),
+    ExtraMetaData("PatientID", "LO", "patient_id", ""),
+    ExtraMetaData("PatientName", "PN", "patient_name", ""),
+    ExtraMetaData("PatientBirthDate", "DA", "patient_birth_date", None),
+    ExtraMetaData("PatientAge", "AS", "patient_age", ""),
+    ExtraMetaData("PatientSex", "CS", "patient_sex", ""),
+    ExtraMetaData("StudyDate", "DA", "study_date", None),
+    ExtraMetaData("StudyInstanceUID", "UI", "study_instance_uid", ""),
+    ExtraMetaData("SeriesInstanceUID", "UI", "series_instance_uid", ""),
+    ExtraMetaData("StudyDescription", "LO", "study_description", ""),
+    ExtraMetaData("SeriesDescription", "LO", "series_description", ""),
 )
 
 
@@ -128,16 +130,16 @@ class PanImg:
     window_width: Optional[float]
     color_space: ColorSpace
     eye_choice: EyeChoice
-    patient_id: Optional[str]
-    patient_name: Optional[str]
-    patient_birth_date: Optional[datetime.date]
-    patient_age: Optional[str]
-    patient_sex: Optional[PatientSex]
-    study_date: Optional[datetime.date]
-    study_instance_uid: Optional[str]
-    series_instance_uid: Optional[str]
-    study_description: Optional[str]
-    series_description: Optional[str]
+    patient_id: str = ""
+    patient_name: str = ""
+    patient_birth_date: Optional[datetime.date] = None
+    patient_age: str = ""
+    patient_sex: PatientSex = PatientSex.EMPTY
+    study_date: Optional[datetime.date] = None
+    study_instance_uid: str = ""
+    series_instance_uid: str = ""
+    study_description: str = ""
+    series_description: str = ""
 
 
 @dataclass(frozen=True)
@@ -266,7 +268,9 @@ class SimpleITKImage(BaseModel):
             return None
 
     def generate_extra_metadata(self,) -> Dict[str, Any]:
-        extra_metadata = {md.field_name: None for md in EXTRA_METADATA}
+        extra_metadata = {
+            md.field_name: md.default_value for md in EXTRA_METADATA
+        }
         for md in EXTRA_METADATA:
             try:
                 value = str(self.image.GetMetaData(md.keyword))
@@ -365,7 +369,7 @@ class TIFFImage(BaseModel):
             window_center=None,
             window_width=None,
             eye_choice=self.eye_choice,
-            **{md.field_name: None for md in EXTRA_METADATA},
+            **{md.field_name: md.default_value for md in EXTRA_METADATA},
         )
 
         shutil.copy(src=self.file, dst=output_file)
