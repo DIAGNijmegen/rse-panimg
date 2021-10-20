@@ -1,5 +1,9 @@
 # History
 
+## 0.5.2 (2021-10-20)
+
+* Fix duplicate except clause
+
 ## 0.5.1 (2021-10-04)
 
 * Fix default values for extra metadata fields
