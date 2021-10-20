@@ -97,10 +97,6 @@ def image_builder_mhd(  # noqa: C901
 
             try:
                 simple_itk_image = load_sitk_image(file.absolute())
-            except ValidationError as e:
-                file_errors[file].append(
-                    format_error(f"Could not validate file. {e}")
-                )
             except RuntimeError:
                 file_errors[file].append(
                     format_error("SimpleITK could not open file.")
