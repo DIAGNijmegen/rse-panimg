@@ -50,7 +50,7 @@ panimg = "panimg.cli:cli"
 [tool.poetry.dependencies]
 python = "^3.7"
 pydantic = "*"
-numpy = "*"
+numpy = ">=1.20"
 SimpleITK = ">=2.0"
 pydicom = ">=2.2"
 Pillow = "*"
