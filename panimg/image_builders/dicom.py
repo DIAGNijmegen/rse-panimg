@@ -214,8 +214,8 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
     else:
         # Multiple slices, average spacing between slices and add artificial sign as
         # this is used later to order the slices
-        z_sign = np.sign(np.sum(origin_diff))
         avg_origin_diff = origin_diff / n_diffs
+        z_sign = np.sign(np.sum(avg_origin_diff))
         z_i = z_sign * np.linalg.norm(avg_origin_diff)
 
     samples_per_pixel = int(getattr(ref_file, "SamplesPerPixel", 1))
