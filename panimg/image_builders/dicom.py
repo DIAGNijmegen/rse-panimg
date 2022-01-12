@@ -209,13 +209,14 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
                 n_diffs += 1
             origin = file_origin
     if n_diffs == 0:
+        # One slice only, no way of computing the spacing between slices
         z_i = np.nan
     else:
-        avg_origin_diff = tuple(origin_diff / n_diffs)
-        try:
-            z_i = avg_origin_diff[2]
-        except IndexError:
-            z_i = 1.0
+        # Multiple slices, average spacing between slices and add artificial sign as
+        # this is used later to order the slices
+        z_sign = np.sign(np.sum(origin_diff))
+        avg_origin_diff = origin_diff / n_diffs
+        z_i = z_sign * np.linalg.norm(avg_origin_diff)
 
     samples_per_pixel = int(getattr(ref_file, "SamplesPerPixel", 1))
     img = _create_itk_from_dcm(
