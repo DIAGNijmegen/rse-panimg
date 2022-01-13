@@ -209,7 +209,7 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
                 n_diffs += 1
             origin = file_origin
     if n_diffs == 0:
-        # One slice only, meaning there is no spacing so default to dummy value of 1 mm
+        # One slice only, meaning there is no spacing, default to 1 mm
         z_i = 1.0
         z_order = 0
     else:
@@ -217,10 +217,11 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
         avg_origin_diff = origin_diff / n_diffs
         z_i = np.linalg.norm(avg_origin_diff)
 
-        # Use orientation of the coordinate system to determine in which direction the
-        # origins of the individual slices should move, and use the dot product to find
-        # the angle between that direction and the spacing vector - this tells us whether
-        # the order of the slices is correct or should be reversed
+        # Use orientation of the coordinate system to determine in which
+        # direction the origins of the individual slices should move.
+        # Use the dot product to find the angle between that direction
+        # and the spacing vector - this tells us whether the order of
+        # the slices is correct or should be reversed
         z_order = np.sign(np.dot(avg_origin_diff, direction @ (1, 1, 1)))
 
     samples_per_pixel = int(getattr(ref_file, "SamplesPerPixel", 1))
