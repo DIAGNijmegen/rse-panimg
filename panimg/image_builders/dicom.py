@@ -209,11 +209,13 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
                 n_diffs += 1
             origin = file_origin
     if n_diffs == 0:
-        # One slice only, no way of computing the spacing between slices
-        z_i = np.nan
+        # One slice only, meaning there is no spacing so default to dummy value of 1 mm
+        z_i = 1.0
+        z_order = 0
     else:
         # Multiple slices, average spacing between slices
         avg_origin_diff = origin_diff / n_diffs
+        z_i = np.linalg.norm(avg_origin_diff)
 
         # Use orientation of the coordinate system to determine in which direction the
         # origins of the individual slices should move, and use the dot product to find
@@ -221,10 +223,7 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
         # the order of the slices is correct or should be reversed
         v = direction @ (1, 1, 1)
         sum_norms = np.linalg.norm(avg_origin_diff) + np.linalg.norm(v)
-        z_sign = np.sign(np.dot(avg_origin_diff, v) / sum_norms)
-
-        # Compute length of spacing vector and add sign to indicate order of the slices
-        z_i = z_sign * np.linalg.norm(avg_origin_diff)
+        z_order = np.sign(np.dot(avg_origin_diff, v) / sum_norms)
 
     samples_per_pixel = int(getattr(ref_file, "SamplesPerPixel", 1))
     img = _create_itk_from_dcm(
@@ -233,14 +232,13 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
         dimensions=dimensions,
         exposures=exposures,
         pixel_dims=pixel_dims,
-        z_i=z_i,
+        z_order=z_order,
         samples_per_pixel=samples_per_pixel,
     )
 
     if origin is None:
         origin = (0.0, 0.0, 0.0)
-    sitk_origin = ref_origin if z_i >= 0.0 else tuple(origin)
-    z_i = np.abs(z_i) if not np.isnan(z_i) else 1.0
+    sitk_origin = ref_origin if z_order >= 0 else tuple(origin)
 
     if "PixelSpacing" in ref_file:
         x_i, y_i = (float(x) for x in ref_file.PixelSpacing)
@@ -285,7 +283,7 @@ def _create_itk_from_dcm(
     dimensions,
     exposures,
     pixel_dims,
-    z_i,
+    z_order,
     samples_per_pixel,
 ):
     apply_slope = any(
@@ -327,7 +325,7 @@ def _create_itk_from_dcm(
         if dcm_array is None:
             dcm_array = np.zeros(pixel_dims, dtype=np_dtype)
 
-        z_index = index if z_i >= 0 else len(dicom_ds.headers) - index - 1
+        z_index = index if z_order >= 0 else len(dicom_ds.headers) - index - 1
 
         if dimensions == 4:
             dcm_array[
