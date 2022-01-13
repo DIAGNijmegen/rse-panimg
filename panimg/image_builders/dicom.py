@@ -221,9 +221,7 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
         # origins of the individual slices should move, and use the dot product to find
         # the angle between that direction and the spacing vector - this tells us whether
         # the order of the slices is correct or should be reversed
-        v = direction @ (1, 1, 1)
-        sum_norms = np.linalg.norm(avg_origin_diff) + np.linalg.norm(v)
-        z_order = np.sign(np.dot(avg_origin_diff, v) / sum_norms)
+        z_order = np.sign(np.dot(avg_origin_diff, direction @ (1, 1, 1)))
 
     samples_per_pixel = int(getattr(ref_file, "SamplesPerPixel", 1))
     img = _create_itk_from_dcm(
