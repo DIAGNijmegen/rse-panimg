@@ -212,10 +212,18 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
         # One slice only, no way of computing the spacing between slices
         z_i = np.nan
     else:
-        # Multiple slices, average spacing between slices and add artificial sign as
-        # this is used later to order the slices
+        # Multiple slices, average spacing between slices
         avg_origin_diff = origin_diff / n_diffs
-        z_sign = np.sign(np.sum(avg_origin_diff))
+
+        # Use orientation of the coordinate system to determine in which direction the
+        # origins of the individual slices should move, and use the dot product to find
+        # the angle between that direction and the spacing vector - this tells us whether
+        # the order of the slices is correct or should be reversed
+        v = direction @ (1, 1, 1)
+        sum_norms = np.linalg.norm(avg_origin_diff) + np.linalg.norm(v)
+        z_sign = np.sign(np.dot(avg_origin_diff, v) / sum_norms)
+
+        # Compute length of spacing vector and add sign to indicate order of the slices
         z_i = z_sign * np.linalg.norm(avg_origin_diff)
 
     samples_per_pixel = int(getattr(ref_file, "SamplesPerPixel", 1))
