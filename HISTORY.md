@@ -1,5 +1,9 @@
 # History
 
+## 0.5.3 (2022-02-01)
+
+* Fix determination of slice spacing with oblique volumes
+
 ## 0.5.2 (2021-10-20)
 
 * Fix duplicate except clause
