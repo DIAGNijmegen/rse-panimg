@@ -21,7 +21,7 @@ EXPECTED_ERROR_MESSAGE = {
     "image_builder_nrrd": ["NRRD image builder: Not a NRRD image file"],
     "image_builder_oct": [
         "OCT image builder: Not a valid OCT file "
-        "(supported formats: .fds,.fda,.e2e)",
+        "(supported formats: .fds,.fda,.e2e)"
     ],
     "image_builder_tiff": [
         "Could not open file with tifffile.",

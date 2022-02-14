@@ -201,7 +201,7 @@ class SimpleITKImage(BaseModel):
         return depth or None
 
     @staticmethod
-    def _extract_first_float(value: str,) -> float:
+    def _extract_first_float(value: str) -> float:
         if value.startswith("["):
             return float(value[1:-1].split(",")[0])
         else:
@@ -267,7 +267,7 @@ class SimpleITKImage(BaseModel):
         else:
             return None
 
-    def generate_extra_metadata(self,) -> Dict[str, Any]:
+    def generate_extra_metadata(self) -> Dict[str, Any]:
         extra_metadata = {
             md.field_name: md.default_value for md in EXTRA_METADATA
         }
@@ -324,7 +324,7 @@ class SimpleITKImage(BaseModel):
         new_files = set()
         for file in work_dir.iterdir():
             new_file = PanImgFile(
-                image_id=pk, image_type=ImageType.MHD, file=file,
+                image_id=pk, image_type=ImageType.MHD, file=file
             )
             new_files.add(new_file)
 

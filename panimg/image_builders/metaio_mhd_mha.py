@@ -8,10 +8,7 @@ from pathlib import Path
 from typing import DefaultDict, Dict, Iterator, List, Mapping, Set, Union
 
 from panimg.exceptions import UnconsumedFilesException, ValidationError
-from panimg.image_builders.metaio_utils import (
-    load_sitk_image,
-    parse_mh_header,
-)
+from panimg.image_builders.metaio_utils import load_sitk_image, parse_mh_header
 from panimg.models import SimpleITKImage
 
 

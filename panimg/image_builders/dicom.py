@@ -156,7 +156,7 @@ def _validate_dicom_files(
         n_slices = n_slices // n_time
         result.append(
             dicom_dataset(
-                headers=headers, n_time=n_time, n_slices=n_slices, index=index,
+                headers=headers, n_time=n_time, n_slices=n_slices, index=index
             )
         )
     del studies
@@ -185,11 +185,7 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
     dimensions = 4 if dicom_ds.n_time and dicom_ds.n_time > 1 else 3
     direction = np.eye(dimensions, dtype=float)
     direction = _extract_direction(dicom_ds, direction)
-    pixel_dims = (
-        dicom_ds.n_slices,
-        int(ref_file.Rows),
-        int(ref_file.Columns),
-    )
+    pixel_dims = (dicom_ds.n_slices, int(ref_file.Rows), int(ref_file.Columns))
     if dimensions == 4:
         pixel_dims = (dicom_ds.n_time,) + pixel_dims
 

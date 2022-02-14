@@ -41,13 +41,13 @@ METAIO_IMAGE_TYPES = {
 
 
 FLOAT_REGEX = r"[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?"
-FLOAT_MATCH_REGEXP = re.compile(fr"^{FLOAT_REGEX}$")
-FLOAT_LIST_MATCH_REGEXP = re.compile(fr"^({FLOAT_REGEX})(\s{FLOAT_REGEX})*$")
+FLOAT_MATCH_REGEXP = re.compile(rf"^{FLOAT_REGEX}$")
+FLOAT_LIST_MATCH_REGEXP = re.compile(rf"^({FLOAT_REGEX})(\s{FLOAT_REGEX})*$")
 FLOAT_ARRAY_MATCH_REGEXP = re.compile(
-    fr"^\[({FLOAT_REGEX},\s?)*{FLOAT_REGEX}]$"
+    rf"^\[({FLOAT_REGEX},\s?)*{FLOAT_REGEX}]$"
 )
 FLOAT_OR_FLOAT_ARRAY_MATCH_REGEX = re.compile(
-    fr"({FLOAT_MATCH_REGEXP.pattern})|({FLOAT_ARRAY_MATCH_REGEXP.pattern})"
+    rf"({FLOAT_MATCH_REGEXP.pattern})|({FLOAT_ARRAY_MATCH_REGEXP.pattern})"
 )
 CONTENT_TIMES_LIST_MATCH_REGEXP = re.compile(
     r"^((2[0-3]|[0-1]\d)[0-5]\d[0-5]\d(\.\d\d\d)?)"

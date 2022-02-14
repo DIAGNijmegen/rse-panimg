@@ -1,5 +1,5 @@
 class OCTVolumeWithMetaData:
-    """ Class to hold the OCT volume and any related metadata, and enable viewing and saving.
+    """Class to hold the OCT volume and any related metadata, and enable viewing and saving.
 
     Attributes:
         volume (list of np.array): All the volume's b-scans.

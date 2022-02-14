@@ -114,7 +114,7 @@ def test_image_builder_dicom_4dct(tmpdir):
     )
     assert np.allclose(
         list(map(float, spacing))[:2],
-        list(map(float, list(dcm_ref.PixelSpacing),)),
+        list(map(float, list(dcm_ref.PixelSpacing))),
     )
     assert np.allclose(
         list(map(float, origin)),

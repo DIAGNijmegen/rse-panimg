@@ -8,18 +8,18 @@ from pathlib import Path
 
 
 class FDS:
-    """ Class for extracting data from Topcon's .fds file format.
+    """Class for extracting data from Topcon's .fds file format.
 
-        Notes:
-            Mostly based on description of .fds file format here:
-            https://bitbucket.org/uocte/uocte/wiki/Topcon%20File%20Format
+    Notes:
+        Mostly based on description of .fds file format here:
+        https://bitbucket.org/uocte/uocte/wiki/Topcon%20File%20Format
 
-        Attributes:
-            filepath (str): Path to .img file for reading.
-            header (obj:Struct): Defines structure of volume's header.
-            oct_header (obj:Struct): Defines structure of OCT header.
-            fundus_header (obj:Struct): Defines structure of fundus header.
-            chunk_dict (dict): Name of data chunks present in the file, and their start locations.
+    Attributes:
+        filepath (str): Path to .img file for reading.
+        header (obj:Struct): Defines structure of volume's header.
+        oct_header (obj:Struct): Defines structure of OCT header.
+        fundus_header (obj:Struct): Defines structure of fundus header.
+        chunk_dict (dict): Name of data chunks present in the file, and their start locations.
     """
 
     def __init__(self, filepath):
@@ -81,10 +81,10 @@ class FDS:
         return chunk_dict
 
     def read_oct_volume(self):
-        """ Reads OCT data.
+        """Reads OCT data.
 
-            Returns:
-                obj:OCTVolumeWithMetaData
+        Returns:
+            obj:OCTVolumeWithMetaData
         """
         if b"@IMG_SCAN_03" not in self.chunk_dict:
             raise ValueError(
@@ -115,10 +115,10 @@ class FDS:
         return oct_volume
 
     def read_fundus_image(self):
-        """ Reads fundus image.
+        """Reads fundus image.
 
-            Returns:
-                obj:FundusImageWithMetaData
+        Returns:
+            obj:FundusImageWithMetaData
         """
         if b"@IMG_OBS" not in self.chunk_dict:
             raise ValueError(

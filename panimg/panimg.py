@@ -137,7 +137,7 @@ def _convert_directory(
 
 
 def _build_files(
-    *, builder: ImageBuilder, files: Set[Path], output_directory: Path,
+    *, builder: ImageBuilder, files: Set[Path], output_directory: Path
 ) -> PanImgResult:
     new_images = set()
     new_image_files: Set[PanImgFile] = set()

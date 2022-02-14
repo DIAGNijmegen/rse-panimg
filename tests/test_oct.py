@@ -5,10 +5,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from panimg.image_builders.oct import (
-    format_error,
-    image_builder_oct,
-)
+from panimg.image_builders.oct import format_error, image_builder_oct
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
@@ -107,7 +104,7 @@ def test_image_builder_oct(
     files = {Path(d[0]).joinpath(f) for d in os.walk(tmpdir) for f in d[2]}
     with TemporaryDirectory() as output:
         result = _build_files(
-            builder=image_builder_oct, files=files, output_directory=output,
+            builder=image_builder_oct, files=files, output_directory=output
         )
 
     assert result.consumed_files == {dest}
@@ -130,7 +127,7 @@ def test_image_builder_oct_corrupt_file(tmpdir):
     files = {Path(d[0]).joinpath(f) for d in os.walk(tmpdir) for f in d[2]}
     with TemporaryDirectory() as output:
         result = _build_files(
-            builder=image_builder_oct, files=files, output_directory=output,
+            builder=image_builder_oct, files=files, output_directory=output
         )
 
     assert result.file_errors == {
@@ -138,6 +135,6 @@ def test_image_builder_oct_corrupt_file(tmpdir):
             format_error(
                 "Not a valid OCT file " "(supported formats: .fds,.fda,.e2e)"
             )
-        ],
+        ]
     }
     assert result.consumed_files == set()
