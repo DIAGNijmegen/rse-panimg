@@ -12,7 +12,6 @@ repos:
     hooks:
       - id: black
         language: python
-        args: [--skip-magic-trailing-comma]
   - repo: https://gitlab.com/pycqa/flake8
     rev: 4.0.1
     hooks:
