@@ -14,13 +14,7 @@ from typing import (
 import SimpleITK
 import numpy as np
 import numpy.typing as npt
-from construct.core import (
-    Float64l,
-    Int8ul,
-    PaddedString,
-    StreamError,
-    Struct,
-)
+from construct.core import Float64l, Int8ul, PaddedString, StreamError, Struct
 from pydantic import BaseModel
 
 from panimg.contrib.oct_converter.image_types import (

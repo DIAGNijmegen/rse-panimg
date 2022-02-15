@@ -71,7 +71,7 @@ def format_error(message: str) -> str:
     return f"NRRD image builder: {message}"
 
 
-def image_builder_nrrd(*, files: Set[Path],) -> Iterator[SimpleITKImage]:
+def image_builder_nrrd(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects from files in NRRD format (nrrd)
 

@@ -12,7 +12,7 @@ def format_error(message: str) -> str:
     return f"NifTI image builder: {message}"
 
 
-def image_builder_nifti(*, files: Set[Path],) -> Iterator[SimpleITKImage]:
+def image_builder_nifti(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects from files in NifTI format (nii/nii.gz)
 

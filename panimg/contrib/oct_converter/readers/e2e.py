@@ -2,14 +2,7 @@ import re
 import struct
 
 import numpy as np
-from construct import (
-    PaddedString,
-    Int16un,
-    Struct,
-    Int32sn,
-    Int32un,
-    Int8un,
-)
+from construct import PaddedString, Int16un, Struct, Int32sn, Int32un, Int8un
 from panimg.contrib.oct_converter.image_types import (
     OCTVolumeWithMetaData,
     FundusImageWithMetaData,
@@ -18,19 +11,19 @@ from pathlib import Path
 
 
 class E2E:
-    """ Class for extracting data from Heidelberg's .e2e file format.
+    """Class for extracting data from Heidelberg's .e2e file format.
 
-        Notes:
-            Mostly based on description of .e2e file format here:
-            https://bitbucket.org/uocte/uocte/wiki/Heidelberg%20File%20Format.
+    Notes:
+        Mostly based on description of .e2e file format here:
+        https://bitbucket.org/uocte/uocte/wiki/Heidelberg%20File%20Format.
 
-        Attributes:
-            filepath (str): Path to .img file for reading.
-            header_structure (obj:Struct): Defines structure of volume's header.
-            main_directory_structure (obj:Struct): Defines structure of volume's main directory.
-            sub_directory_structure (obj:Struct): Defines structure of each sub directory in the volume.
-            chunk_structure (obj:Struct): Defines structure of each data chunk.
-            image_structure (obj:Struct): Defines structure of image header.
+    Attributes:
+        filepath (str): Path to .img file for reading.
+        header_structure (obj:Struct): Defines structure of volume's header.
+        main_directory_structure (obj:Struct): Defines structure of volume's main directory.
+        sub_directory_structure (obj:Struct): Defines structure of each sub directory in the volume.
+        chunk_structure (obj:Struct): Defines structure of each data chunk.
+        image_structure (obj:Struct): Defines structure of image header.
     """
 
     def __init__(self, filepath):
@@ -90,9 +83,9 @@ class E2E:
         return laterality
 
     def read_oct_volume(self):
-        """ Reads oct data.
-            Returns:
-                obj:OCTVolumeWithMetaData
+        """Reads oct data.
+        Returns:
+            obj:OCTVolumeWithMetaData
         """
         with open(self.filepath, "rb") as f:
 
@@ -139,7 +132,7 @@ class E2E:
 
             oct_volumes = []
             for key, volume in volume_dict.items():
-                slice_order = sorted([id for id in volume.keys()])
+                slice_order = sorted(id for id in volume.keys())
                 ordered_volume = [volume[id] for id in slice_order]
                 oct_volumes.append(
                     OCTVolumeWithMetaData(
@@ -152,10 +145,10 @@ class E2E:
         return oct_volumes
 
     def read_fundus_image(self):
-        """ Reads fundus data.
+        """Reads fundus data.
 
-            Returns:
-                obj:FundusImageWithMetaData
+        Returns:
+            obj:FundusImageWithMetaData
         """
         with open(self.filepath, "rb") as f:
             chunk_positions = self.find_data_chunks(f)
@@ -196,7 +189,7 @@ class E2E:
         return fundus_images
 
     def read_custom_float(self, bytes):
-        """ Implementation of bespoke float type used in .e2e files.
+        """Implementation of bespoke float type used in .e2e files.
 
         Notes:
             Custom float is a floating point type with no sign, 6-bit exponent, and 10-bit mantissa.

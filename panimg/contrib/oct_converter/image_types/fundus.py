@@ -1,5 +1,5 @@
 class FundusImageWithMetaData:
-    """ Class to hold the fundus image and any related metadata, and enable saving.
+    """Class to hold the fundus image and any related metadata, and enable saving.
 
     Attributes:
         image (np.array): Fundus image.

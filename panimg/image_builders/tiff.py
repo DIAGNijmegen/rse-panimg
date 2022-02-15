@@ -9,14 +9,8 @@ from uuid import UUID, uuid4
 
 import tifffile
 
-from panimg.exceptions import (
-    UnconsumedFilesException,
-    ValidationError,
-)
-from panimg.models import (
-    ColorSpace,
-    TIFFImage,
-)
+from panimg.exceptions import UnconsumedFilesException, ValidationError
+from panimg.models import ColorSpace, TIFFImage
 
 try:
     import openslide

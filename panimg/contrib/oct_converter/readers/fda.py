@@ -9,18 +9,18 @@ from pathlib import Path
 
 
 class FDA:
-    """ Class for extracting data from Topcon's .fda file format.
+    """Class for extracting data from Topcon's .fda file format.
 
-        Notes:
-            Mostly based on description of .fda file format here:
-            https://bitbucket.org/uocte/uocte/wiki/Topcon%20File%20Format
+    Notes:
+        Mostly based on description of .fda file format here:
+        https://bitbucket.org/uocte/uocte/wiki/Topcon%20File%20Format
 
-        Attributes:
-            filepath (str): Path to .img file for reading.
-            header (obj:Struct): Defines structure of volume's header.
-            oct_header (obj:Struct): Defines structure of OCT header.
-            fundus_header (obj:Struct): Defines structure of fundus header.
-            chunk_dict (dict): Name of data chunks present in the file, and their start locations.
+    Attributes:
+        filepath (str): Path to .img file for reading.
+        header (obj:Struct): Defines structure of volume's header.
+        oct_header (obj:Struct): Defines structure of OCT header.
+        fundus_header (obj:Struct): Defines structure of fundus header.
+        chunk_dict (dict): Name of data chunks present in the file, and their start locations.
     """
 
     def __init__(self, filepath):
@@ -94,10 +94,10 @@ class FDA:
         return chunk_dict
 
     def read_oct_volume(self):
-        """ Reads OCT data.
+        """Reads OCT data.
 
-            Returns:
-                obj:OCTVolumeWithMetaData
+        Returns:
+            obj:OCTVolumeWithMetaData
         """
 
         if b"@IMG_JPEG" not in self.chunk_dict:
@@ -123,10 +123,10 @@ class FDA:
         return oct_volume
 
     def read_fundus_image(self):
-        """ Reads fundus image.
+        """Reads fundus image.
 
-            Returns:
-                obj:FundusImageWithMetaData
+        Returns:
+            obj:FundusImageWithMetaData
         """
         if b"@IMG_FUNDUS" not in self.chunk_dict:
             raise ValueError(
