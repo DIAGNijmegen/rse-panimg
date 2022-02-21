@@ -69,6 +69,6 @@ jobs:
           python -m pip install poetry
       - name: Upload to pypi
         env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PANIMG_PYPI_DEPLOY_TOKEN }}
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.POETRY_PYPI_TOKEN_PYPI }}
         run: |
           poetry publish --build
