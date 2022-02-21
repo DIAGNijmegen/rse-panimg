@@ -42,7 +42,6 @@ pytest = "*"
 pytest-xdist = "*"
 pytest-randomly = "*"
 pytest-cov = "*"
-tox = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -76,5 +75,5 @@ python =
 allowlist_externals = poetry
 commands =
     poetry install -v
-    poetry run pytest --cov=tests/ --cov=panimg/ {posargs}
+    poetry run pytest --cov-branch --cov-report term-missing --cov=tests/ --cov=panimg/ {posargs}
 """
