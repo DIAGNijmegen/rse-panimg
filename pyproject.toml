@@ -48,9 +48,12 @@ classifiers = [
 panimg = "panimg.cli:cli"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = ">=3.7,<3.10"
 pydantic = "*"
-numpy = ">=1.21"
+numpy = [
+  { version = "^1.21", python = "<3.8" },
+  { version = "^1.22", python = ">=3.8,<3.10" }
+]
 SimpleITK = ">=2.0"
 pydicom = ">=2.2"
 Pillow = "*"

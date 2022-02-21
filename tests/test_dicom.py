@@ -70,7 +70,7 @@ def test_image_builder_dicom_single_slice(tmpdir):
 
     image = result.new_images.pop()
     assert image.depth == 1
-    assert pytest.approx(image.voxel_depth_mm, 1.0)
+    assert image.voxel_depth_mm == pytest.approx(1.0)
 
 
 def test_image_builder_dicom_4dct(tmpdir):
