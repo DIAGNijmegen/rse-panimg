@@ -67,5 +67,4 @@ jobs:
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PANIMG_PYPI_DEPLOY_TOKEN }}
         run: |
-          poetry config http-basic.pypi "__token__" "${POETRY_PYPI_TOKEN_PYPI}"
           poetry publish --build

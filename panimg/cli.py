@@ -3,11 +3,19 @@ from pathlib import Path
 
 import click
 
-from panimg import __version__, convert, logger
+from panimg import convert, logger
+
+try:
+    from importlib.metadata import version
+    panimg_version = version("panimg")
+except ImportError:
+    # py <= py37
+    from pkg_resources import get_distribution
+    panimg_version = get_distribution("panimg").version
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.version_option(__version__, "-v", "--version")
+@click.version_option(panimg_version, "-v", "--version")
 def cli():
     pass
 
