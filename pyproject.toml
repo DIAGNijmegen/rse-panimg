@@ -10,7 +10,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Healthcare Industry",
-    "Operating System :: POSIX",
 ]
 
 [tool.poetry.scripts]
