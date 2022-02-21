@@ -76,5 +76,5 @@ python =
 allowlist_externals = poetry
 commands =
     poetry install -v
-    poetry run pytest --cov=tests/ --cov=panimg/
+    poetry run pytest --cov=tests/ --cov=panimg/ {posargs}
 """
