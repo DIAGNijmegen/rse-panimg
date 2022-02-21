@@ -39,3 +39,4 @@ repos:
       - id: mypy
         additional_dependencies:
           - pydantic
+          - types-setuptools  # Required for versioning on py37

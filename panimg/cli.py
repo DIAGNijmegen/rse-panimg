@@ -7,10 +7,12 @@ from panimg import convert, logger
 
 try:
     from importlib.metadata import version
+
     panimg_version = version("panimg")
 except ImportError:
     # py <= py37
     from pkg_resources import get_distribution
+
     panimg_version = get_distribution("panimg").version
 
 
