@@ -8,7 +8,11 @@ on:
       - published
 
 env:
-  MINIMUM_PYTHON_VERSION: '3.8'
+  MINIMUM_PYTHON_VERSION: '3.7'
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
 
@@ -65,7 +69,6 @@ jobs:
           python -m pip install poetry
       - name: Upload to pypi
         env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PANIMG_PYPI_DEPLOY_TOKEN }}
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.POETRY_PYPI_TOKEN_PYPI }}
         run: |
-          poetry config http-basic.pypi "__token__" "${POETRY_PYPI_TOKEN_PYPI}"
           poetry publish --build

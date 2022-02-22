@@ -1,5 +1,3 @@
-__version__ = "0.5.3"
-
 import logging
 
 from .panimg import convert
