@@ -300,7 +300,7 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
                 )
         except (AttributeError, IndexError) as e:
             raise RuntimeError(
-                "Unsupported enhanced DICOM format, " "missing pixel spacing"
+                "Unsupported enhanced DICOM format, missing pixel spacing"
             ) from e
     else:
         pixel_spacing = (1.0, 1.0)
