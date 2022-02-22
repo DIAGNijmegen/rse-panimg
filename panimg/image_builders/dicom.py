@@ -166,47 +166,82 @@ def _validate_dicom_files(
 def _extract_direction(dicom_ds, direction):
     try:
         # Try to extract the direction from the file
-        sitk_ref = SimpleITK.ReadImage(str(dicom_ds.headers[0]["file"]))
+        reader = SimpleITK.ImageFileReader()
+        reader.SetFileName(str(dicom_ds.headers[0]["file"]))
+        reader.ReadImageInformation()
+
         # The direction per slice is a 3x3 matrix, so we add the time
         # dimension ourselves
-        dims = sitk_ref.GetDimension()
-        _direction = np.reshape(sitk_ref.GetDirection(), (dims, dims))
+        dims = reader.GetDimension()
+        _direction = np.reshape(reader.GetDirection(), (dims, dims))
         direction[:dims, :dims] = _direction
-    except Exception:
+    except RuntimeError:
         pass
     return direction
 
 
 def _process_dicom_file(*, dicom_ds):  # noqa: C901
-    ref_file = pydicom.dcmread(str(dicom_ds.headers[0]["file"]))
-    ref_origin = tuple(
-        float(i) for i in getattr(ref_file, "ImagePositionPatient", (0, 0, 0))
-    )
+    # Use first slice or volume as reference
+    ref = dicom_ds.headers[0]["data"]
+
+    # Determine size and orientation of the image
     dimensions = 4 if dicom_ds.n_time and dicom_ds.n_time > 1 else 3
     direction = np.eye(dimensions, dtype=float)
     direction = _extract_direction(dicom_ds, direction)
-    pixel_dims = (dicom_ds.n_slices, int(ref_file.Rows), int(ref_file.Columns))
+    pixel_dims = (dicom_ds.n_slices, int(ref.Rows), int(ref.Columns))
     if dimensions == 4:
         pixel_dims = (dicom_ds.n_time,) + pixel_dims
 
-    # Additional Meta data Contenttimes and Exposures
-    content_times = []
-    exposures = []
+    # Find origin and compute offset between slices (= spacing)
+    try:
+        n_frames = len(ref.PerFrameFunctionalGroupsSequence)
+    except AttributeError:
+        n_frames = None
+
+    if n_frames is None:
+        # One or multiple regular DICOM files
+        file_origins = [
+            np.array(partial["data"].ImagePositionPatient, dtype=float)
+            for partial in dicom_ds.headers
+            if "ImagePositionPatient" in partial["data"]
+        ]
+    else:
+        # An enhanced DICOM file with the entire volume stored in one file
+        if len(dicom_ds.headers) != 1:
+            raise RuntimeError(
+                "Unsupported enhanced DICOM format, more than one file"
+            )
+        try:
+            file_origins = [
+                np.array(
+                    frame.PlanePositionSequence[0].ImagePositionPatient,
+                    dtype=float,
+                )
+                for frame in ref.PerFrameFunctionalGroupsSequence
+            ]
+        except (AttributeError, IndexError) as e:
+            raise RuntimeError(
+                "Unsupported enhanced DICOM format, missing image position"
+            ) from e
+
+    if len(file_origins) > 0:
+        ref_origin = tuple(float(i) for i in file_origins[0])
+    else:
+        ref_origin = (0, 0, 0)
+
     origin = None
     origin_diff = np.array((0, 0, 0), dtype=float)
     n_diffs = 0
-    for partial in dicom_ds.headers:
-        ds = partial["data"]
-        if "ImagePositionPatient" in ds:
-            file_origin = np.array(ds.ImagePositionPatient, dtype=float)
-            if origin is not None:
-                diff = file_origin - origin
-                origin_diff = origin_diff + diff
-                n_diffs += 1
-            origin = file_origin
+    for file_origin in file_origins:
+        if origin is not None:
+            diff = file_origin - origin
+            origin_diff = origin_diff + diff
+            n_diffs += 1
+        origin = file_origin
+
     if n_diffs == 0:
-        # One slice only, meaning there is no spacing, default to 1 mm
-        z_i = 1.0
+        # One slice or volume only, default to 1 mm
+        z_i = float(getattr(ref, "SpacingBetweenSlices", 1.0))
         z_order = 0
     else:
         # Multiple slices, average spacing between slices
@@ -227,7 +262,10 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
             )
         z_order = np.sign(np.dot(avg_origin_diff, z_direction))
 
-    samples_per_pixel = int(getattr(ref_file, "SamplesPerPixel", 1))
+    # Create ITK image from DICOM, collect additional metadata
+    content_times = []
+    exposures = []
+    samples_per_pixel = int(getattr(ref, "SamplesPerPixel", 1))
     img = _create_itk_from_dcm(
         content_times=content_times,
         dicom_ds=dicom_ds,
@@ -238,15 +276,36 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
         samples_per_pixel=samples_per_pixel,
     )
 
+    # Slices might have been reordered, so compute the actual origin and
+    # set the correct world coordinate system (origin, spacing, direction)
     if origin is None:
         origin = (0.0, 0.0, 0.0)
     sitk_origin = ref_origin if z_order >= 0 else tuple(origin)
 
-    if "PixelSpacing" in ref_file:
-        x_i, y_i = (float(x) for x in ref_file.PixelSpacing)
+    if "PixelSpacing" in ref:
+        pixel_spacing = ref.PixelSpacing
+    elif n_frames is not None:
+        try:
+            try:
+                pixel_spacing = (
+                    ref.SharedFunctionalGroupsSequence[0]
+                    .PixelMeasuresSequence[0]
+                    .PixelSpacing
+                )
+            except (AttributeError, IndexError):
+                pixel_spacing = (
+                    ref.PerFrameFunctionalGroupsSequence[0]
+                    .PixelMeasuresSequence[0]
+                    .PixelSpacing
+                )
+        except (AttributeError, IndexError) as e:
+            raise RuntimeError(
+                "Unsupported enhanced DICOM format, " "missing pixel spacing"
+            ) from e
     else:
-        x_i = y_i = 1.0
+        pixel_spacing = (1.0, 1.0)
 
+    x_i, y_i = (float(s) for s in pixel_spacing)
     sitk_spacing = (x_i, y_i, z_i)
     if dimensions == 4:
         sitk_spacing += (1.0,)
@@ -257,14 +316,14 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
     img.SetSpacing(sitk_spacing)
     img.SetOrigin(sitk_origin)
 
+    # Add additional metadata
     if dimensions == 4:
-        # Set Additional Meta Data
         img.SetMetaData("ContentTimes", " ".join(content_times))
         img.SetMetaData("Exposures", " ".join(exposures))
 
     for f in OPTIONAL_METADATA_FIELDS:
-        if hasattr(ref_file, f):
-            value = getattr(ref_file, f)
+        if hasattr(ref, f):
+            value = getattr(ref, f)
             validate_metadata_value(key=f, value=value)
             img.SetMetaData(f, str(value))
 
