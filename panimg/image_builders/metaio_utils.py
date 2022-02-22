@@ -247,9 +247,8 @@ def validate_list_data_matches_num_timepoints(
 
 
 def add_additional_mh_headers_to_sitk_image(
-    sitk_image: SimpleITK.Image, headers: Dict[str, str]
+    sitk_image: SimpleITK.Image, cleaned_headers: Dict[str, str]
 ):
-    cleaned_headers = validate_and_clean_additional_mh_headers(headers)
     for header in ADDITIONAL_HEADERS:
         if header in cleaned_headers:
             value = cleaned_headers[header]
@@ -260,21 +259,34 @@ def add_additional_mh_headers_to_sitk_image(
             sitk_image.SetMetaData(header, value)
 
 
-def load_sitk_image(mhd_file: Path) -> SimpleITK.Image:
-    headers = parse_mh_header(mhd_file)
-    headers = validate_and_clean_additional_mh_headers(headers=headers)
-    ndims = int(headers["NDims"])
-    if ndims <= 4:
-        sitk_image = SimpleITK.ReadImage(str(mhd_file))
-        for key in sitk_image.GetMetaDataKeys():
-            if key not in ADDITIONAL_HEADERS:
-                sitk_image.EraseMetaData(key)
+def load_sitk_image(
+    file: Path, imageio: str = "MetaImageIO"
+) -> SimpleITK.Image:
+    # Read and validate only the header first
+    reader = SimpleITK.ImageFileReader()
+    reader.SetImageIO(imageio)
+    reader.SetFileName(str(file.absolute()))
+    reader.ReadImageInformation()
+
+    headers = validate_and_clean_additional_mh_headers(
+        headers={
+            key: reader.GetMetaData(key) for key in reader.GetMetaDataKeys()
+        }
+    )
+
+    # Header has been validated, read the pixel data
+    if reader.GetDimension() in (2, 3, 4):
+        sitk_image = reader.Execute()
     else:
-        error_msg = (
+        raise NotImplementedError(
             "SimpleITK images with more than 4 dimensions are not supported"
         )
-        raise NotImplementedError(error_msg)
+
+    # Remove all headers, add back cleaned versions of supported additional headers
+    for key in sitk_image.GetMetaDataKeys():
+        sitk_image.EraseMetaData(key)
     add_additional_mh_headers_to_sitk_image(
-        sitk_image=sitk_image, headers=headers
+        sitk_image=sitk_image, cleaned_headers=headers
     )
+
     return sitk_image
