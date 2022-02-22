@@ -6,7 +6,7 @@ from typing import List
 
 import pytest
 
-from panimg.image_builders.nrrd import image_builder_nrrd
+from panimg.image_builders.metaio_nrrd import image_builder_nrrd
 from panimg.models import ColorSpace
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH

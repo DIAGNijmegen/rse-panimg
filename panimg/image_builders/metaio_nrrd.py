@@ -3,9 +3,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Iterator, List, Set
 
-import SimpleITK
-
-from panimg.exceptions import UnconsumedFilesException
+from panimg.exceptions import UnconsumedFilesException, ValidationError
+from panimg.image_builders.metaio_utils import load_sitk_image
 from panimg.models import SimpleITKImage
 
 MAGIC_REGEX = re.compile("NRRD([0-9]{4})")
@@ -98,15 +97,16 @@ def image_builder_nrrd(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
     for file in files:
         try:
             if verify_single_file_nrrd(file):
-                reader = SimpleITK.ImageFileReader()
-                reader.SetImageIO("NrrdImageIO")
-                reader.SetFileName(str(file.absolute()))
-                img: SimpleITK.Image = reader.Execute()
+                img = load_sitk_image(file=file, imageio="NrrdImageIO")
             else:
                 raise InvalidNrrdFileError(
                     "NRRD files with detached headers are not supported"
                 )
-        except InvalidNrrdFileError as e:
+        except (
+            InvalidNrrdFileError,
+            ValidationError,
+            NotImplementedError,
+        ) as e:
             file_errors[file].append(format_error(str(e)))
         except RuntimeError:
             file_errors[file].append(
