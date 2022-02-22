@@ -2,9 +2,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Iterator, List, Set
 
-import SimpleITK
-
-from panimg.exceptions import UnconsumedFilesException
+from panimg.exceptions import UnconsumedFilesException, ValidationError
+from panimg.image_builders.metaio_utils import load_sitk_image
 from panimg.models import SimpleITKImage
 
 
@@ -37,22 +36,20 @@ def image_builder_nifti(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
             continue
 
         try:
-            reader = SimpleITK.ImageFileReader()
-            reader.SetImageIO("NiftiImageIO")
-            reader.SetFileName(str(file.absolute()))
-            img: SimpleITK.Image = reader.Execute()
+            img = load_sitk_image(file=file, imageio="NiftiImageIO")
+        except (ValidationError, NotImplementedError) as e:
+            file_errors[file].append(format_error(str(e)))
         except RuntimeError:
             file_errors[file].append(
                 format_error("Not a valid NifTI image file")
             )
-            continue
-
-        yield SimpleITKImage(
-            image=img,
-            name=file.name,
-            consumed_files={file},
-            spacing_valid=True,
-        )
+        else:
+            yield SimpleITKImage(
+                image=img,
+                name=file.name,
+                consumed_files={file},
+                spacing_valid=True,
+            )
 
     if file_errors:
         raise UnconsumedFilesException(file_errors=file_errors)
