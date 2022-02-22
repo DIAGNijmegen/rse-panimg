@@ -183,10 +183,11 @@ def resolve_mh_data_file_path(
 
 
 def validate_and_clean_additional_mh_headers(
-    headers: Dict[str, str]
+    reader: SimpleITK.ImageFileReader,
 ) -> Dict[str, str]:
     cleaned_headers = {}
-    for key, value in headers.items():
+    for key in reader.GetMetaDataKeys():
+        value = reader.GetMetaData(key)
         if key in EXPECTED_HEADERS:
             cleaned_headers[key] = value
         elif key in ADDITIONAL_HEADERS:
@@ -198,19 +199,22 @@ def validate_and_clean_additional_mh_headers(
                     f"pattern {match_pattern.pattern}"
                 )
             if key in HEADERS_MATCHING_NUM_TIMEPOINTS:
+                timepoints = (
+                    reader.GetSize()[3] if reader.GetDimension() == 4 else 1
+                )
                 validate_list_data_matches_num_timepoints(
-                    headers=headers, key=key, value=value
+                    key=key, value=value, expected_timepoints=timepoints
                 )
             if key in HEADERS_MATCHING_WINDOW_SETTINGS:
                 validate_center_matches_width_setting(
-                    headers=headers, key=key, value=value
+                    key=key, value=value, reader=reader
                 )
             cleaned_headers[key] = value
     return cleaned_headers
 
 
 def validate_center_matches_width_setting(
-    headers: Dict[str, str], key: str, value: str
+    key: str, value: str, reader: SimpleITK.ImageFileReader
 ):
     window_keys = ("WindowWidth", "WindowCenter")
     if key not in window_keys:
@@ -219,11 +223,18 @@ def validate_center_matches_width_setting(
         return
 
     counter_key = window_keys[0] if key == window_keys[1] else window_keys[1]
-    if not re.match(FLOAT_ARRAY_MATCH_REGEXP, headers[counter_key]):
+    if not reader.HasMetaDataKey(counter_key):
+        raise ValidationError(
+            f"Headers '{key}' and '{counter_key}' should both be present "
+            f"but '{counter_key}' is missing"
+        )
+
+    counter_value = reader.GetMetaData(counter_key)
+    if not re.match(FLOAT_ARRAY_MATCH_REGEXP, counter_value):
         raise ValidationError(
             f"Header '{key}' is of a different format than '{counter_key}'"
         )
-    if len(value.split(",")) != len(headers[counter_key].split(",")):
+    if len(value.split(",")) != len(counter_value.split(",")):
         raise ValidationError(
             f"Headers '{key}' and '{counter_key}' should "
             f"contain an equal number of values"
@@ -231,14 +242,9 @@ def validate_center_matches_width_setting(
 
 
 def validate_list_data_matches_num_timepoints(
-    headers: Dict[str, str], key: str, value: str
+    key: str, value: str, expected_timepoints: int
 ):
     num_timepoints = len(value.split(" "))
-    expected_timepoints = (
-        int(headers["DimSize"].split(" ")[3])
-        if int(headers["NDims"]) >= 4
-        else 1
-    )
     if num_timepoints != expected_timepoints:
         raise ValidationError(
             f"Found {num_timepoints} values for {key}, "
@@ -268,11 +274,7 @@ def load_sitk_image(
     reader.SetFileName(str(file.absolute()))
     reader.ReadImageInformation()
 
-    headers = validate_and_clean_additional_mh_headers(
-        headers={
-            key: reader.GetMetaData(key) for key in reader.GetMetaDataKeys()
-        }
-    )
+    headers = validate_and_clean_additional_mh_headers(reader=reader)
 
     # Header has been validated, read the pixel data
     if reader.GetDimension() in (2, 3, 4):
