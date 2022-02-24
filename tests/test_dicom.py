@@ -122,6 +122,71 @@ def test_image_builder_dicom_4dct(tmpdir):
     )
 
 
+def test_image_builder_dicom_enhanced():
+    # Load reference image from individual slices
+    slices = set((RESOURCE_PATH / "dicom_enhanced").glob("slice*.dcm"))
+    ref_images = list(image_builder_dicom(files=slices))
+    assert len(ref_images) == 1
+    ref_image = ref_images.pop().image
+
+    # Load the same image but now stored as enhanced DICOM volume
+    volume = {RESOURCE_PATH / "dicom_enhanced" / "volume.dcm"}
+    images = list(image_builder_dicom(files=volume))
+    assert len(images) == 1
+    image = images.pop().image
+
+    assert image == ref_image
+
+
+def test_image_builder_dicom_4d():
+    slices = set((RESOURCE_PATH / "dicom_4d").glob("*.dcm"))
+    images = list(image_builder_dicom(files=slices))
+
+    assert len(images) == 1
+    image = images.pop()
+
+    assert image.width == 2
+    assert image.height == 3
+    assert image.depth == 4
+    assert image.timepoints == 19
+
+    assert image.voxel_width_mm == pytest.approx(0.43)
+    assert image.voxel_height_mm == pytest.approx(0.43)
+    assert image.voxel_depth_mm == pytest.approx(0.5)
+
+    sitk_image = image.image
+    assert sitk_image.GetDimension() == 4
+    assert sitk_image.GetSize() == (2, 3, 4, 19)
+
+    origin = sitk_image.GetOrigin()
+    assert origin[0] == pytest.approx(-103.378)
+    assert origin[1] == pytest.approx(-112.7536)
+    assert origin[2] == pytest.approx(-729.25)
+    assert origin[3] == 0
+
+    assert np.reshape(sitk_image.GetDirection(), (4, 4)) == pytest.approx(
+        np.eye(4)
+    )
+
+
+def test_image_builder_dicom_4d_enhanced():
+    # Load reference image from individual slices
+    slices = set((RESOURCE_PATH / "dicom_4d").glob("*.dcm"))
+    ref_images = list(image_builder_dicom(files=slices))
+    assert len(ref_images) == 1
+    ref_image = ref_images.pop().image
+
+    # Load the same image but now stored as enhanced DICOM volume
+    volumes = set((RESOURCE_PATH / "dicom_4d_enhanced").glob("*.dcm"))
+    images = list(image_builder_dicom(files=volumes))
+    assert len(images) == 1
+    image = images.pop().image
+
+    for i in range(ref_image.GetSize()[0]):
+        # Compare in 3D because 4D comparisons are not implemented in SITK
+        assert image[i, :, :, :] == ref_image[i, :, :, :]
+
+
 @pytest.mark.parametrize(
     "folder,element_type",
     [
