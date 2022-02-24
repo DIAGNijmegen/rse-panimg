@@ -49,7 +49,7 @@ def test_number_of_images_consumed_by_each_builder(tmp_path, builder):
     # Except for the oct builder, each of the builders should only consume one
     # image. The other files should error out.
     files = {
-        *(RESOURCE_PATH / "dicom").glob("*.dcm"),
+        *(RESOURCE_PATH / "dicom_4d").glob("*.dcm"),
         RESOURCE_PATH / "test_rgb.png",
         RESOURCE_PATH / "image10x10x10.mha",
         RESOURCE_PATH / "nifti" / "image10x11x12.nii.gz",
