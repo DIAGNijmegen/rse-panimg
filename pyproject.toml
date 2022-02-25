@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "panimg"
-version = "0.5.3"
+version = "0.6.0"
 description = "Conversion of medical images to MHA and TIFF."
 license = "Apache-2.0"
 authors = ["James Meakin <panimg@jmsmkn.com>"]
@@ -46,6 +46,11 @@ pytest-cov = "*"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+known_first_party = ["panimg", "tests"]
+line_length = 79
 
 [tool.black]
 line-length = 79

@@ -1,13 +1,14 @@
 import re
 import struct
+from pathlib import Path
 
 import numpy as np
-from construct import PaddedString, Int16un, Struct, Int32sn, Int32un, Int8un
+from construct import Int8un, Int16un, Int32sn, Int32un, PaddedString, Struct
+
 from panimg.contrib.oct_converter.image_types import (
-    OCTVolumeWithMetaData,
     FundusImageWithMetaData,
+    OCTVolumeWithMetaData,
 )
-from pathlib import Path
 
 
 class E2E:

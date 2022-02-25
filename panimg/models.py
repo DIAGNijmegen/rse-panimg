@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
-from SimpleITK import Image, WriteImage
 from pydantic import BaseModel, validator
 from pydantic.dataclasses import dataclass
+from SimpleITK import Image, WriteImage
 
 from panimg.exceptions import ValidationError
 

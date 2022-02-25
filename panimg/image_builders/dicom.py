@@ -4,9 +4,9 @@ from math import isclose
 from pathlib import Path
 from typing import Any, DefaultDict, Dict, Iterator, List, Set, Tuple
 
-import SimpleITK
 import numpy as np
 import pydicom
+import SimpleITK
 
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.models import (
