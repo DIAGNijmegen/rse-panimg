@@ -2,8 +2,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Iterator, List, Set
 
-import SimpleITK
 import numpy as np
+import SimpleITK
 from PIL import Image
 from PIL.Image import DecompressionBombError
 

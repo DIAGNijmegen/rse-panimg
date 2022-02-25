@@ -11,9 +11,9 @@ from typing import (
     Union,
 )
 
-import SimpleITK
 import numpy as np
 import numpy.typing as npt
+import SimpleITK
 from construct.core import Float64l, Int8ul, PaddedString, StreamError, Struct
 from pydantic import BaseModel
 
