@@ -2,13 +2,13 @@ import logging
 from collections import defaultdict
 from math import isclose
 from pathlib import Path
-from typing import DefaultDict, Iterator, List, Set
+from typing import Any, DefaultDict, Dict, Iterator, List, Set, Tuple
 
 import SimpleITK
 import numpy as np
 import pydicom
 
-from panimg.exceptions import UnconsumedFilesException
+from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.models import (
     EXTRA_METADATA,
     SimpleITKImage,
@@ -200,18 +200,18 @@ class DicomDataset:
 
         return pixel_array.astype(self._pixel_value_dtype(rescale=rescale))
 
-    def _shape(self, samples_per_pixel: int):
+    def _shape(self, samples_per_pixel: int) -> Tuple[int, ...]:
         pixel_dims = [
             self.n_slices,
-            int(self.ref_header.Rows),
-            int(self.ref_header.Columns),
+            self.ref_header.Rows,
+            self.ref_header.Columns,
         ]
         if self.dimensions == 4:
             pixel_dims.insert(0, self.n_time)
         if samples_per_pixel > 1:
             pixel_dims.append(samples_per_pixel)
 
-        return tuple(pixel_dims)
+        return tuple(int(s) for s in pixel_dims)
 
     def _create_itk_from_dcm(self, z_order: int) -> SimpleITK.Image:
         samples_per_pixel = int(getattr(self.ref_header, "SamplesPerPixel", 1))
@@ -261,8 +261,12 @@ class DicomDataset:
             value = getattr(self.ref_header, f, "")
             str_value = str(value)
             if str_value != "":
-                validate_metadata_value(key=f, value=value)
-                img.SetMetaData(f, str_value)
+                try:
+                    validate_metadata_value(key=f, value=value)
+                except ValidationError:
+                    pass
+                else:
+                    img.SetMetaData(f, str_value)
 
     def _add_temporal_metadata(self, img: SimpleITK.Image, z_order: int):
         content_times = []
@@ -302,7 +306,9 @@ class DicomDataset:
         )
 
 
-def _get_headers_by_study(files, file_errors):
+def _get_headers_by_study(
+    files: Set[Path], file_errors: DefaultDict[Path, List[str]]
+):
     """
     Gets all headers from dicom files found in path.
 
@@ -319,8 +325,8 @@ def _get_headers_by_study(files, file_errors):
     A dictionary of sorted headers for all dicom image files found within path,
     grouped by study id.
     """
-    studies = {}
-    indices = {}
+    studies: Dict[str, Dict[str, Any]] = {}
+    indices: Dict[str, Dict[str, int]] = {}
 
     for file in files:
         if not file.is_file():
@@ -358,7 +364,7 @@ def _get_headers_by_study(files, file_errors):
     return studies
 
 
-def _validate_dicom_files(
+def _find_valid_dicom_files(
     files: Set[Path], file_errors: DefaultDict[Path, List[str]]
 ) -> List[DicomDataset]:
     """
@@ -450,8 +456,7 @@ def image_builder_dicom(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
     """
     file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
-    studies = _validate_dicom_files(files=files, file_errors=file_errors)
-
+    studies = _find_valid_dicom_files(files=files, file_errors=file_errors)
     for dicom_ds in studies:
         try:
             yield dicom_ds.read()
