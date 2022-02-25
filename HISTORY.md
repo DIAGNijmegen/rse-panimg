@@ -1,5 +1,10 @@
 # History
 
+## 0.6.0 (2022-02-25)
+
+* Added support for enhanced DICOM files
+* Added header validation for nrrd and nifti files
+
 ## 0.5.3 (2022-02-01)
 
 * Fix determination of slice spacing with oblique volumes
