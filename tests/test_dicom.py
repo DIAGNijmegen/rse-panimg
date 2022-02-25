@@ -8,8 +8,8 @@ import pydicom
 import pytest
 
 from panimg.image_builders.dicom import (
+    _find_valid_dicom_files,
     _get_headers_by_study,
-    _validate_dicom_files,
     format_error,
     image_builder_dicom,
 )
@@ -38,8 +38,8 @@ def test_get_headers_by_study():
 
 
 def test_validate_dicom_files():
-    files = [Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]]
-    studies = _validate_dicom_files(files, defaultdict(list))
+    files = {Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]}
+    studies = _find_valid_dicom_files(files, defaultdict(list))
     assert len(studies) == 1
     for study in studies:
         headers = study.headers
@@ -52,7 +52,7 @@ def test_validate_dicom_files():
         },
     ):
         errors = defaultdict(list)
-        studies = _validate_dicom_files(files, errors)
+        studies = _find_valid_dicom_files(files, errors)
         assert len(studies) == 0
         for header in headers[1:]:
             assert errors[header["file"]] == [
