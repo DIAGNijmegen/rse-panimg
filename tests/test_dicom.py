@@ -17,7 +17,7 @@ from panimg.image_builders.metaio_utils import parse_mh_header
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
-DICOM_DIR = RESOURCE_PATH / "dicom"
+DICOM_DIR = RESOURCE_PATH / "dicom_4d"
 
 
 def test_get_headers_by_study():
@@ -122,10 +122,44 @@ def test_image_builder_dicom_4dct(tmpdir):
     )
 
 
+def test_image_builder_dicom_enhanced():
+    # Load reference image from individual slices
+    slices = set((RESOURCE_PATH / "dicom_enhanced").glob("slice*.dcm"))
+    ref_images = list(image_builder_dicom(files=slices))
+    assert len(ref_images) == 1
+    ref_image = ref_images.pop().image
+
+    # Load the same image but now stored as enhanced DICOM volume
+    volume = {RESOURCE_PATH / "dicom_enhanced" / "volume.dcm"}
+    images = list(image_builder_dicom(files=volume))
+    assert len(images) == 1
+    image = images.pop().image
+
+    assert image == ref_image
+
+
+def test_image_builder_dicom_4d_enhanced():
+    # Load reference image from individual slices
+    slices = set((RESOURCE_PATH / "dicom_4d").glob("*.dcm"))
+    ref_images = list(image_builder_dicom(files=slices))
+    assert len(ref_images) == 1
+    ref_image = ref_images.pop().image
+
+    # Load the same image but now stored as enhanced DICOM volume
+    volumes = set((RESOURCE_PATH / "dicom_4d_enhanced").glob("*.dcm"))
+    images = list(image_builder_dicom(files=volumes))
+    assert len(images) == 1
+    image = images.pop().image
+
+    for i in range(ref_image.GetSize()[0]):
+        # Compare in 3D because 4D comparisons are not implemented in SITK
+        assert image[i, :, :, :] == ref_image[i, :, :, :]
+
+
 @pytest.mark.parametrize(
     "folder,element_type",
     [
-        ("dicom", "MET_SHORT"),
+        ("dicom_4d", "MET_SHORT"),
         ("dicom_intercept", "MET_FLOAT"),
         ("dicom_slope", "MET_FLOAT"),
     ],
@@ -159,7 +193,7 @@ def test_dicom_rescaling(folder, element_type, tmpdir):
         (
             {
                 Path(d[0]).joinpath(f)
-                for d in os.walk(RESOURCE_PATH / "dicom")
+                for d in os.walk(RESOURCE_PATH / "dicom_4d")
                 for f in d[2]
             },
             "30",

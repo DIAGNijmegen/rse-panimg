@@ -41,8 +41,20 @@ OPTIONAL_METADATA_FIELDS = (
 )
 
 
-def pixel_data_reached(tag, vr, length):
-    return pydicom.datadict.keyword_for_tag(tag) == "PixelData"
+def format_error(message: str) -> str:
+    return f"Dicom image builder: {message}"
+
+
+class DicomTagNotFoundError(KeyError):
+    pass
+
+
+def _find_dicom_tag(dataset: pydicom.Dataset, tag: str):
+    for header in dataset.iterall():
+        if header.keyword == tag:
+            return header.value
+
+    raise DicomTagNotFoundError
 
 
 def _get_headers_by_study(files, file_errors):
@@ -51,9 +63,11 @@ def _get_headers_by_study(files, file_errors):
 
     Parameters
     ----------
-    path
-        Path to a directory that contains all images that were uploaded during
-        an upload session.
+    files
+        Paths images that were uploaded during an upload session.
+
+    file_errors
+        Dictionary in which reading errors are recorded per file
 
     Returns
     -------
@@ -69,7 +83,8 @@ def _get_headers_by_study(files, file_errors):
         with file.open("rb") as f:
             try:
                 ds = pydicom.filereader.read_partial(
-                    f, stop_when=pixel_data_reached
+                    f,
+                    stop_when=lambda tag, vr, length: tag == (0x7FE0, 0x0010),
                 )
                 dims = f"{ds.Rows}x{ds.Columns}"
                 key = f"{ds.StudyInstanceUID}-{dims}"
@@ -98,10 +113,6 @@ def _get_headers_by_study(files, file_errors):
     return studies
 
 
-def format_error(message: str) -> str:
-    return f"Dicom image builder: {message}"
-
-
 def _validate_dicom_files(
     files: Set[Path], file_errors: DefaultDict[Path, List[str]]
 ):
@@ -110,9 +121,11 @@ def _validate_dicom_files(
 
     Parameters
     ----------
-    path
-        Path to a directory that contains all images that were uploaded during
-        an upload session.
+    files
+        Paths images that were uploaded during an upload session.
+
+    file_errors
+        Dictionary in which reading errors are recorded per file
 
     Returns
     -------
@@ -126,87 +139,122 @@ def _validate_dicom_files(
     studies = _get_headers_by_study(files=files, file_errors=file_errors)
     result = []
     dicom_dataset = namedtuple(
-        "dicom_dataset", ["headers", "n_time", "n_slices", "index"]
+        "dicom_dataset",
+        ["headers", "n_time", "n_slices", "n_slices_per_file", "index"],
     )
     for key in studies:
         headers = studies[key]["headers"]
         index = studies[key]["index"]
         if not headers:
             continue
+
         data = headers[-1]["data"]
+        n_files = len(headers)
         n_time = getattr(data, "TemporalPositionIndex", None)
-        n_slices = max(len(headers), int(getattr(data, "NumberOfFrames", 0)))
-        # Not a 4d dicom file
+        try:
+            n_slices_per_file = len(data.PerFrameFunctionalGroupsSequence)
+        except AttributeError:
+            n_slices_per_file = int(getattr(data, "NumberOfFrames", 1))
+        n_slices = n_files * n_slices_per_file
+
         if n_time is None:
+            # Not a 4d dicom file
             result.append(
                 dicom_dataset(
                     headers=headers,
                     n_time=n_time,
                     n_slices=n_slices,
+                    n_slices_per_file=n_slices_per_file,
                     index=index,
                 )
             )
-            continue
-        if len(headers) % n_time > 0:
+        elif len(headers) % n_time > 0:
+            # Invalid 4d dicom file
             for d in headers:
                 file_errors[d["file"]].append(
                     format_error("Number of slices per time point differs")
                 )
-            continue
-        n_slices = n_slices // n_time
-        result.append(
-            dicom_dataset(
-                headers=headers, n_time=n_time, n_slices=n_slices, index=index
+        else:
+            # Valid 4d dicom file
+            result.append(
+                dicom_dataset(
+                    headers=headers,
+                    n_time=n_time,
+                    n_slices=n_slices // n_time,
+                    n_slices_per_file=n_slices_per_file,
+                    index=index,
+                )
             )
-        )
+
     del studies
     return result
 
 
-def _extract_direction(dicom_ds, direction):
-    try:
-        # Try to extract the direction from the file
-        sitk_ref = SimpleITK.ReadImage(str(dicom_ds.headers[0]["file"]))
-        # The direction per slice is a 3x3 matrix, so we add the time
-        # dimension ourselves
-        dims = sitk_ref.GetDimension()
-        _direction = np.reshape(sitk_ref.GetDirection(), (dims, dims))
-        direction[:dims, :dims] = _direction
-    except Exception:
-        pass
-    return direction
-
-
 def _process_dicom_file(*, dicom_ds):  # noqa: C901
-    ref_file = pydicom.dcmread(str(dicom_ds.headers[0]["file"]))
-    ref_origin = tuple(
-        float(i) for i in getattr(ref_file, "ImagePositionPatient", (0, 0, 0))
-    )
+    # Use first slice or volume as reference
+    ref = dicom_ds.headers[0]["data"]
+
+    # Images are either 4D or 3D (2D images get an additional axis of size 1)
     dimensions = 4 if dicom_ds.n_time and dicom_ds.n_time > 1 else 3
-    direction = np.eye(dimensions, dtype=float)
-    direction = _extract_direction(dicom_ds, direction)
-    pixel_dims = (dicom_ds.n_slices, int(ref_file.Rows), int(ref_file.Columns))
+
+    pixel_dims = (dicom_ds.n_slices, int(ref.Rows), int(ref.Columns))
     if dimensions == 4:
         pixel_dims = (dicom_ds.n_time,) + pixel_dims
 
-    # Additional Meta data Contenttimes and Exposures
-    content_times = []
-    exposures = []
+    # Compute rotation matrix (orientation of the image)
+    orientation = _find_dicom_tag(ref, "ImageOrientationPatient")
+    row_cos = orientation[:3]
+    col_cos = orientation[3:]
+    direction = np.eye(dimensions, dtype=float)
+    direction[:3, :3] = np.stack(
+        [row_cos, col_cos, np.cross(row_cos, col_cos)], axis=1
+    )
+
+    # Find origin and compute offset between slices (= spacing)
+    if (
+        dicom_ds.n_slices_per_file == 1
+        or "PerFrameFunctionalGroupsSequence" not in ref
+    ):
+        # One or multiple regular DICOM files
+        file_origins = [
+            np.array(partial["data"].ImagePositionPatient, dtype=float)
+            for partial in dicom_ds.headers
+            if "ImagePositionPatient" in partial["data"]
+        ]
+    else:
+        # An enhanced DICOM file with the entire volume stored in one file
+        file_origins = []
+        for frame in ref.PerFrameFunctionalGroupsSequence:
+            try:
+                file_origin = _find_dicom_tag(frame, "ImagePositionPatient")
+            except DicomTagNotFoundError:
+                pass
+            else:
+                file_origins.append(np.array(file_origin, dtype=float))
+
+    try:
+        ref_origin = tuple(file_origins[0])
+    except IndexError:
+        ref_origin = (0, 0, 0)
+
     origin = None
     origin_diff = np.array((0, 0, 0), dtype=float)
+    origin_seen = []
     n_diffs = 0
-    for partial in dicom_ds.headers:
-        ds = partial["data"]
-        if "ImagePositionPatient" in ds:
-            file_origin = np.array(ds.ImagePositionPatient, dtype=float)
-            if origin is not None:
-                diff = file_origin - origin
-                origin_diff = origin_diff + diff
-                n_diffs += 1
-            origin = file_origin
+    for file_origin in file_origins:
+        if any(np.allclose(file_origin, o) for o in origin_seen):
+            continue  # ignore duplicates (seen in 4D images)
+
+        if origin is not None:
+            diff = file_origin - origin
+            origin_diff = origin_diff + diff
+            n_diffs += 1
+        origin = file_origin
+        origin_seen.append(file_origin)
+
     if n_diffs == 0:
-        # One slice only, meaning there is no spacing, default to 1 mm
-        z_i = 1.0
+        # One slice or volume only, read spacing from header or default to 1 mm
+        z_i = float(getattr(ref, "SpacingBetweenSlices", 1.0))
         z_order = 0
     else:
         # Multiple slices, average spacing between slices
@@ -227,26 +275,28 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
             )
         z_order = np.sign(np.dot(avg_origin_diff, z_direction))
 
-    samples_per_pixel = int(getattr(ref_file, "SamplesPerPixel", 1))
+    # Create ITK image from DICOM, collect additional metadata
+    samples_per_pixel = int(getattr(ref, "SamplesPerPixel", 1))
     img = _create_itk_from_dcm(
-        content_times=content_times,
         dicom_ds=dicom_ds,
         dimensions=dimensions,
-        exposures=exposures,
         pixel_dims=pixel_dims,
         z_order=z_order,
         samples_per_pixel=samples_per_pixel,
     )
 
+    # Slices might have been reordered, so compute the actual origin and
+    # set the correct world coordinate system (origin, spacing, direction)
     if origin is None:
         origin = (0.0, 0.0, 0.0)
     sitk_origin = ref_origin if z_order >= 0 else tuple(origin)
 
-    if "PixelSpacing" in ref_file:
-        x_i, y_i = (float(x) for x in ref_file.PixelSpacing)
-    else:
-        x_i = y_i = 1.0
+    try:
+        pixel_spacing = _find_dicom_tag(ref, "PixelSpacing")
+    except DicomTagNotFoundError:
+        pixel_spacing = (1.0, 1.0)
 
+    x_i, y_i = (float(s) for s in pixel_spacing)
     sitk_spacing = (x_i, y_i, z_i)
     if dimensions == 4:
         sitk_spacing += (1.0,)
@@ -257,16 +307,14 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
     img.SetSpacing(sitk_spacing)
     img.SetOrigin(sitk_origin)
 
-    if dimensions == 4:
-        # Set Additional Meta Data
-        img.SetMetaData("ContentTimes", " ".join(content_times))
-        img.SetMetaData("Exposures", " ".join(exposures))
-
+    # Add additional metadata
     for f in OPTIONAL_METADATA_FIELDS:
-        if hasattr(ref_file, f):
-            value = getattr(ref_file, f)
+        if hasattr(ref, f):
+            value = getattr(ref, f)
             validate_metadata_value(key=f, value=value)
-            img.SetMetaData(f, str(value))
+            str_value = str(value)
+            if str_value != "":
+                img.SetMetaData(f, str_value)
 
     return SimpleITKImage(
         image=img,
@@ -280,10 +328,8 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
 
 def _create_itk_from_dcm(
     *,
-    content_times,
     dicom_ds,
     dimensions,
-    exposures,
     pixel_dims,
     z_order,
     samples_per_pixel,
@@ -304,16 +350,18 @@ def _create_itk_from_dcm(
         np_dtype = np.short
     if samples_per_pixel > 1:
         pixel_dims += (samples_per_pixel,)
+
     dcm_array = None
-    use_pixel_array = False
+    content_times = []
+    exposures = []
 
     for index, partial in enumerate(dicom_ds.headers):
         ds = pydicom.dcmread(str(partial["file"]))
 
         if apply_scaling:
-            pixel_array = float(
-                getattr(ds, "RescaleSlope", 1)
-            ) * ds.pixel_array + float(getattr(ds, "RescaleIntercept", 0))
+            slope = float(getattr(ds, "RescaleSlope", 1))
+            intercept = float(getattr(ds, "RescaleIntercept", 0))
+            pixel_array = slope * ds.pixel_array + intercept
         else:
             pixel_array = ds.pixel_array
 
@@ -321,18 +369,26 @@ def _create_itk_from_dcm(
             len(pixel_array.shape) == dimensions
             or pixel_array.shape == pixel_dims
         ):
-            use_pixel_array = True
+            dcm_array = pixel_array.astype(np_dtype)
             del ds
+
+            slicing = [slice(None)] * dimensions
+            slicing[-3] = slice(None, None, 1 if z_order >= 0 else -1)
+            dcm_array = dcm_array[tuple(slicing)]
             break
+
         if dcm_array is None:
             dcm_array = np.zeros(pixel_dims, dtype=np_dtype)
 
         z_index = index if z_order >= 0 else len(dicom_ds.headers) - index - 1
 
         if dimensions == 4:
-            dcm_array[
-                index // dicom_ds.n_slices, z_index % dicom_ds.n_slices, :, :
-            ] = pixel_array
+            z = (
+                z_index % dicom_ds.n_slices
+                if dicom_ds.n_slices_per_file == 1
+                else slice(None)
+            )
+            dcm_array[index // dicom_ds.n_slices, z, :, :] = pixel_array
             if index % dicom_ds.n_slices == 0:
                 content_times.append(str(ds.ContentTime))
                 exposures.append(str(ds.Exposure))
@@ -340,10 +396,12 @@ def _create_itk_from_dcm(
             dcm_array[z_index % dicom_ds.n_slices, :, :] = pixel_array
 
         del ds
-    if use_pixel_array:
-        img = SimpleITK.GetImageFromArray(pixel_array, isVector=is_rgb)
-    else:
-        img = SimpleITK.GetImageFromArray(dcm_array, isVector=is_rgb)
+
+    img = SimpleITK.GetImageFromArray(dcm_array, isVector=is_rgb)
+    if dimensions == 4:
+        img.SetMetaData("ContentTimes", " ".join(content_times))
+        img.SetMetaData("Exposures", " ".join(exposures))
+
     return img
 
 
@@ -353,9 +411,8 @@ def image_builder_dicom(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
 
     Parameters
     ----------
-    path
-        Path to a directory that contains all images that were uploaded during
-        an upload session.
+    files
+        Paths to images that were uploaded during an upload session.
 
     Returns
     -------
