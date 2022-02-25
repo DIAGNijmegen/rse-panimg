@@ -8,7 +8,7 @@ import numpy as np
 import pydicom
 import SimpleITK
 
-from panimg.exceptions import UnconsumedFilesException, ValidationError
+from panimg.exceptions import UnconsumedFilesException
 from panimg.models import (
     EXTRA_METADATA,
     SimpleITKImage,
@@ -261,12 +261,8 @@ class DicomDataset:
             value = getattr(self.ref_header, f, "")
             str_value = str(value)
             if str_value != "":
-                try:
-                    validate_metadata_value(key=f, value=value)
-                except ValidationError:
-                    pass
-                else:
-                    img.SetMetaData(f, str_value)
+                validate_metadata_value(key=f, value=value)
+                img.SetMetaData(f, str_value)
 
     def _add_temporal_metadata(self, img: SimpleITK.Image, z_order: int):
         content_times = []
