@@ -1,11 +1,13 @@
-from construct import PaddedString, Struct, Int32un
-import numpy as np
-from panimg.contrib.oct_converter.image_types import (
-    OCTVolumeWithMetaData,
-    FundusImageWithMetaData,
-)
-from pylibjpeg import decode
 from pathlib import Path
+
+import numpy as np
+from construct import Int32un, PaddedString, Struct
+from pylibjpeg import decode
+
+from panimg.contrib.oct_converter.image_types import (
+    FundusImageWithMetaData,
+    OCTVolumeWithMetaData,
+)
 
 
 class FDA:
