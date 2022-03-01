@@ -76,11 +76,16 @@ class DicomDataset:
 
     def direction(self) -> np.ndarray:
         # Compute rotation matrix (orientation of the image)
-        orientation = _find_dicom_tag(
-            self.ref_header, "ImageOrientationPatient"
-        )
-        row_cos = orientation[:3]
-        col_cos = orientation[3:]
+        try:
+            orientation = _find_dicom_tag(
+                self.ref_header, "ImageOrientationPatient"
+            )
+            row_cos = orientation[:3]
+            col_cos = orientation[3:]
+        except DicomTagNotFoundError:
+            # Tag can be missing in X-ray images for example
+            row_cos = (1, 0, 0)
+            col_cos = (0, 1, 0)
 
         direction = np.eye(self.dimensions, dtype=float)
         direction[:3, :3] = np.stack(
