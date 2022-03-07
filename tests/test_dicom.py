@@ -75,7 +75,7 @@ def test_image_builder_dicom_single_slice(tmpdir):
 
 
 def test_image_builder_dicom_2d(tmpdir):
-    files = {RESOURCE_PATH / "xray.dcm"}
+    files = {RESOURCE_PATH / "dicom_2d" / "xray.dcm"}
     result = _build_files(
         builder=image_builder_dicom, files=files, output_directory=tmpdir
     )
