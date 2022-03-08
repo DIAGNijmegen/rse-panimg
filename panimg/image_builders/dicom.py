@@ -54,7 +54,9 @@ def _find_dicom_tag(dataset: pydicom.Dataset, tag: str):
         if header.keyword == tag:
             return header.value
 
-    raise DicomTagNotFoundError
+    raise DicomTagNotFoundError(
+        f"Could not find DICOM tag {tag} in the header"
+    )
 
 
 def _get_headers_by_study(files, file_errors):
