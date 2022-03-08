@@ -196,14 +196,17 @@ class DicomDataset:
 
     def _read_pixel_values(self, filename: Path, rescale: bool) -> np.ndarray:
         ds = pydicom.dcmread(str(filename))
-        if rescale:
-            slope = float(getattr(ds, "RescaleSlope", 1))
-            intercept = float(getattr(ds, "RescaleIntercept", 0))
-            pixel_array = slope * ds.pixel_array + intercept
-        else:
-            pixel_array = ds.pixel_array
+        slope = float(getattr(ds, "RescaleSlope", 1))
+        intercept = float(getattr(ds, "RescaleIntercept", 0))
+        pixel_array = ds.pixel_array.astype(
+            dtype=self._pixel_value_dtype(rescale=rescale), copy=False
+        )
+        del ds
 
-        return pixel_array.astype(self._pixel_value_dtype(rescale=rescale))
+        if rescale:
+            return slope * pixel_array + intercept
+        else:
+            return pixel_array
 
     def _shape(self, samples_per_pixel: int) -> Tuple[int, ...]:
         pixel_dims = [
