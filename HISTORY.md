@@ -1,5 +1,9 @@
 # History
 
+## 0.6.1 (2022-03-08)
+
+* Fix loading of 2D DICOM
+
 ## 0.6.0 (2022-02-25)
 
 * Added support for enhanced DICOM files
