@@ -54,7 +54,9 @@ def _find_dicom_tag(dataset: pydicom.Dataset, tag: str):
         if header.keyword == tag:
             return header.value
 
-    raise DicomTagNotFoundError
+    raise DicomTagNotFoundError(
+        f"Could not find DICOM tag {tag} in the header"
+    )
 
 
 def _get_headers_by_study(files, file_errors):
@@ -202,9 +204,14 @@ def _process_dicom_file(*, dicom_ds):  # noqa: C901
         pixel_dims = (dicom_ds.n_time,) + pixel_dims
 
     # Compute rotation matrix (orientation of the image)
-    orientation = _find_dicom_tag(ref, "ImageOrientationPatient")
-    row_cos = orientation[:3]
-    col_cos = orientation[3:]
+    try:
+        orientation = _find_dicom_tag(ref, "ImageOrientationPatient")
+        row_cos = orientation[:3]
+        col_cos = orientation[3:]
+    except DicomTagNotFoundError:
+        # Tag can be missing in X-ray images for example
+        row_cos = (1, 0, 0)
+        col_cos = (0, 1, 0)
     direction = np.eye(dimensions, dtype=float)
     direction[:3, :3] = np.stack(
         [row_cos, col_cos, np.cross(row_cos, col_cos)], axis=1
