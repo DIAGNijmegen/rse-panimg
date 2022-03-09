@@ -95,6 +95,7 @@ def test_image_builder_dicom_2d(tmpdir):
     assert sitk_image.GetDimension() == 3
     assert np.allclose(sitk_image.GetOrigin(), (0, 0, 0))
     assert np.allclose(sitk_image.GetDirection(), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+    assert sitk_image.GetPixelID() == SimpleITK.sitkUInt16
 
 
 def test_image_builder_dicom_4d(tmpdir):

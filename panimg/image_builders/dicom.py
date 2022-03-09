@@ -17,20 +17,6 @@ from panimg.models import (
 
 logger = logging.getLogger(__name__)
 
-NUMPY_IMAGE_TYPES = {
-    "character": SimpleITK.sitkUInt8,
-    "uint8": SimpleITK.sitkUInt8,
-    "uint16": SimpleITK.sitkUInt16,
-    "uint32": SimpleITK.sitkUInt32,
-    "uint64": SimpleITK.sitkUInt64,
-    "int8": SimpleITK.sitkInt8,
-    "int16": SimpleITK.sitkInt16,
-    "int32": SimpleITK.sitkInt32,
-    "int64": SimpleITK.sitkInt64,
-    "float32": SimpleITK.sitkFloat32,
-    "float64": SimpleITK.sitkFloat64,
-}
-
 OPTIONAL_METADATA_FIELDS = (
     # These fields will be included in the output mha file
     "Laterality",
@@ -66,6 +52,8 @@ class DicomDataset:
         self.n_time = n_time
         self.n_slices = n_slices
         self.n_slices_per_file = n_slices_per_file
+
+        self._pixel_value_dtype = None
 
     @property
     def ref_header(self) -> pydicom.Dataset:
@@ -193,15 +181,24 @@ class DicomDataset:
         )
         return apply_slope or apply_intercept
 
-    def _pixel_value_dtype(self, rescale: bool):
-        return np.float32 if rescale else np.short
-
     def _read_pixel_values(self, filename: Path, rescale: bool) -> np.ndarray:
         ds = pydicom.dcmread(str(filename))
+
+        # Read rescaling parameters already now so that we can delete
+        # the DICOM dataset instance as soon as possible
         slope = float(getattr(ds, "RescaleSlope", 1))
         intercept = float(getattr(ds, "RescaleIntercept", 0))
+
+        # If the data type is still unknown, use data type of this slice
+        if self._pixel_value_dtype is None:
+            if rescale:
+                self._pixel_value_dtype = np.float32
+            else:
+                self._pixel_value_dtype = ds.pixel_array.dtype
+
+        # Get pixel array and cast to desired data type if needed
         pixel_array = ds.pixel_array.astype(
-            dtype=self._pixel_value_dtype(rescale=rescale), copy=False
+            dtype=self._pixel_value_dtype, copy=False
         )
         del ds
 
@@ -245,10 +242,7 @@ class DicomDataset:
                 break
 
             if dcm_array is None:
-                dcm_array = np.zeros(
-                    pixel_dims,
-                    dtype=self._pixel_value_dtype(rescale=apply_scaling),
-                )
+                dcm_array = np.zeros(pixel_dims, dtype=pixel_array.dtype)
 
             # Determine slice position in array based on slice order
             z_index = index if z_order >= 0 else len(self.headers) - index - 1
