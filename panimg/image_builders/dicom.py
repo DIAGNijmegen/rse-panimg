@@ -37,6 +37,13 @@ OPTIONAL_METADATA_FIELDS = (
     "SliceThickness",
     "WindowCenter",
     "WindowWidth",
+    "PhotometricInterpretation",
+    "RedPaletteColorLookupTableData",
+    "RedPaletteColorLookupTableDescriptor",
+    "GreenPaletteColorLookupTableData",
+    "GreenPaletteColorLookupTableDescriptor",
+    "BluePaletteColorLookupTableData",
+    "BluePaletteColorLookupTableDescriptor",
     *[md.keyword for md in EXTRA_METADATA],
 )
 

@@ -26,6 +26,7 @@ PatientBirthDate = 20200101
 PatientAge = 001Y
 PatientSex = M
 Laterality = R
+PhotometricInterpretation = MONOCHROME1
 StudyDescription = super awesome study
 SeriesDescription = super awesome series
 SliceThickness = 2
