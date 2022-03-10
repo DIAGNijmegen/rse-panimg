@@ -97,6 +97,10 @@ def test_image_builder_dicom_2d(tmpdir):
     assert np.allclose(sitk_image.GetDirection(), (1, 0, 0, 0, 1, 0, 0, 0, 1))
     assert sitk_image.GetPixelID() == SimpleITK.sitkUInt16
 
+    # Raw voxel values are 1, but photometric interpretation is MONOCHROME1
+    # meaning that panimg will invert all values by subtracting the maximum value
+    assert np.all(SimpleITK.GetArrayViewFromImage(sitk_image) == 0)
+
 
 def test_image_builder_dicom_4d(tmpdir):
     files = {Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]}

@@ -258,6 +258,14 @@ class DicomDataset:
             else:
                 dcm_array[z_index % self.n_slices, :, :] = pixel_array
 
+        # When images have a photometric interpretation that requires low
+        # values to be displayed in white, we invert the image values
+        photometric_interpretation = getattr(
+            self.ref_header, "PhotometricInterpretation", None
+        )
+        if not is_rgb and photometric_interpretation == "MONOCHROME1":
+            dcm_array -= np.max(dcm_array)
+
         return SimpleITK.GetImageFromArray(dcm_array, isVector=is_rgb)
 
     def _add_optional_metadata(self, img: SimpleITK.Image):
