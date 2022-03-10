@@ -264,7 +264,7 @@ class DicomDataset:
             self.ref_header, "PhotometricInterpretation", None
         )
         if not is_rgb and photometric_interpretation == "MONOCHROME1":
-            dcm_array -= np.max(dcm_array)
+            dcm_array = np.max(dcm_array) - dcm_array
 
         return SimpleITK.GetImageFromArray(dcm_array, isVector=is_rgb)
 
