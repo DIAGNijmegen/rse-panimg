@@ -98,8 +98,8 @@ def test_image_builder_dicom_2d(tmpdir):
     assert sitk_image.GetPixelID() == SimpleITK.sitkUInt16
 
     # Raw voxel values are 1, but photometric interpretation is MONOCHROME1
-    # meaning that panimg will invert all values by subtracting the maximum value
-    assert np.all(SimpleITK.GetArrayViewFromImage(sitk_image) == 0)
+    # meaning that panimg will invert all values
+    assert np.all(SimpleITK.GetArrayViewFromImage(sitk_image) == 65534)
 
 
 def test_image_builder_dicom_4d(tmpdir):

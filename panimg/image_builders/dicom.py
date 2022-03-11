@@ -225,7 +225,7 @@ class DicomDataset:
         pixel_dims = self._shape(samples_per_pixel)
         is_rgb = samples_per_pixel > 1
         apply_scaling = self._pixel_values_need_scaling()
-        dcm_array = None
+        dcm_array: np.ndarray = None
 
         for index, partial in enumerate(self.headers):
             pixel_array = self._read_pixel_values(
@@ -264,7 +264,10 @@ class DicomDataset:
             self.ref_header, "PhotometricInterpretation", None
         )
         if not is_rgb and photometric_interpretation == "MONOCHROME1":
-            dcm_array = np.max(dcm_array) - dcm_array
+            if np.issubdtype(dcm_array.dtype, np.floating):
+                dcm_array = -dcm_array
+            else:
+                dcm_array = ~dcm_array
 
         return SimpleITK.GetImageFromArray(dcm_array, isVector=is_rgb)
 
