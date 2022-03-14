@@ -408,15 +408,15 @@ def _find_valid_dicom_files(
 
         data = headers[-1]["data"]
         n_files = len(headers)
-        n_time = getattr(data, "TemporalPositionIndex", None)
+        n_time = int(getattr(data, "TemporalPositionIndex", 0))
         try:
             n_slices_per_file = len(data.PerFrameFunctionalGroupsSequence)
         except AttributeError:
             n_slices_per_file = int(getattr(data, "NumberOfFrames", 1))
         n_slices = n_files * n_slices_per_file
 
-        if n_time is None:
-            # Not a 4d dicom file
+        if n_time < 1:
+            # Not a 4d dicom file (DICOM standard says TPI is >=1 )
             result.append(
                 DicomDataset(
                     headers=headers,
