@@ -420,7 +420,7 @@ def _find_valid_dicom_files(
             result.append(
                 DicomDataset(
                     headers=headers,
-                    n_time=n_time,
+                    n_time=None,
                     n_slices=n_slices,
                     n_slices_per_file=n_slices_per_file,
                     index=index,
