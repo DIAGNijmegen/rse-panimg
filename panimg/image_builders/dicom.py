@@ -53,6 +53,7 @@ class DicomDataset:
         self.n_slices = n_slices
         self.n_slices_per_file = n_slices_per_file
 
+        self._direction = None
         self._pixel_value_dtype = None
 
     @property
@@ -64,25 +65,28 @@ class DicomDataset:
         # Images are either 4D or 3D (2D images get an additional axis of size 1)
         return 4 if self.n_time and self.n_time > 1 else 3
 
+    @property
     def direction(self) -> np.ndarray:
-        # Compute rotation matrix (orientation of the image)
-        try:
-            orientation = _find_dicom_tag(
-                self.ref_header, "ImageOrientationPatient"
+        if self._direction is None:
+            # Compute rotation matrix (orientation of the image)
+            try:
+                orientation = _find_dicom_tag(
+                    self.ref_header, "ImageOrientationPatient"
+                )
+                row_cos = orientation[:3]
+                col_cos = orientation[3:]
+            except DicomTagNotFoundError:
+                # Tag can be missing in X-ray images for example
+                row_cos = (1, 0, 0)
+                col_cos = (0, 1, 0)
+
+            direction = np.eye(self.dimensions, dtype=float)
+            direction[:3, :3] = np.stack(
+                [row_cos, col_cos, np.cross(row_cos, col_cos)], axis=1
             )
-            row_cos = orientation[:3]
-            col_cos = orientation[3:]
-        except DicomTagNotFoundError:
-            # Tag can be missing in X-ray images for example
-            row_cos = (1, 0, 0)
-            col_cos = (0, 1, 0)
+            self._direction = direction
 
-        direction = np.eye(self.dimensions, dtype=float)
-        direction[:3, :3] = np.stack(
-            [row_cos, col_cos, np.cross(row_cos, col_cos)], axis=1
-        )
-
-        return direction
+        return self._direction
 
     def _iter_origins(self):
         has_frame_details = (
@@ -138,7 +142,7 @@ class DicomDataset:
             # Use the dot product to find the angle between that direction
             # and the spacing vector - this tells us whether the order of
             # the slices is correct or should be reversed
-            z_direction = self.direction() @ np.ones(self.dimensions)
+            z_direction = self.direction @ np.ones(self.dimensions)
             if self.dimensions > 3:
                 avg_origin_diff = np.pad(
                     avg_origin_diff,
@@ -300,7 +304,7 @@ class DicomDataset:
 
         # Create ITK image from DICOM
         img = self._create_itk_from_dcm(z_order=z_order)
-        img.SetDirection(tuple(self.direction().flatten()))
+        img.SetDirection(tuple(self.direction.flatten()))
         img.SetSpacing(spacing)
         img.SetOrigin(origin)
 
@@ -391,7 +395,7 @@ def _find_valid_dicom_files(
 
     Returns
     -------
-    A list of `dicom_dataset` named tuples per study, consisting of:
+    A list of `DicomDataset` instancesnamed tuples per study, consisting of:
      - Headers for all dicom image files for the study
      - Number of time points
      - Number of slices per time point
