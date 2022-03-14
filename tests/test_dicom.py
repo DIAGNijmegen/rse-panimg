@@ -6,10 +6,11 @@ from unittest import mock
 import numpy as np
 import pydicom
 import pytest
+import SimpleITK
 
 from panimg.image_builders.dicom import (
+    _find_valid_dicom_files,
     _get_headers_by_study,
-    _validate_dicom_files,
     format_error,
     image_builder_dicom,
 )
@@ -38,8 +39,8 @@ def test_get_headers_by_study():
 
 
 def test_validate_dicom_files():
-    files = [Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]]
-    studies = _validate_dicom_files(files, defaultdict(list))
+    files = {Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]}
+    studies = _find_valid_dicom_files(files, defaultdict(list))
     assert len(studies) == 1
     for study in studies:
         headers = study.headers
@@ -52,7 +53,7 @@ def test_validate_dicom_files():
         },
     ):
         errors = defaultdict(list)
-        studies = _validate_dicom_files(files, errors)
+        studies = _find_valid_dicom_files(files, errors)
         assert len(studies) == 0
         for header in headers[1:]:
             assert errors[header["file"]] == [
@@ -73,7 +74,35 @@ def test_image_builder_dicom_single_slice(tmpdir):
     assert image.voxel_depth_mm == pytest.approx(1.0)
 
 
-def test_image_builder_dicom_4dct(tmpdir):
+def test_image_builder_dicom_2d(tmpdir):
+    files = {RESOURCE_PATH / "dicom_2d" / "xray.dcm"}
+    result = _build_files(
+        builder=image_builder_dicom, files=files, output_directory=tmpdir
+    )
+    assert result.consumed_files == files
+    assert len(result.new_images) == 1
+
+    image = result.new_images.pop()
+    assert image.width == 1720
+    assert image.height == 2320
+    assert image.depth == 1
+
+    assert image.voxel_width_mm == pytest.approx(0.1)
+    assert image.voxel_height_mm == pytest.approx(0.1)
+    assert image.voxel_depth_mm == pytest.approx(1.0)
+
+    sitk_image = SimpleITK.ReadImage(str(result.new_image_files.pop().file))
+    assert sitk_image.GetDimension() == 3
+    assert np.allclose(sitk_image.GetOrigin(), (0, 0, 0))
+    assert np.allclose(sitk_image.GetDirection(), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+    assert sitk_image.GetPixelID() == SimpleITK.sitkUInt16
+
+    # Raw voxel values are 1, but photometric interpretation is MONOCHROME1
+    # meaning that panimg will invert all values
+    assert np.all(SimpleITK.GetArrayViewFromImage(sitk_image) == 65534)
+
+
+def test_image_builder_dicom_4d(tmpdir):
     files = {Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]}
     result = _build_files(
         builder=image_builder_dicom, files=files, output_directory=tmpdir
