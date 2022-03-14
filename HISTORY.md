@@ -1,5 +1,9 @@
 # History
 
+## 0.7.0 (2022-03-14)
+
+* Refactoed DICOM loading handling some extra corner cases
+
 ## 0.6.1 (2022-03-08)
 
 * Fix loading of 2D DICOM
