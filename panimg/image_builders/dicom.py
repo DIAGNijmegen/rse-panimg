@@ -395,10 +395,7 @@ def _find_valid_dicom_files(
 
     Returns
     -------
-    A list of `DicomDataset` instancesnamed tuples per study, consisting of:
-     - Headers for all dicom image files for the study
-     - Number of time points
-     - Number of slices per time point
+    A list of `DicomDataset` instances
 
     Any study with an inconsistent amount of slices per time point is discarded.
     """
