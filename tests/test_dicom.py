@@ -100,6 +100,8 @@ def test_image_builder_dicom_2d(tmpdir):
     # Raw voxel values are 1, but photometric interpretation is MONOCHROME1
     # meaning that panimg will invert all values
     assert np.all(SimpleITK.GetArrayViewFromImage(sitk_image) == 65534)
+    assert sitk_image.GetMetaData("WindowCenter") == "65435"
+    assert sitk_image.GetMetaData("WindowWidth") == "200"
 
 
 def test_image_builder_dicom_4d(tmpdir):
@@ -225,9 +227,9 @@ def test_dicom_rescaling(folder, element_type, tmpdir):
                 for d in os.walk(RESOURCE_PATH / "dicom_4d")
                 for f in d[2]
             },
-            "30",
+            "30.0",
             30.0,
-            "200",
+            "200.0",
             200.0,
         ),
         (
