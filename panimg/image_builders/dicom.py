@@ -21,8 +21,6 @@ OPTIONAL_METADATA_FIELDS = (
     # These fields will be included in the output mha file
     "Laterality",
     "SliceThickness",
-    "WindowCenter",
-    "WindowWidth",
     *[md.keyword for md in EXTRA_METADATA],
 )
 
