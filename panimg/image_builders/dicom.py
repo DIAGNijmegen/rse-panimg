@@ -8,7 +8,7 @@ import numpy as np
 import pydicom
 import SimpleITK
 
-from panimg.exceptions import UnconsumedFilesException
+from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.models import (
     EXTRA_METADATA,
     SimpleITKImage,
@@ -55,6 +55,7 @@ class DicomDataset:
 
         self._direction = None
         self._pixel_value_dtype = None
+        self._pixel_values_need_inverting = None
 
     @property
     def ref_header(self) -> pydicom.Dataset:
@@ -211,6 +212,16 @@ class DicomDataset:
         else:
             return pixel_array
 
+    def _invert_pixel_values_if_needed(self, value):
+        if not self._pixel_values_need_inverting:
+            return value
+
+        array = np.asarray(value, dtype=self._pixel_value_dtype)
+        if np.issubdtype(array.dtype, np.floating):
+            return -array
+        else:
+            return ~array
+
     def _shape(self, samples_per_pixel: int) -> Tuple[int, ...]:
         pixel_dims = [
             self.n_slices,
@@ -267,11 +278,10 @@ class DicomDataset:
         photometric_interpretation = getattr(
             self.ref_header, "PhotometricInterpretation", None
         )
-        if not is_rgb and photometric_interpretation == "MONOCHROME1":
-            if np.issubdtype(dcm_array.dtype, np.floating):
-                dcm_array = -dcm_array
-            else:
-                dcm_array = ~dcm_array
+        self._pixel_values_need_inverting = (
+            not is_rgb and photometric_interpretation == "MONOCHROME1"
+        )
+        dcm_array = self._invert_pixel_values_if_needed(dcm_array)
 
         return SimpleITK.GetImageFromArray(dcm_array, isVector=is_rgb)
 
@@ -279,9 +289,41 @@ class DicomDataset:
         for f in OPTIONAL_METADATA_FIELDS:
             value = getattr(self.ref_header, f, "")
             str_value = str(value)
-            if str_value != "":
-                validate_metadata_value(key=f, value=value)
-                img.SetMetaData(f, str_value)
+
+            # Skip empty entries, ITK will not write them anyway
+            if str_value == "":
+                continue
+
+            validate_metadata_value(key=f, value=value)
+            img.SetMetaData(f, str_value)
+
+    def _add_window_level_metadata(self, img: SimpleITK.Image):
+        try:
+            centers = self.ref_header.WindowCenter
+            widths = self.ref_header.WindowWidth
+        except AttributeError:
+            return
+
+        validate_metadata_value(key="WindowCenter", value=centers)
+        validate_metadata_value(key="WindowWidth", value=widths)
+
+        centers = np.asarray(centers, dtype=np.float32)
+        widths = np.asarray(widths, dtype=np.float32)
+
+        if centers.size != widths.size:
+            raise ValidationError(
+                "Different number of window centers and widths"
+            )
+        if centers.size == 0:
+            return
+
+        # When inverting pixel values, the window center also needs to
+        # be modified as this otherwise does not match the pixels anymore
+        centers = self._invert_pixel_values_if_needed(centers)
+        widths = widths.astype(dtype=centers.dtype, copy=False)
+
+        for k, v in zip(("WindowCenter", "WindowWidth"), (centers, widths)):
+            img.SetMetaData(k, str(list(v) if v.size > 1 else v.item()))
 
     def _add_temporal_metadata(self, img: SimpleITK.Image, z_order: int):
         content_times = []
@@ -310,6 +352,7 @@ class DicomDataset:
 
         # Add additional metadata
         self._add_optional_metadata(img)
+        self._add_window_level_metadata(img)
         if self.dimensions == 4:
             self._add_temporal_metadata(img, z_order)
 
