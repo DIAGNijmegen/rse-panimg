@@ -111,6 +111,10 @@ class DicomDataset:
                 else:
                     yield np.array(file_origin, dtype=float)
 
+    @staticmethod
+    def _invert_intensities(array: np.ndarray) -> np.ndarray:
+        return -array + array.max() + array.min()
+
     def _determine_slice_order(self):
         # Compute coordinate differences between successive slices
         origin = None
@@ -268,10 +272,7 @@ class DicomDataset:
             self.ref_header, "PhotometricInterpretation", None
         )
         if not is_rgb and photometric_interpretation == "MONOCHROME1":
-            if np.issubdtype(dcm_array.dtype, np.floating):
-                dcm_array = -dcm_array
-            else:
-                dcm_array = ~dcm_array
+            dcm_array = self._invert_intensities(dcm_array)
 
         return SimpleITK.GetImageFromArray(dcm_array, isVector=is_rgb)
 
