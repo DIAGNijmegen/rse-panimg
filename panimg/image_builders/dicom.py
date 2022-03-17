@@ -305,8 +305,8 @@ class DicomDataset:
         validate_metadata_value(key="WindowCenter", value=centers)
         validate_metadata_value(key="WindowWidth", value=widths)
 
-        centers = np.asarray(centers, dtype=np.float32)
-        widths = np.asarray(widths, dtype=np.float32)
+        centers = np.asarray(centers)
+        widths = np.asarray(widths)
 
         if centers.size != widths.size:
             raise ValidationError(
