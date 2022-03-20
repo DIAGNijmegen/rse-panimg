@@ -75,7 +75,7 @@ def test_image_builder_dicom_single_slice(tmpdir):
 
 
 def test_image_builder_dicom_2d(tmpdir):
-    files = {RESOURCE_PATH / "dicom_2d" / "xray.dcm"}
+    files = {RESOURCE_PATH / "dicom_2d" / "cxr.dcm"}
     result = _build_files(
         builder=image_builder_dicom, files=files, output_directory=tmpdir
     )
@@ -83,8 +83,8 @@ def test_image_builder_dicom_2d(tmpdir):
     assert len(result.new_images) == 1
 
     image = result.new_images.pop()
-    assert image.width == 1720
-    assert image.height == 2320
+    assert image.width == 440
+    assert image.height == 440
     assert image.depth == 1
 
     assert image.voxel_width_mm == pytest.approx(0.1)
@@ -97,11 +97,13 @@ def test_image_builder_dicom_2d(tmpdir):
     assert np.allclose(sitk_image.GetDirection(), (1, 0, 0, 0, 1, 0, 0, 0, 1))
     assert sitk_image.GetPixelID() == SimpleITK.sitkUInt16
 
-    # Raw voxel values are 1, but photometric interpretation is MONOCHROME1
-    # meaning that panimg will invert all values
-    assert np.all(SimpleITK.GetArrayViewFromImage(sitk_image) == 65534)
-    assert sitk_image.GetMetaData("WindowCenter") == "65435"
-    assert sitk_image.GetMetaData("WindowWidth") == "200"
+    # Photometric interpretation is MONOCHROME1 so pixel values have been
+    # altered (inverted), including the window level but not the width
+    array = SimpleITK.GetArrayViewFromImage(sitk_image)
+    assert np.count_nonzero(array == 979) == 6
+    assert np.count_nonzero(array == 0) == 4
+    assert sitk_image.GetMetaData("WindowCenter") == "429"
+    assert sitk_image.GetMetaData("WindowWidth") == "1024"
 
 
 def test_image_builder_dicom_4d(tmpdir):
@@ -227,9 +229,9 @@ def test_dicom_rescaling(folder, element_type, tmpdir):
                 for d in os.walk(RESOURCE_PATH / "dicom_4d")
                 for f in d[2]
             },
-            "30.0",
+            "30",
             30.0,
-            "200.0",
+            "200",
             200.0,
         ),
         (
