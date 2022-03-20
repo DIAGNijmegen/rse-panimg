@@ -9,7 +9,7 @@ import pytest
 import SimpleITK
 
 from panimg.image_builders.dicom import (
-    DicomDataset,
+    PixelValueInverter,
     _find_valid_dicom_files,
     _get_headers_by_study,
     format_error,
@@ -288,5 +288,6 @@ def test_dicom_window_level(tmpdir, files, center, center_ob, width, width_ob):
     ],
 )
 def test_dicom_photometric_interpretation_inversion(array_as_list, expected):
-    inverted = DicomDataset._invert_intensities(np.array(array_as_list))
-    np.testing.assert_equal(inverted, np.array(expected))
+    array = np.array(array_as_list)
+    inverter = PixelValueInverter(array)
+    np.testing.assert_equal(inverter.invert(array), np.array(expected))
