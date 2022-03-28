@@ -64,7 +64,7 @@ class PixelValueInverter:
     def invert(self, pixel_array: np.ndarray) -> np.ndarray:
         a = np.asarray(pixel_array, dtype=self.dtype)
         with IgnoreOverflowWarnings():
-            return -a + self.max + self.min
+            return -a + (self.max + self.min)
 
 
 class DicomDataset:
