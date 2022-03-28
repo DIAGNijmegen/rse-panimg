@@ -45,26 +45,16 @@ def _find_dicom_tag(dataset: pydicom.Dataset, tag: str):
     )
 
 
-class IgnoreOverflowWarnings:
-    def __enter__(self):
-        self.original_settings = np.seterr(over="ignore")
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        np.seterr(**self.original_settings)
-
-
 class PixelValueInverter:
     """Inverts pixel values to generate MONOCHROME2 images from MONOCHROME1 images"""
 
     def __init__(self, image: np.ndarray):
-        self.min = np.min(image)
-        self.max = np.max(image)
+        self.offset = np.add(np.min(image), np.max(image))
         self.dtype = image.dtype
 
     def invert(self, pixel_array: np.ndarray) -> np.ndarray:
         a = np.asarray(pixel_array, dtype=self.dtype)
-        with IgnoreOverflowWarnings():
-            return -a + (self.max + self.min)
+        return -a + self.offset
 
 
 class DicomDataset:
