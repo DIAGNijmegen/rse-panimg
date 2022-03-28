@@ -54,7 +54,7 @@ class PixelValueInverter:
 
     def invert(self, pixel_array: np.ndarray) -> np.ndarray:
         a = np.asarray(pixel_array, dtype=self.dtype)
-        return -a + self.offset
+        return np.add(-a, self.offset)  # use np.add to avoid overflow warnings
 
 
 class DicomDataset:
