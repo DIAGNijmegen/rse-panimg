@@ -109,14 +109,14 @@ def test_image_builder_oct(
 
     assert result.consumed_files == {dest}
     assert len(result.new_images) == 1
-    for result in result.new_images:
+    for res in result.new_images:
         expected_values = expected_oct_properties
-        if "fundus" in result.name:
+        if "fundus" in res.name:
             # expected_values = expected_fundus_properties
             continue  # Skip fundus_images for now
 
         for k, v in expected_values.items():
-            assert getattr(result, k) == v
+            assert getattr(res, k) == v
 
 
 def test_image_builder_oct_corrupt_file(tmpdir):

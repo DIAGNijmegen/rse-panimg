@@ -45,6 +45,18 @@ def _find_dicom_tag(dataset: pydicom.Dataset, tag: str):
     )
 
 
+class PixelValueInverter:
+    """Inverts pixel values to generate MONOCHROME2 images from MONOCHROME1 images"""
+
+    def __init__(self, image: np.ndarray):
+        self.offset = np.add(np.min(image), np.max(image))
+        self.dtype = image.dtype
+
+    def invert(self, pixel_array: np.ndarray) -> np.ndarray:
+        a = np.asarray(pixel_array, dtype=self.dtype)
+        return np.add(-a, self.offset)  # use np.add to avoid overflow warnings
+
+
 class DicomDataset:
     def __init__(self, index, headers, n_time, n_slices, n_slices_per_file):
         self.index = index
@@ -55,6 +67,7 @@ class DicomDataset:
 
         self._direction = None
         self._pixel_value_dtype = None
+        self._pixel_value_inverter = None
 
     @property
     def ref_header(self) -> pydicom.Dataset:
@@ -110,10 +123,6 @@ class DicomDataset:
                     pass
                 else:
                     yield np.array(file_origin, dtype=float)
-
-    @staticmethod
-    def _invert_intensities(array: np.ndarray) -> np.ndarray:
-        return -array + array.max() + array.min()
 
     def _determine_slice_order(self):
         # Compute coordinate differences between successive slices
@@ -272,7 +281,8 @@ class DicomDataset:
             self.ref_header, "PhotometricInterpretation", None
         )
         if not is_rgb and photometric_interpretation == "MONOCHROME1":
-            dcm_array = self._invert_intensities(dcm_array)
+            self._pixel_value_inverter = PixelValueInverter(dcm_array)
+            dcm_array = self._pixel_value_inverter.invert(dcm_array)
 
         return SimpleITK.GetImageFromArray(dcm_array, isVector=is_rgb)
 
@@ -280,9 +290,21 @@ class DicomDataset:
         for f in OPTIONAL_METADATA_FIELDS:
             value = getattr(self.ref_header, f, "")
             str_value = str(value)
-            if str_value != "":
-                validate_metadata_value(key=f, value=value)
-                img.SetMetaData(f, str_value)
+
+            # Skip empty entries, ITK will not write them anyway
+            if str_value == "":
+                continue
+
+            validate_metadata_value(key=f, value=value)
+
+            # Invert value of window level
+            if f == "WindowCenter" and self._pixel_value_inverter is not None:
+                centers = self._pixel_value_inverter.invert(value)
+                str_value = str(
+                    list(centers) if centers.size > 1 else centers.item()
+                )
+
+            img.SetMetaData(f, str_value)
 
     def _add_temporal_metadata(self, img: SimpleITK.Image, z_order: int):
         content_times = []
