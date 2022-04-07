@@ -396,7 +396,7 @@ def _get_headers_by_study(
                 try:
                     index = indices[ds.StudyInstanceUID][key]
                 except KeyError:
-                    index = len(indices[ds.StudyInstanceUID]) + 1
+                    index = len(indices[ds.StudyInstanceUID])
                     indices[ds.StudyInstanceUID][key] = index
 
                 headers = studies[key].get("headers", [])
