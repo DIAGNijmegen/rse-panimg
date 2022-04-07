@@ -338,7 +338,7 @@ class DicomDataset:
 
         return SimpleITKImage(
             image=img,
-            name=f"{self.headers[0]['data'].StudyInstanceUID}-{self.index}",
+            name=f"{self.ref_header.StudyInstanceUID}-{self.index}",
             consumed_files={d["file"] for d in self.headers},
             spacing_valid=True,
         )
@@ -363,31 +363,42 @@ def _get_headers_by_study(
     A dictionary of sorted headers for all dicom image files found within path,
     grouped by study id.
     """
-    studies: Dict[str, Dict[str, Any]] = {}
-    indices: Dict[str, Dict[str, int]] = {}
+    studies: Dict[Any, Dict[str, Any]] = {}
+    indices: Dict[Any, Dict[Any, int]] = {}
 
     for file in files:
         if not file.is_file():
             continue
         with file.open("rb") as f:
             try:
-                ds = pydicom.filereader.read_partial(
-                    f,
-                    stop_when=lambda tag, vr, length: tag == (0x7FE0, 0x0010),
+                # Read header only, skip reading the pixel data for now
+                ds = pydicom.dcmread(f, stop_before_pixels=True)
+
+                # Group by series instance uid or by stack ID (for 4D images)
+                # Additionally also group by SOP class UID to skip over extra
+                # raw data (dose reports for example) that are sometimes stored
+                # under the same series instance UID.
+                key = (
+                    ds.StudyInstanceUID,
+                    getattr(ds, "StackID", ds.SeriesInstanceUID),
+                    ds.SOPClassUID,
                 )
-                dims = f"{ds.Rows}x{ds.Columns}"
-                key = f"{ds.StudyInstanceUID}-{dims}"
+
+                # Since we might need to combine multiple images with different
+                # series instance UID (in 4D images), we cannot use the series
+                # as the unique file name - instead, we use the study instance
+                # uid and a counter (index) per study
                 studies[key] = studies.get(key, {})
                 indices[ds.StudyInstanceUID] = indices.get(
                     ds.StudyInstanceUID, {}
                 )
-                index = indices[ds.StudyInstanceUID].get(dims)
-                if index is None:
-                    index = (
-                        max(list(indices[ds.StudyInstanceUID].values()) + [-1])
-                        + 1
-                    )
-                    indices[ds.StudyInstanceUID][dims] = index
+
+                try:
+                    index = indices[ds.StudyInstanceUID][key]
+                except KeyError:
+                    index = len(indices[ds.StudyInstanceUID]) + 1
+                    indices[ds.StudyInstanceUID][key] = index
+
                 headers = studies[key].get("headers", [])
                 headers.append({"file": file, "data": ds})
                 studies[key]["index"] = index
