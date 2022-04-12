@@ -363,8 +363,9 @@ def _get_headers_by_study(
     A dictionary of sorted headers for all dicom image files found within path,
     grouped by study id.
     """
-    studies: Dict[Any, Dict[str, Any]] = {}
-    indices: Dict[Any, Dict[Any, int]] = {}
+    study_key = Tuple[Any, Any, Any]
+    studies: Dict[study_key, Dict[str, Any]] = {}
+    indices: Dict[str, Dict[study_key, int]] = {}
 
     for file in files:
         if not file.is_file():
@@ -378,7 +379,7 @@ def _get_headers_by_study(
                 # Additionally also group by SOP class UID to skip over extra
                 # raw data (dose reports for example) that are sometimes stored
                 # under the same series instance UID.
-                key = (
+                key: study_key = (
                     ds.StudyInstanceUID,
                     getattr(ds, "StackID", ds.SeriesInstanceUID),
                     ds.SOPClassUID,
