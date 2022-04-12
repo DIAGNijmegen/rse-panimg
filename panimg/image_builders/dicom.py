@@ -363,7 +363,7 @@ def _get_headers_by_study(
     A dictionary of sorted headers for all dicom image files found within path,
     grouped by study id.
     """
-    study_key = Tuple[Any, Any, Any]
+    study_key = Tuple[str, str, str]
     studies: Dict[study_key, Dict[str, Any]] = {}
     indices: Dict[str, Dict[study_key, int]] = {}
 
