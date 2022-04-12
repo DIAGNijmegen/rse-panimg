@@ -50,7 +50,7 @@ def test_validate_dicom_files():
     with mock.patch(
         "panimg.image_builders.dicom._get_headers_by_study",
         return_value={
-            "foo": {"headers": headers[1:], "file": "bar", "index": 1}
+            "foo": {"headers": headers[1:], "name": "StudyInstanceUID-0"}
         },
     ):
         errors = defaultdict(list)
