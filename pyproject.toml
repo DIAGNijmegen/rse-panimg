@@ -23,7 +23,10 @@ numpy = [
   { version = "^1.21", python = "<3.8" },
   { version = "^1.22", python = ">=3.8,<3.10" }
 ]
-SimpleITK = ">=2.0"
+# Exclude 2.1.1.1 due to
+# https://github.com/SimpleITK/SimpleITK/issues/1627
+# and https://github.com/python-poetry/poetry/issues/2453
+SimpleITK = ">=2.0,!=2.1.1.1"
 pydicom = ">=2.2"
 Pillow = "*"
 openslide-python = "*"
