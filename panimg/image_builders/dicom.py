@@ -58,8 +58,8 @@ class PixelValueInverter:
 
 
 class DicomDataset:
-    def __init__(self, index, headers, n_time, n_slices, n_slices_per_file):
-        self.index = index
+    def __init__(self, *, name, headers, n_time, n_slices, n_slices_per_file):
+        self.name = name
         self.headers = headers
         self.n_time = n_time
         self.n_slices = n_slices
@@ -338,7 +338,7 @@ class DicomDataset:
 
         return SimpleITKImage(
             image=img,
-            name=f"{self.ref_header.StudyInstanceUID}-{self.index}",
+            name=self.name,
             consumed_files={d["file"] for d in self.headers},
             spacing_valid=True,
         )
@@ -385,10 +385,6 @@ def _get_headers_by_study(
                     ds.SOPClassUID,
                 )
 
-                # Since we might need to combine multiple images with different
-                # series instance UID (in 4D images), we cannot use the series
-                # as the unique file name - instead, we use the study instance
-                # uid and a counter (index) per study
                 studies[key] = studies.get(key, {})
                 indices[ds.StudyInstanceUID] = indices.get(
                     ds.StudyInstanceUID, {}
@@ -402,8 +398,14 @@ def _get_headers_by_study(
 
                 headers = studies[key].get("headers", [])
                 headers.append({"file": file, "data": ds})
-                studies[key]["index"] = index
                 studies[key]["headers"] = headers
+
+                # Since we might need to combine multiple images with different
+                # series instance UID (in 4D images), we cannot use the series
+                # as the unique file name - instead, we use the study instance
+                # uid and a counter (index) per study
+                studies[key]["name"] = f"{ds.StudyInstanceUID}-{index}"
+
             except Exception as e:
                 file_errors[file].append(format_error(str(e)))
 
@@ -438,7 +440,7 @@ def _find_valid_dicom_files(
     result = []
     for key in studies:
         headers = studies[key]["headers"]
-        index = studies[key]["index"]
+        set_name = studies[key]["name"]
         if not headers:
             continue
 
@@ -455,11 +457,11 @@ def _find_valid_dicom_files(
             # Not a 4d dicom file (DICOM standard says TPI is >=1 )
             result.append(
                 DicomDataset(
+                    name=set_name,
                     headers=headers,
                     n_time=None,
                     n_slices=n_slices,
                     n_slices_per_file=n_slices_per_file,
-                    index=index,
                 )
             )
         elif len(headers) % n_time > 0:
@@ -472,11 +474,11 @@ def _find_valid_dicom_files(
             # Valid 4d dicom file
             result.append(
                 DicomDataset(
+                    name=set_name,
                     headers=headers,
                     n_time=n_time,
                     n_slices=n_slices // n_time,
                     n_slices_per_file=n_slices_per_file,
-                    index=index,
                 )
             )
 
