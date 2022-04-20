@@ -1,8 +1,12 @@
 # History
 
+## 0.7.1 (2022-04-20)
+
+* Added support for Python 3.10
+
 ## 0.7.0 (2022-03-14)
 
-* Refactoed DICOM loading handling some extra corner cases
+* Refactored DICOM loading handling some extra corner cases
 
 ## 0.6.1 (2022-03-08)
 
