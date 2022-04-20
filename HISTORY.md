@@ -1,8 +1,13 @@
 # History
 
-## 0.7.1 (2022-04-20)
+## 0.8.1 (2022-04-20)
 
 * Added support for Python 3.10
+
+## 0.8.0 (2022-04-12)
+
+* Group DICOM studies by series instance UID or stack ID
+* Exclude SimpleITK 2.1.1.1
 
 ## 0.7.0 (2022-03-14)
 
