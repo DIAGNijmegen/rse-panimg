@@ -1,5 +1,9 @@
 # History
 
+## 0.8.1 (2022-04-20)
+
+* Added support for Python 3.10
+
 ## 0.8.0 (2022-04-12)
 
 * Group DICOM studies by series instance UID or stack ID

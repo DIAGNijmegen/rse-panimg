@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "panimg"
-version = "0.8.0"
+version = "0.8.1"
 description = "Conversion of medical images to MHA and TIFF."
 license = "Apache-2.0"
 authors = ["James Meakin <panimg@jmsmkn.com>"]
@@ -17,11 +17,11 @@ classifiers = [
 panimg = "panimg.cli:cli"
 
 [tool.poetry.dependencies]
-python = ">=3.7,<3.10"
+python = "^3.7"
 pydantic = "*"
 numpy = [
   { version = "^1.21", python = "<3.8" },
-  { version = "^1.22", python = ">=3.8,<3.10" }
+  { version = "^1.22", python = "^3.8" }
 ]
 # Exclude 2.1.1.1 due to
 # https://github.com/SimpleITK/SimpleITK/issues/1627
@@ -71,13 +71,14 @@ addopts = "--strict-markers --showlocals -n auto --dist loadscope"
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = py37, py38, py39
+envlist = py37, py38, py39, py310
 
 [gh-actions]
 python =
     3.7: py37
     3.8: py38
     3.9: py39
+    3.10: py310
 
 [testenv]
 allowlist_externals = poetry
