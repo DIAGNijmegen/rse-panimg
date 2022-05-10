@@ -31,4 +31,6 @@ SeriesDescription = super awesome series
 SliceThickness = 2
 WindowCenter = 20.5
 WindowWidth = 200.5
+SmallestImagePixelValue = -100
+LargestImagePixelValue = 100
 ElementDataFile = image3x4.zraw
