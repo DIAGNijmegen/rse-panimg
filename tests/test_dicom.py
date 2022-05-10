@@ -9,7 +9,7 @@ import pytest
 import SimpleITK
 
 from panimg.image_builders.dicom import (
-    DicomDataset,
+    PixelValueInverter,
     _find_valid_dicom_files,
     _get_headers_by_study,
     format_error,
@@ -50,7 +50,7 @@ def test_validate_dicom_files():
     with mock.patch(
         "panimg.image_builders.dicom._get_headers_by_study",
         return_value={
-            "foo": {"headers": headers[1:], "file": "bar", "index": 1}
+            "foo": {"headers": headers[1:], "name": "StudyInstanceUID-0"}
         },
     ):
         errors = defaultdict(list)
@@ -76,7 +76,7 @@ def test_image_builder_dicom_single_slice(tmpdir):
 
 
 def test_image_builder_dicom_2d(tmpdir):
-    files = {RESOURCE_PATH / "dicom_2d" / "xray.dcm"}
+    files = {RESOURCE_PATH / "dicom_2d" / "cxr.dcm"}
     result = _build_files(
         builder=image_builder_dicom, files=files, output_directory=tmpdir
     )
@@ -84,8 +84,8 @@ def test_image_builder_dicom_2d(tmpdir):
     assert len(result.new_images) == 1
 
     image = result.new_images.pop()
-    assert image.width == 1720
-    assert image.height == 2320
+    assert image.width == 440
+    assert image.height == 440
     assert image.depth == 1
 
     assert image.voxel_width_mm == pytest.approx(0.1)
@@ -98,7 +98,13 @@ def test_image_builder_dicom_2d(tmpdir):
     assert np.allclose(sitk_image.GetDirection(), (1, 0, 0, 0, 1, 0, 0, 0, 1))
     assert sitk_image.GetPixelID() == SimpleITK.sitkUInt16
 
-    assert np.all(SimpleITK.GetArrayViewFromImage(sitk_image) == 1)
+    # Photometric interpretation is MONOCHROME1 so pixel values have been
+    # altered (inverted), including the window level but not the width
+    array = SimpleITK.GetArrayViewFromImage(sitk_image)
+    assert np.count_nonzero(array == 979) == 6
+    assert np.count_nonzero(array == 0) == 4
+    assert sitk_image.GetMetaData("WindowCenter") == "429"
+    assert sitk_image.GetMetaData("WindowWidth") == "1024"
 
 
 def test_image_builder_dicom_4d(tmpdir):
@@ -282,5 +288,6 @@ def test_dicom_window_level(tmpdir, files, center, center_ob, width, width_ob):
     ],
 )
 def test_dicom_photometric_interpretation_inversion(array_as_list, expected):
-    inverted = DicomDataset._invert_intensities(np.array(array_as_list))
-    np.testing.assert_equal(inverted, np.array(expected))
+    array = np.array(array_as_list)
+    inverter = PixelValueInverter(array)
+    np.testing.assert_equal(inverter.invert(array), np.array(expected))

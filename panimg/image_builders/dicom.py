@@ -45,9 +45,21 @@ def _find_dicom_tag(dataset: pydicom.Dataset, tag: str):
     )
 
 
+class PixelValueInverter:
+    """Inverts pixel values to generate MONOCHROME2 images from MONOCHROME1 images"""
+
+    def __init__(self, image: np.ndarray):
+        self.offset = np.add(np.min(image), np.max(image))
+        self.dtype = image.dtype
+
+    def invert(self, pixel_array: np.ndarray) -> np.ndarray:
+        a = np.asarray(pixel_array, dtype=self.dtype)
+        return np.add(-a, self.offset)  # use np.add to avoid overflow warnings
+
+
 class DicomDataset:
-    def __init__(self, index, headers, n_time, n_slices, n_slices_per_file):
-        self.index = index
+    def __init__(self, *, name, headers, n_time, n_slices, n_slices_per_file):
+        self.name = name
         self.headers = headers
         self.n_time = n_time
         self.n_slices = n_slices
@@ -55,6 +67,7 @@ class DicomDataset:
 
         self._direction = None
         self._pixel_value_dtype = None
+        self._pixel_value_inverter = None
 
     @property
     def ref_header(self) -> pydicom.Dataset:
@@ -110,10 +123,6 @@ class DicomDataset:
                     pass
                 else:
                     yield np.array(file_origin, dtype=float)
-
-    @staticmethod
-    def _invert_intensities(array: np.ndarray) -> np.ndarray:
-        return -array + array.max() + array.min()
 
     def _determine_slice_order(self):
         # Compute coordinate differences between successive slices
@@ -272,7 +281,8 @@ class DicomDataset:
             self.ref_header, "PhotometricInterpretation", None
         )
         if not is_rgb and photometric_interpretation == "MONOCHROME1":
-            dcm_array = self._invert_intensities(dcm_array)
+            self._pixel_value_inverter = PixelValueInverter(dcm_array)
+            dcm_array = self._pixel_value_inverter.invert(dcm_array)
 
         return SimpleITK.GetImageFromArray(dcm_array, isVector=is_rgb)
 
@@ -280,9 +290,21 @@ class DicomDataset:
         for f in OPTIONAL_METADATA_FIELDS:
             value = getattr(self.ref_header, f, "")
             str_value = str(value)
-            if str_value != "":
-                validate_metadata_value(key=f, value=value)
-                img.SetMetaData(f, str_value)
+
+            # Skip empty entries, ITK will not write them anyway
+            if str_value == "":
+                continue
+
+            validate_metadata_value(key=f, value=value)
+
+            # Invert value of window level
+            if f == "WindowCenter" and self._pixel_value_inverter is not None:
+                centers = self._pixel_value_inverter.invert(value)
+                str_value = str(
+                    list(centers) if centers.size > 1 else centers.item()
+                )
+
+            img.SetMetaData(f, str_value)
 
     def _add_temporal_metadata(self, img: SimpleITK.Image, z_order: int):
         content_times = []
@@ -316,7 +338,7 @@ class DicomDataset:
 
         return SimpleITKImage(
             image=img,
-            name=f"{self.headers[0]['data'].StudyInstanceUID}-{self.index}",
+            name=self.name,
             consumed_files={d["file"] for d in self.headers},
             spacing_valid=True,
         )
@@ -341,35 +363,49 @@ def _get_headers_by_study(
     A dictionary of sorted headers for all dicom image files found within path,
     grouped by study id.
     """
-    studies: Dict[str, Dict[str, Any]] = {}
-    indices: Dict[str, Dict[str, int]] = {}
+    study_key_type = Tuple[str, ...]
+    studies: Dict[study_key_type, Dict[str, Any]] = {}
+    indices: Dict[str, Dict[study_key_type, int]] = {}
 
     for file in files:
         if not file.is_file():
             continue
         with file.open("rb") as f:
             try:
-                ds = pydicom.filereader.read_partial(
-                    f,
-                    stop_when=lambda tag, vr, length: tag == (0x7FE0, 0x0010),
+                # Read header only, skip reading the pixel data for now
+                ds = pydicom.dcmread(f, stop_before_pixels=True)
+
+                # Group by series instance uid or by stack ID (for 4D images)
+                # Additionally also group by SOP class UID to skip over extra
+                # raw data (dose reports for example) that are sometimes stored
+                # under the same series instance UID.
+                key: study_key_type = (
+                    ds.StudyInstanceUID,
+                    getattr(ds, "StackID", ds.SeriesInstanceUID),
+                    ds.SOPClassUID,
                 )
-                dims = f"{ds.Rows}x{ds.Columns}"
-                key = f"{ds.StudyInstanceUID}-{dims}"
+
                 studies[key] = studies.get(key, {})
                 indices[ds.StudyInstanceUID] = indices.get(
                     ds.StudyInstanceUID, {}
                 )
-                index = indices[ds.StudyInstanceUID].get(dims)
-                if index is None:
-                    index = (
-                        max(list(indices[ds.StudyInstanceUID].values()) + [-1])
-                        + 1
-                    )
-                    indices[ds.StudyInstanceUID][dims] = index
+
+                try:
+                    index = indices[ds.StudyInstanceUID][key]
+                except KeyError:
+                    index = len(indices[ds.StudyInstanceUID])
+                    indices[ds.StudyInstanceUID][key] = index
+
                 headers = studies[key].get("headers", [])
                 headers.append({"file": file, "data": ds})
-                studies[key]["index"] = index
                 studies[key]["headers"] = headers
+
+                # Since we might need to combine multiple images with different
+                # series instance UID (in 4D images), we cannot use the series
+                # as the unique file name - instead, we use the study instance
+                # uid and a counter (index) per study
+                studies[key]["name"] = f"{ds.StudyInstanceUID}-{index}"
+
             except Exception as e:
                 file_errors[file].append(format_error(str(e)))
 
@@ -404,7 +440,7 @@ def _find_valid_dicom_files(
     result = []
     for key in studies:
         headers = studies[key]["headers"]
-        index = studies[key]["index"]
+        set_name = studies[key]["name"]
         if not headers:
             continue
 
@@ -421,11 +457,11 @@ def _find_valid_dicom_files(
             # Not a 4d dicom file (DICOM standard says TPI is >=1 )
             result.append(
                 DicomDataset(
+                    name=set_name,
                     headers=headers,
                     n_time=None,
                     n_slices=n_slices,
                     n_slices_per_file=n_slices_per_file,
-                    index=index,
                 )
             )
         elif len(headers) % n_time > 0:
@@ -438,11 +474,11 @@ def _find_valid_dicom_files(
             # Valid 4d dicom file
             result.append(
                 DicomDataset(
+                    name=set_name,
                     headers=headers,
                     n_time=n_time,
                     n_slices=n_slices // n_time,
                     n_slices_per_file=n_slices_per_file,
-                    index=index,
                 )
             )
 
