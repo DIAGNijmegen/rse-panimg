@@ -8,7 +8,7 @@ MINIMUM_VALUE_TAG = "SmallestImagePixelValue"
 MAXIMUM_VALUE_TAG = "LargestImagePixelValue"
 
 
-def sitk_pixel_range(*, image_files: Set[PanImgFile]) -> PostProcessorResult:
+def mha_pixel_range(*, image_files: Set[PanImgFile]) -> PostProcessorResult:
     reader = SimpleITK.ImageFileReader()
     writer = SimpleITK.ImageFileWriter()
 

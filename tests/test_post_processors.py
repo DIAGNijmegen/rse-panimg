@@ -6,7 +6,7 @@ import pytest
 from SimpleITK import SimpleITK
 
 from panimg import convert
-from panimg.post_processors.sitk_pixel_range import (
+from panimg.post_processors.mha_pixel_range import (
     MAXIMUM_VALUE_TAG,
     MINIMUM_VALUE_TAG,
 )
@@ -81,7 +81,7 @@ def test_dzi_creation(tmpdir_factory, post_processors):
         ),
     ],
 )
-def test_sitk_value_range(
+def test_mha_value_range(
     tmpdir_factory,
     post_processors,
     image_files,
