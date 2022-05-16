@@ -179,8 +179,6 @@ class SimpleITKImage(BaseModel):
     spacing_valid: bool
     eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
 
-    _post_processed: bool = False
-
     class Config:
         arbitrary_types_allowed = True
         allow_mutation = False
