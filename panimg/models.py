@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, validator
 from pydantic.dataclasses import dataclass
-from SimpleITK import Image, WriteImage
+from SimpleITK import GetArrayViewFromImage, Image, WriteImage
 
 from panimg.exceptions import ValidationError
 
@@ -237,6 +237,24 @@ class SimpleITKImage(BaseModel):
         cs = image.GetNumberOfComponentsPerPixel()
         if cs not in ITK_COLOR_SPACE_MAP:
             raise ValueError(f"Unknown color space for MetaIO image: {cs}")
+        return image
+
+    @validator("image")
+    def add_value_range_meta_data(cls, image: Image):  # noqa: B902, N805
+        smallest_tag = "SmallestImagePixelValue"
+        largest_tag = "LargestImagePixelValue"
+
+        if image.HasMetaDataKey(smallest_tag) and image.HasMetaDataKey(
+            largest_tag
+        ):
+            return image
+
+        # Use the numpy-array route to support a larger range of data-types
+        # than ITK' MinimumMaximumImageFilter (e.g. 2D uint8)
+        array = GetArrayViewFromImage(image)
+        image.SetMetaData(smallest_tag, str(array.min()))
+        image.SetMetaData(largest_tag, str(array.max()))
+
         return image
 
     @property

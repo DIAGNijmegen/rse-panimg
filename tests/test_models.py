@@ -108,3 +108,52 @@ def test_built_image_extra_metadata_defaults(tmpdir, caplog):
     }
     for key, val in expected_default_values.items():
         assert getattr(new_image, key) == val
+
+
+@pytest.mark.parametrize(
+    "src_image_name,smallest_pixel_value,largest_pixel_value",
+    [
+        (  # Regular case
+            "image_min10_max10.mha",
+            -10,
+            10,
+        ),
+        (  # Predefined ranges in input file
+            "image3x4-extra-stuff.mhd",
+            -100,
+            100,
+        ),
+        (  # 3D image
+            "image10x10x10.mha",
+            8.341192e-05,
+            0.999185,
+        ),
+        (  # 4D image
+            "image10x11x12x13.mha",
+            0,
+            0,
+        ),
+    ],
+)
+def test_sitk_image_value_range(
+    src_image_name,
+    smallest_pixel_value,
+    largest_pixel_value,
+):
+    src = RESOURCE_PATH / src_image_name
+    sitk_image = load_sitk_image(src)
+    result = SimpleITKImage(
+        image=sitk_image,
+        name=src.name,
+        consumed_files={src},
+        spacing_valid=True,
+    )
+
+    for value, tag in [
+        (smallest_pixel_value, "SmallestImagePixelValue"),
+        (largest_pixel_value, "LargestImagePixelValue"),
+    ]:
+        if value is None:
+            assert not result.image.HasMetaDataKey(tag)
+        else:
+            assert float(result.image.GetMetaData(tag)) == pytest.approx(value)

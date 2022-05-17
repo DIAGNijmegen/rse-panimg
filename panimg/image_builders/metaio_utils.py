@@ -63,6 +63,8 @@ ADDITIONAL_HEADERS = {
     "ContentTimes": CONTENT_TIMES_LIST_MATCH_REGEXP,
     "WindowCenter": FLOAT_OR_FLOAT_ARRAY_MATCH_REGEX,
     "WindowWidth": FLOAT_OR_FLOAT_ARRAY_MATCH_REGEX,
+    "SmallestImagePixelValue": FLOAT_MATCH_REGEXP,
+    "LargestImagePixelValue": FLOAT_MATCH_REGEXP,
     "t0": FLOAT_MATCH_REGEXP,
     "t1": FLOAT_MATCH_REGEXP,
     **{md.keyword: md.match_pattern for md in EXTRA_METADATA},
