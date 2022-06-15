@@ -49,7 +49,7 @@ def convert(
         recurse_subdirectories=recurse_subdirectories,
     )
 
-    result = _post_process(
+    result = post_process(
         image_files=new_image_files,
         post_processors=post_processors
         if post_processors is not None
@@ -166,7 +166,7 @@ def _build_files(
     )
 
 
-def _post_process(
+def post_process(
     *, image_files: Set[PanImgFile], post_processors: Iterable[PostProcessor]
 ) -> PostProcessorResult:
     new_image_files: Set[PanImgFile] = set()
