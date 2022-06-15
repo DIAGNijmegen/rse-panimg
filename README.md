@@ -87,11 +87,21 @@ To access the help test you can use `panimg -h`.
 #### Post Processors
 
 You can also define a set of post processors that will operate on each output file.
+Post processors will not produce any new image entities, but rather add additional representations of an image, such as DZI or thumbnails.
 We provide a `dzi_to_tiff` post processor that is enabled by default, which will produce a DZI file if it is able to.
 To customise the post processors that run you can do this with
 
 ```python
 result = convert(..., post_processors=[...])
+```
+
+You are able to run the post processors directly with
+
+```python
+from panimg import post_process
+from panimg.models import PanImgFile
+
+result = post_process(image_files={PanImgFile(...), ...}, post_processors=[...])
 ```
 
 #### Using Strategies Directly
