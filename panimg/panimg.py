@@ -169,15 +169,39 @@ def _build_files(
 def post_process(
     *, image_files: Set[PanImgFile], post_processors: Iterable[PostProcessor]
 ) -> PostProcessorResult:
+    """
+    Run a set of post processors on a set of image files
+
+    Post processors add new files and folders to existing images,
+    such as DZI creation for TIFF images, or thumbnail generation.
+    They do not produce new image entities.
+    """
     new_image_files: Set[PanImgFile] = set()
     new_folders: Set[PanImgFolder] = set()
 
     logger.info(f"Post processing {len(image_files)} image(s)")
 
+    existing_ids = {f.image_id for f in image_files}
+
     for processor in post_processors:
         result = processor(image_files=image_files)
-        new_image_files |= result.new_image_files
-        new_folders |= result.new_folders
+
+        # Filter out any new image ids
+        filtered_files = {
+            f for f in result.new_image_files if f.image_id in existing_ids
+        }
+        filtered_folders = {
+            f for f in result.new_folders if f.image_id in existing_ids
+        }
+
+        excluded_files = result.new_image_files - filtered_files
+        excluded_folders = result.new_folders - filtered_folders
+
+        if excluded_files or excluded_folders:
+            logger.warning(f"Ignoring: {excluded_files} {excluded_folders}")
+
+        new_image_files |= filtered_files
+        new_folders |= filtered_folders
 
     return PostProcessorResult(
         new_image_files=new_image_files, new_folders=new_folders
