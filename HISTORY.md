@@ -1,5 +1,9 @@
 # History
 
+## 0.8.1 (2022-06-15)
+
+* `post_process` is now a public method
+
 ## 0.8.1 (2022-04-20)
 
 * Added support for Python 3.10
