@@ -1,6 +1,6 @@
 # History
 
-## 0.8.1 (2022-06-15)
+## 0.8.2 (2022-06-15)
 
 * `post_process` is now a public method
 
