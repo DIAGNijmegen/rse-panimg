@@ -344,6 +344,27 @@ class DicomDataset:
         )
 
 
+def _sort_studies(studies, file_errors):
+    unsortable_studies = []
+    for key, study in studies.items():
+        if len(study["headers"]) == 1:
+            continue  # no need to sort if there is only a single file
+
+        try:
+            study["headers"].sort(key=lambda x: int(x["data"].InstanceNumber))
+        except (TypeError, AttributeError) as e:
+            # InstanceNumber is missing, empty or None but is needed to sort
+            # the slices (could also sort by coordinates, but that is a lot
+            # more complicated)
+            for header in studies[key]["headers"]:
+                file_errors[header["file"]].append(format_error(str(e)))
+            unsortable_studies.append(key)
+
+    for key in unsortable_studies:
+        # Remove studies that would be read with messed up slice order
+        del studies[key]
+
+
 def _get_headers_by_study(
     files: Set[Path], file_errors: DefaultDict[Path, List[str]]
 ):
@@ -409,10 +430,7 @@ def _get_headers_by_study(
             except Exception as e:
                 file_errors[file].append(format_error(str(e)))
 
-    for key in studies:
-        studies[key]["headers"].sort(
-            key=lambda x: int(x["data"].InstanceNumber)
-        )
+    _sort_studies(studies, file_errors)
     return studies
 
 
