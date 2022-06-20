@@ -347,8 +347,9 @@ class DicomDataset:
 def _sort_headers_per_study(studies, file_errors):
     """
     For each study, sorts the headers according to InstanceNumber.
-    If this value is missing or not a number, the study is removed
-    as reading the pixel data would then not be reliable.
+    If for any header this value is missing or not a number, the
+    corresponding study is removed as reading the pixel data
+    would then not be reliable.
 
     Parameters
     ----------
