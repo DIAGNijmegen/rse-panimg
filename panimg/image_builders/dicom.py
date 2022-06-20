@@ -344,8 +344,21 @@ class DicomDataset:
         )
 
 
-def _sort_studies(studies, file_errors):
-    unsortable_studies = []
+def _sort_headers_per_study(studies, file_errors):
+    """
+    For each study, sorts the headers according to InstanceNumber.
+    If this value is missing or not a number, the study is removed
+    as reading the pixel data would then not be reliable.
+
+    Parameters
+    ----------
+    studies
+        Dictionary of DICOM headers grouped by study (items are
+        modified in place)
+    file_errors
+        Dictionary in which reading errors are recorded per file
+    """
+    ignored_studies = []
     for key, study in studies.items():
         if len(study["headers"]) == 1:
             continue  # no need to sort if there is only a single file
@@ -358,9 +371,9 @@ def _sort_studies(studies, file_errors):
             # more complicated)
             for header in studies[key]["headers"]:
                 file_errors[header["file"]].append(format_error(str(e)))
-            unsortable_studies.append(key)
+            ignored_studies.append(key)
 
-    for key in unsortable_studies:
+    for key in ignored_studies:
         # Remove studies that would be read with messed up slice order
         del studies[key]
 
@@ -430,7 +443,7 @@ def _get_headers_by_study(
             except Exception as e:
                 file_errors[file].append(format_error(str(e)))
 
-    _sort_studies(studies, file_errors)
+    _sort_headers_per_study(studies, file_errors)
     return studies
 
 
