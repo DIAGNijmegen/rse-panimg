@@ -124,6 +124,30 @@ class DicomDataset:
                 else:
                     yield np.array(file_origin, dtype=float)
 
+    def _sort_slices_by_instance_number(self):
+        """
+        Sorts the slices of this study according to InstanceNumber.
+
+        Raises
+        ------
+        ValueError
+            If for any slice the InstanceNumber value is missing or
+            not a number.
+        """
+        if len(self.headers) == 1:
+            return  # no need to sort if there is only a single file
+
+        try:
+            self.headers.sort(key=lambda x: int(x["data"].InstanceNumber))
+        except (TypeError, AttributeError) as e:
+            # InstanceNumber is missing, empty or None but is needed to sort
+            # the slices (could also sort by coordinates, but that is a lot
+            # more complicated so currently not implemented)
+            raise ValueError(
+                "Could not determine slice order "
+                "due to missing or invalid InstanceNumber"
+            ) from e
+
     def _determine_slice_order(self):
         # Compute coordinate differences between successive slices
         origin = None
@@ -323,6 +347,12 @@ class DicomDataset:
         img.SetMetaData("Exposures", " ".join(exposures))
 
     def read(self) -> SimpleITKImage:
+        # Sort slices by instance number, which might be result in an order
+        # in which slices are ordered from low to high coordinates according
+        # to the default DICOM coordinate system - or the other way around.
+        # First sort the slices, then find out which of these two options it
+        # is (z_order will be 1 or -1, or 0 if there is a single slice)
+        self._sort_slices_by_instance_number()
         origin, spacing, z_order = self._determine_slice_order()
 
         # Create ITK image from DICOM
@@ -395,7 +425,7 @@ def _get_headers_by_study(
 
     Returns
     -------
-    A dictionary of sorted headers for all dicom image files found within path,
+    A dictionary of headers for all dicom image files found within path,
     grouped by study id.
     """
     study_key_type = Tuple[str, ...]
@@ -444,7 +474,6 @@ def _get_headers_by_study(
             except Exception as e:
                 file_errors[file].append(format_error(str(e)))
 
-    _sort_headers_per_study(studies, file_errors)
     return studies
 
 
