@@ -370,7 +370,7 @@ def _sort_headers_per_study(studies, file_errors):
             # InstanceNumber is missing, empty or None but is needed to sort
             # the slices (could also sort by coordinates, but that is a lot
             # more complicated)
-            for header in studies[key]["headers"]:
+            for header in study["headers"]:
                 file_errors[header["file"]].append(format_error(str(e)))
             ignored_studies.append(key)
 
