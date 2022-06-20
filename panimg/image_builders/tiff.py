@@ -14,7 +14,7 @@ from panimg.models import ColorSpace, TIFFImage
 
 try:
     import openslide
-except OSError:
+except (OSError, ModuleNotFoundError):
     openslide = False
 
 try:
