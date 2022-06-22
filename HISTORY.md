@@ -1,5 +1,10 @@
 # History
 
+## 0.8.3 (2022-06-22)
+
+* Fix installation on Windows
+* Fix DICOM imports with missing instance number
+
 ## 0.8.2 (2022-06-15)
 
 * `post_process` is now a public method
