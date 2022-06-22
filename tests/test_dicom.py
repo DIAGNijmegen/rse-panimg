@@ -27,9 +27,9 @@ def test_get_headers_by_study():
     studies = _get_headers_by_study(files, defaultdict(list))
     assert len(studies) == 1
     for key in studies:
-        assert [x["file"] for x in studies[key]["headers"]] == [
+        assert {x["file"] for x in studies[key]["headers"]} == {
             DICOM_DIR / f"{x}.dcm" for x in range(1, 77)
-        ]
+        }
 
     for root, _, files in os.walk(RESOURCE_PATH):
         files = [Path(root).joinpath(f) for f in files]
