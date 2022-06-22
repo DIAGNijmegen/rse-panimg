@@ -124,6 +124,30 @@ class DicomDataset:
                 else:
                     yield np.array(file_origin, dtype=float)
 
+    def _sort_slices_by_instance_number(self):
+        """
+        Sorts the slices of this study according to InstanceNumber.
+
+        Raises
+        ------
+        ValueError
+            If for any slice the InstanceNumber value is missing or
+            not a number.
+        """
+        if len(self.headers) == 1:
+            return  # no need to sort if there is only a single file
+
+        try:
+            self.headers.sort(key=lambda x: int(x["data"].InstanceNumber))
+        except (TypeError, AttributeError) as e:
+            # InstanceNumber is missing, empty or None but is needed to sort
+            # the slices (could also sort by coordinates, but that is a lot
+            # more complicated so currently not implemented)
+            raise ValueError(
+                "Could not determine slice order "
+                "due to missing or invalid InstanceNumber"
+            ) from e
+
     def _determine_slice_order(self):
         # Compute coordinate differences between successive slices
         origin = None
@@ -323,6 +347,12 @@ class DicomDataset:
         img.SetMetaData("Exposures", " ".join(exposures))
 
     def read(self) -> SimpleITKImage:
+        # Sort slices by instance number, which might be result in an order
+        # in which slices are ordered from low to high coordinates according
+        # to the default DICOM coordinate system - or the other way around.
+        # First sort the slices, then find out which of these two options it
+        # is (z_order will be 1 or -1, or 0 if there is a single slice)
+        self._sort_slices_by_instance_number()
         origin, spacing, z_order = self._determine_slice_order()
 
         # Create ITK image from DICOM
@@ -344,41 +374,6 @@ class DicomDataset:
         )
 
 
-def _sort_headers_per_study(studies, file_errors):
-    """
-    For each study, sorts the headers according to InstanceNumber.
-    If for any header this value is missing or not a number, the
-    corresponding study is removed as reading the pixel data
-    would then not be reliable.
-
-    Parameters
-    ----------
-    studies
-        Dictionary of DICOM headers grouped by study (items are
-        modified in place)
-    file_errors
-        Dictionary in which reading errors are recorded per file
-    """
-    ignored_studies = []
-    for key, study in studies.items():
-        if len(study["headers"]) == 1:
-            continue  # no need to sort if there is only a single file
-
-        try:
-            study["headers"].sort(key=lambda x: int(x["data"].InstanceNumber))
-        except (TypeError, AttributeError) as e:
-            # InstanceNumber is missing, empty or None but is needed to sort
-            # the slices (could also sort by coordinates, but that is a lot
-            # more complicated)
-            for header in study["headers"]:
-                file_errors[header["file"]].append(format_error(str(e)))
-            ignored_studies.append(key)
-
-    for key in ignored_studies:
-        # Remove studies that would be read with messed up slice order
-        del studies[key]
-
-
 def _get_headers_by_study(
     files: Set[Path], file_errors: DefaultDict[Path, List[str]]
 ):
@@ -395,7 +390,7 @@ def _get_headers_by_study(
 
     Returns
     -------
-    A dictionary of sorted headers for all dicom image files found within path,
+    A dictionary of headers for all dicom image files found within path,
     grouped by study id.
     """
     study_key_type = Tuple[str, ...]
@@ -444,7 +439,6 @@ def _get_headers_by_study(
             except Exception as e:
                 file_errors[file].append(format_error(str(e)))
 
-    _sort_headers_per_study(studies, file_errors)
     return studies
 
 
@@ -476,13 +470,21 @@ def _find_valid_dicom_files(
         if not headers:
             continue
 
-        data = headers[-1]["data"]
         n_files = len(headers)
-        n_time = int(getattr(data, "TemporalPositionIndex", 0))
+        n_time = max(
+            int(getattr(header["data"], "TemporalPositionIndex", 0))
+            for header in headers
+        )
+
+        arbitrary_header = headers[0]["data"]
         try:
-            n_slices_per_file = len(data.PerFrameFunctionalGroupsSequence)
+            n_slices_per_file = len(
+                arbitrary_header.PerFrameFunctionalGroupsSequence
+            )
         except AttributeError:
-            n_slices_per_file = int(getattr(data, "NumberOfFrames", 1))
+            n_slices_per_file = int(
+                getattr(arbitrary_header, "NumberOfFrames", 1)
+            )
         n_slices = n_files * n_slices_per_file
 
         if n_time < 1:
