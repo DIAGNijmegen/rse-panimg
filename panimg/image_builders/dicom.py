@@ -470,13 +470,21 @@ def _find_valid_dicom_files(
         if not headers:
             continue
 
-        data = headers[-1]["data"]
         n_files = len(headers)
-        n_time = int(getattr(data, "TemporalPositionIndex", 0))
+        n_time = max(
+            int(getattr(header["data"], "TemporalPositionIndex", 0))
+            for header in headers
+        )
+
+        arbitrary_header = headers[0]["data"]
         try:
-            n_slices_per_file = len(data.PerFrameFunctionalGroupsSequence)
+            n_slices_per_file = len(
+                arbitrary_header.PerFrameFunctionalGroupsSequence
+            )
         except AttributeError:
-            n_slices_per_file = int(getattr(data, "NumberOfFrames", 1))
+            n_slices_per_file = int(
+                getattr(arbitrary_header, "NumberOfFrames", 1)
+            )
         n_slices = n_files * n_slices_per_file
 
         if n_time < 1:
