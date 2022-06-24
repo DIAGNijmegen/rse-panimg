@@ -471,9 +471,12 @@ def _find_valid_dicom_files(
             continue
 
         n_files = len(headers)
-        n_time = max(
-            int(getattr(header["data"], "TemporalPositionIndex", 0))
-            for header in headers
+        n_time = len(
+            {
+                int(header["data"].TemporalPositionIndex)
+                for header in headers
+                if "TemporalPositionIndex" in header["data"]
+            }
         )
 
         arbitrary_header = headers[0]["data"]
@@ -487,8 +490,8 @@ def _find_valid_dicom_files(
             )
         n_slices = n_files * n_slices_per_file
 
-        if n_time < 1:
-            # Not a 4d dicom file (DICOM standard says TPI is >=1 )
+        if n_time < 2:
+            # Not a 4d dicom file
             result.append(
                 DicomDataset(
                     name=set_name,
