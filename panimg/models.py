@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
+import numpy as np
 from pydantic import BaseModel, validator
 from pydantic.dataclasses import dataclass
 from SimpleITK import GetArrayViewFromImage, Image, WriteImage
@@ -61,6 +62,8 @@ DICOM_VR_TO_VALIDATION_REGEXP = {
 DICOM_VR_TO_VALUE_CAST = {
     "DA": lambda v: datetime.date(int(v[:4]), int(v[4:6]), int(v[6:8]))
 }
+
+MAXIMUM_SEGMENTS_LENGTH = 32
 
 
 class ExtraMetaData(NamedTuple):
@@ -140,6 +143,7 @@ class PanImg:
     series_instance_uid: str = ""
     study_description: str = ""
     series_description: str = ""
+    segments: Optional[Tuple[Any, ...]] = None
 
 
 @dataclass(frozen=True)
@@ -258,6 +262,15 @@ class SimpleITKImage(BaseModel):
         return image
 
     @property
+    def segments(self) -> Optional[Tuple[Any, ...]]:
+        segments = np.unique(GetArrayViewFromImage(self.image))
+        if len(segments) > MAXIMUM_SEGMENTS_LENGTH:
+            return None
+        if not np.issubdtype(segments.dtype, np.number):
+            return None
+        return tuple(segments)
+
+    @property
     def color_space(self) -> ColorSpace:
         return ITK_COLOR_SPACE_MAP[self.image.GetNumberOfComponentsPerPixel()]
 
@@ -330,6 +343,7 @@ class SimpleITKImage(BaseModel):
             voxel_height_mm=self.voxel_height_mm,
             voxel_depth_mm=self.voxel_depth_mm,
             eye_choice=self.eye_choice,
+            segments=self.segments,
             **self.generate_extra_metadata(),
         )
 
@@ -387,6 +401,7 @@ class TIFFImage(BaseModel):
             window_center=None,
             window_width=None,
             eye_choice=self.eye_choice,
+            segments=None,
             **{md.field_name: md.default_value for md in EXTRA_METADATA},
         )
 
