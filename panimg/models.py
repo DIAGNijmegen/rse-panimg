@@ -143,7 +143,7 @@ class PanImg:
     series_instance_uid: str = ""
     study_description: str = ""
     series_description: str = ""
-    segments: Optional[Tuple[Any, ...]] = None
+    segments: Optional[Tuple[np.number, ...]] = None
 
 
 @dataclass(frozen=True)
@@ -262,7 +262,7 @@ class SimpleITKImage(BaseModel):
         return image
 
     @property
-    def segments(self) -> Optional[Tuple[Any, ...]]:
+    def segments(self) -> Optional[Tuple[np.number, ...]]:
         segments = np.unique(GetArrayViewFromImage(self.image))
         if len(segments) > MAXIMUM_SEGMENTS_LENGTH:
             return None
