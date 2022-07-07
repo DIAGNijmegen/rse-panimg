@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
+import numpy as np
+import SimpleITK
 from pydantic import BaseModel, validator
 from pydantic.dataclasses import dataclass
 from SimpleITK import GetArrayViewFromImage, Image, WriteImage
@@ -14,6 +16,17 @@ from SimpleITK import GetArrayViewFromImage, Image, WriteImage
 from panimg.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
+
+MASK_TYPE_PIXEL_IDS = [
+    SimpleITK.sitkInt8,
+    SimpleITK.sitkInt16,
+    SimpleITK.sitkInt32,
+    SimpleITK.sitkInt64,
+    SimpleITK.sitkUInt8,
+    SimpleITK.sitkUInt16,
+    SimpleITK.sitkUInt32,
+    SimpleITK.sitkUInt64,
+]
 
 
 class ColorSpace(str, Enum):
@@ -61,6 +74,8 @@ DICOM_VR_TO_VALIDATION_REGEXP = {
 DICOM_VR_TO_VALUE_CAST = {
     "DA": lambda v: datetime.date(int(v[:4]), int(v[4:6]), int(v[6:8]))
 }
+
+MAXIMUM_SEGMENTS_LENGTH = 32
 
 
 class ExtraMetaData(NamedTuple):
@@ -140,6 +155,7 @@ class PanImg:
     series_instance_uid: str = ""
     study_description: str = ""
     series_description: str = ""
+    segments: Optional[Tuple[int, ...]] = None
 
 
 @dataclass(frozen=True)
@@ -258,6 +274,18 @@ class SimpleITKImage(BaseModel):
         return image
 
     @property
+    def segments(self) -> Optional[Tuple[int, ...]]:
+        if self.image.GetPixelIDValue() not in MASK_TYPE_PIXEL_IDS:
+            return None
+
+        segments = np.unique(GetArrayViewFromImage(self.image))
+
+        if len(segments) <= MAXIMUM_SEGMENTS_LENGTH:
+            return tuple(segments)
+        else:
+            return None
+
+    @property
     def color_space(self) -> ColorSpace:
         return ITK_COLOR_SPACE_MAP[self.image.GetNumberOfComponentsPerPixel()]
 
@@ -330,6 +358,7 @@ class SimpleITKImage(BaseModel):
             voxel_height_mm=self.voxel_height_mm,
             voxel_depth_mm=self.voxel_depth_mm,
             eye_choice=self.eye_choice,
+            segments=self.segments,
             **self.generate_extra_metadata(),
         )
 
@@ -387,6 +416,7 @@ class TIFFImage(BaseModel):
             window_center=None,
             window_width=None,
             eye_choice=self.eye_choice,
+            segments=None,
             **{md.field_name: md.default_value for md in EXTRA_METADATA},
         )
 

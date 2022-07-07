@@ -1,5 +1,10 @@
 # History
 
+## 0.9.0 (2022-07-07)
+
+* Add `segments` property to the `PanImg` model containing the unique values in the image as a tuple of `int`s.
+  These are only calculated for `int` or `uint` type `SimpleITKImage`s, for any other output type `segments` are set to `None`.
+
 ## 0.8.3 (2022-06-22)
 
 * Fix installation on Windows

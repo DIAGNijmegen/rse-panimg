@@ -1,10 +1,13 @@
 import logging
+from pathlib import Path
 
 import pytest
 
+from panimg import image_builders
 from panimg.exceptions import ValidationError
 from panimg.image_builders.metaio_utils import load_sitk_image
 from panimg.models import EXTRA_METADATA, ExtraMetaData, SimpleITKImage
+from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
 
@@ -157,3 +160,68 @@ def test_sitk_image_value_range(
             assert not result.image.HasMetaDataKey(tag)
         else:
             assert float(result.image.GetMetaData(tag)) == pytest.approx(value)
+
+
+@pytest.mark.parametrize(
+    "src_image,builder,segments",
+    [
+        (
+            "image_min10_max10.mha",
+            image_builders.image_builder_mhd,
+            (
+                -10,
+                -9,
+                -8,
+                -7,
+                -6,
+                -5,
+                -4,
+                -3,
+                -2,
+                -1,
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+            ),
+        ),
+        (  # Too many values
+            "dicom_2d/cxr.dcm",
+            image_builders.image_builder_dicom,
+            None,
+        ),
+        (  # Image type is vector of ints
+            "test_rgb.png",
+            image_builders.image_builder_fallback,
+            None,
+        ),
+        (  # Tiffs are always None
+            "valid_tiff.tif",
+            image_builders.image_builder_tiff,
+            None,
+        ),
+    ],
+)
+def test_segments(
+    src_image,
+    builder,
+    segments,
+    tmpdir_factory,
+):
+    files = {RESOURCE_PATH / src_image}
+    output_dir = Path(tmpdir_factory.mktemp("output"))
+    result = _build_files(
+        builder=builder, files=files, output_directory=output_dir
+    )
+    assert result.consumed_files == files
+    assert len(result.new_images) == 1
+
+    image = result.new_images.pop()
+    assert image.segments == segments
