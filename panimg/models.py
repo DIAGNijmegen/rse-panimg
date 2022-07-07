@@ -8,6 +8,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
 import numpy as np
+import SimpleITK as sitk  # noqa: N813
 from pydantic import BaseModel, validator
 from pydantic.dataclasses import dataclass
 from SimpleITK import GetArrayViewFromImage, Image, WriteImage
@@ -15,6 +16,17 @@ from SimpleITK import GetArrayViewFromImage, Image, WriteImage
 from panimg.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
+
+MASK_TYPE_PIXEL_IDS = [
+    sitk.sitkInt8,
+    sitk.sitkInt16,
+    sitk.sitkInt32,
+    sitk.sitkInt64,
+    sitk.sitkUInt8,
+    sitk.sitkUInt16,
+    sitk.sitkUInt32,
+    sitk.sitkUInt64,
+]
 
 
 class ColorSpace(str, Enum):
@@ -143,7 +155,7 @@ class PanImg:
     series_instance_uid: str = ""
     study_description: str = ""
     series_description: str = ""
-    segments: Optional[Tuple[np.number, ...]] = None
+    segments: Optional[Tuple[int, ...]] = None
 
 
 @dataclass(frozen=True)
@@ -262,11 +274,11 @@ class SimpleITKImage(BaseModel):
         return image
 
     @property
-    def segments(self) -> Optional[Tuple[np.number, ...]]:
+    def segments(self) -> Optional[Tuple[int, ...]]:
+        if self.image.GetPixelIDValue() not in MASK_TYPE_PIXEL_IDS:
+            return None
         segments = np.unique(GetArrayViewFromImage(self.image))
         if len(segments) > MAXIMUM_SEGMENTS_LENGTH:
-            return None
-        if not np.issubdtype(segments.dtype, np.number):
             return None
         return tuple(segments)
 

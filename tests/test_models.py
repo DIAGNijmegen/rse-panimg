@@ -197,10 +197,10 @@ def test_sitk_image_value_range(
             image_builders.image_builder_dicom,
             None,
         ),
-        (
-            "test_rgb.jpg",
+        (  # Image type is vector of ints
+            "test_rgb.png",
             image_builders.image_builder_fallback,
-            (255,),
+            None,
         ),
         (  # Tiffs are always None
             "valid_tiff.tif",
