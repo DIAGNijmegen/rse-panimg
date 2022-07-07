@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
+import SimpleITK
 import numpy as np
-import SimpleITK as sitk  # noqa: N813
 from pydantic import BaseModel, validator
 from pydantic.dataclasses import dataclass
 from SimpleITK import GetArrayViewFromImage, Image, WriteImage
@@ -18,14 +18,14 @@ from panimg.exceptions import ValidationError
 logger = logging.getLogger(__name__)
 
 MASK_TYPE_PIXEL_IDS = [
-    sitk.sitkInt8,
-    sitk.sitkInt16,
-    sitk.sitkInt32,
-    sitk.sitkInt64,
-    sitk.sitkUInt8,
-    sitk.sitkUInt16,
-    sitk.sitkUInt32,
-    sitk.sitkUInt64,
+    SimpleITK.sitkInt8,
+    SimpleITK.sitkInt16,
+    SimpleITK.sitkInt32,
+    SimpleITK.sitkInt64,
+    SimpleITK.sitkUInt8,
+    SimpleITK.sitkUInt16,
+    SimpleITK.sitkUInt32,
+    SimpleITK.sitkUInt64,
 ]
 
 
