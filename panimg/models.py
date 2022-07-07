@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
-import SimpleITK
 import numpy as np
+import SimpleITK
 from pydantic import BaseModel, validator
 from pydantic.dataclasses import dataclass
 from SimpleITK import GetArrayViewFromImage, Image, WriteImage
@@ -277,10 +277,13 @@ class SimpleITKImage(BaseModel):
     def segments(self) -> Optional[Tuple[int, ...]]:
         if self.image.GetPixelIDValue() not in MASK_TYPE_PIXEL_IDS:
             return None
+
         segments = np.unique(GetArrayViewFromImage(self.image))
-        if len(segments) > MAXIMUM_SEGMENTS_LENGTH:
+
+        if len(segments) <= MAXIMUM_SEGMENTS_LENGTH:
+            return tuple(segments)
+        else:
             return None
-        return tuple(segments)
 
     @property
     def color_space(self) -> ColorSpace:
