@@ -1,5 +1,9 @@
 # History
 
+## 0.9.1 (2022-07-12)
+
+* Return a `frozenset` for segments
+
 ## 0.9.0 (2022-07-07)
 
 * Add `segments` property to the `PanImg` model containing the unique values in the image as a tuple of `int`s.

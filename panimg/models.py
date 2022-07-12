@@ -4,7 +4,7 @@ import re
 import shutil
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
+from typing import Any, Dict, FrozenSet, List, NamedTuple, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
 import numpy as np
@@ -155,7 +155,7 @@ class PanImg:
     series_instance_uid: str = ""
     study_description: str = ""
     series_description: str = ""
-    segments: Optional[Tuple[int, ...]] = None
+    segments: Optional[FrozenSet[int]] = None
 
 
 @dataclass(frozen=True)
@@ -274,14 +274,14 @@ class SimpleITKImage(BaseModel):
         return image
 
     @property
-    def segments(self) -> Optional[Tuple[int, ...]]:
+    def segments(self) -> Optional[FrozenSet[int]]:
         if self.image.GetPixelIDValue() not in MASK_TYPE_PIXEL_IDS:
             return None
 
         segments = np.unique(GetArrayViewFromImage(self.image))
 
         if len(segments) <= MAXIMUM_SEGMENTS_LENGTH:
-            return tuple(segments)
+            return frozenset(segments)
         else:
             return None
 
