@@ -261,6 +261,7 @@ def test_image_builder_tiff(tmpdir_factory):
     # Assert that both tiff images are imported
     assert len(image_builder_result.new_image_files) == 2
 
+
 def test_handle_complex_files(tmpdir_factory):
     # Copy resource files to writable temp folder
     temp_dir = Path(tmpdir_factory.mktemp("temp") / "resources")
