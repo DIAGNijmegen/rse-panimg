@@ -261,7 +261,6 @@ def test_image_builder_tiff(tmpdir_factory):
     # Assert that both tiff images are imported
     assert len(image_builder_result.new_image_files) == 2
 
-
 def test_handle_complex_files(tmpdir_factory):
     # Copy resource files to writable temp folder
     temp_dir = Path(tmpdir_factory.mktemp("temp") / "resources")
@@ -289,11 +288,12 @@ def test_handle_complex_files(tmpdir_factory):
         file_errors=defaultdict(list),
     )
 
-    mock_image.copy.assert_called()
-    assert "xres" in mock_image.copy.call_args[1]
-    assert (
-        pyvips.base.version(0) == 8 and pyvips.base.version(1) < 10
-    ), "Remove work-around calculation of xres and yres in _convert_to_tiff function."
+    if pyvips.base.version(0) == 8 and pyvips.base.version(1) < 10:
+        # work-around calculation of xres and yres in _convert_to_tiff function
+        mock_image.copy.assert_called()
+        assert "xres" in mock_image.copy.call_args[1]
+    else:
+        mock_image.copy.assert_not_called()
 
 
 @pytest.mark.xfail(
