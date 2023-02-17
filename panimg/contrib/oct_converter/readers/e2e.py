@@ -89,7 +89,6 @@ class E2E:
             obj:OCTVolumeWithMetaData
         """
         with open(self.filepath, "rb") as f:
-
             chunk_positions = self.find_data_chunks(f)
 
             volume_dict = {}

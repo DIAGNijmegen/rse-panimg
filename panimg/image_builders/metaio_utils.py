@@ -197,8 +197,8 @@ def validate_and_clean_additional_mh_headers(
             match_pattern = ADDITIONAL_HEADERS[key]
             if not re.match(match_pattern, value):
                 raise ValidationError(
-                    f"Value '{value}' for field {key} does not match "
-                    f"pattern {match_pattern.pattern}"
+                    f"Value {value!r} for field {key!r} does not match "
+                    f"pattern {match_pattern.pattern!r}"
                 )
             if key in HEADERS_MATCHING_NUM_TIMEPOINTS:
                 timepoints = (
@@ -227,18 +227,18 @@ def validate_center_matches_width_setting(
     counter_key = window_keys[0] if key == window_keys[1] else window_keys[1]
     if not reader.HasMetaDataKey(counter_key):
         raise ValidationError(
-            f"Headers '{key}' and '{counter_key}' should both be present "
-            f"but '{counter_key}' is missing"
+            f"Headers {key!r} and {counter_key!r} should both be present "
+            f"but {counter_key!r} is missing"
         )
 
     counter_value = reader.GetMetaData(counter_key)
     if not re.match(FLOAT_ARRAY_MATCH_REGEXP, counter_value):
         raise ValidationError(
-            f"Header '{key}' is of a different format than '{counter_key}'"
+            f"Header {key!r} is of a different format than {counter_key!r}"
         )
     if len(value.split(",")) != len(counter_value.split(",")):
         raise ValidationError(
-            f"Headers '{key}' and '{counter_key}' should "
+            f"Headers {key!r} and {counter_key!r} should "
             f"contain an equal number of values"
         )
 
@@ -249,7 +249,7 @@ def validate_list_data_matches_num_timepoints(
     num_timepoints = len(value.split(" "))
     if num_timepoints != expected_timepoints:
         raise ValidationError(
-            f"Found {num_timepoints} values for {key}, "
+            f"Found {num_timepoints} values for {key!r}, "
             f"but expected {expected_timepoints} (1/timepoint)"
         )
 

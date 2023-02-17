@@ -392,7 +392,6 @@ def image_builder_tiff(  # noqa: C901
     file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
     with TemporaryDirectory() as output_directory:
-
         loaded_files = _load_gc_files(
             files=files,
             converter=pyvips,
