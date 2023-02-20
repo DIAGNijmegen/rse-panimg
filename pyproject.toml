@@ -19,7 +19,7 @@ panimg = "panimg.cli:cli"
 [tool.poetry.dependencies]
 python = "^3.8"
 pydantic = "*"
-numpy = "^1.22"
+numpy = ">=1.22"
 # Exclude 2.1.1.1 due to
 # https://github.com/SimpleITK/SimpleITK/issues/1627
 # and https://github.com/python-poetry/poetry/issues/2453
@@ -67,7 +67,7 @@ addopts = "--strict-markers --showlocals -n auto --dist loadscope"
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = py38, py39, py310, py3.11
+envlist = py38, py39, py310, py311
 
 [gh-actions]
 python =
