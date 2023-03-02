@@ -29,13 +29,13 @@ from tests import RESOURCE_PATH
 @pytest.mark.parametrize(
     "color_space_string, expected",
     [
-        ("TEST.GRAY", ColorSpace.GRAY),
-        ("TEST.MINISBLACK", ColorSpace.GRAY),
-        ("TEST.minisblack", ColorSpace.GRAY),
-        ("TEST.RGB", ColorSpace.RGB),
-        ("TEST.RGBA", ColorSpace.RGBA),
-        ("TEST.YCBCR", ColorSpace.YCBCR),
-        ("Not.Colour", None),
+        ("GRAY", ColorSpace.GRAY),
+        ("MINISBLACK", ColorSpace.GRAY),
+        ("minisblack", ColorSpace.GRAY),
+        ("RGB", ColorSpace.RGB),
+        ("RGBA", ColorSpace.RGBA),
+        ("YCBCR", ColorSpace.YCBCR),
+        ("Colour", None),
     ],
 )
 def test_get_color_space(color_space_string, expected):
@@ -150,7 +150,7 @@ def test_grandchallengetifffile_validation(
         (
             RESOURCE_PATH,
             "invalid_resolutions_tiff.tif",
-            "Invalid resolution unit RESUNIT.NONE in tiff file",
+            "Invalid resolution unit NONE in tiff file",
         ),
     ],
 )
@@ -221,9 +221,9 @@ def test_tiff_image_entry_creation(
         assert gc_file.image_height == tiff_tags["ImageLength"].value
         assert gc_file.resolution_levels == len(tiff_file.pages)
         assert gc_file.color_space == _get_color_space(
-            color_space_string=str(
-                tiff_tags["PhotometricInterpretation"].value
-            )
+            color_space_string=tiff_tags[
+                "PhotometricInterpretation"
+            ].value.name
         )
         assert gc_file.voxel_width_mm == approx(voxel_size[0])
         assert gc_file.voxel_height_mm == approx(voxel_size[1])

@@ -98,11 +98,11 @@ def _get_voxel_spacing_mm(tags, tag):
     try:
         # Resolution is a tuple of the number of pixels and the length of the
         # image in cm or inches, depending on resolution unit
-        resolution_unit = str(_get_tag_value(tags, "ResolutionUnit"))
+        resolution_unit = _get_tag_value(tags, "ResolutionUnit").name
         resolution = _get_tag_value(tags, tag)
-        if resolution_unit == "RESUNIT.INCH":
+        if resolution_unit == "INCH":
             return 25.4 / (resolution[0] / resolution[1])
-        elif resolution_unit == "RESUNIT.CENTIMETER":
+        elif resolution_unit == "CENTIMETER":
             return 10 / (resolution[0] / resolution[1])
         raise ValidationError(
             f"Invalid resolution unit {resolution_unit}" f" in tiff file"
@@ -162,9 +162,9 @@ def _extract_tags(
     gc_file.resolution_levels = len(pages)
 
     gc_file.color_space = _get_color_space(
-        color_space_string=str(
-            _get_tag_value(tags, "PhotometricInterpretation")
-        )
+        color_space_string=_get_tag_value(
+            tags, "PhotometricInterpretation"
+        ).name
     )
     gc_file.image_width = _get_tag_value(tags, "ImageWidth")
     gc_file.image_height = _get_tag_value(tags, "ImageLength")
@@ -179,7 +179,7 @@ def _extract_tags(
 
 
 def _get_color_space(*, color_space_string) -> Optional[ColorSpace]:
-    color_space_string = color_space_string.split(".")[1].upper()
+    color_space_string = color_space_string.upper()
 
     if color_space_string == "MINISBLACK":
         color_space = ColorSpace.GRAY

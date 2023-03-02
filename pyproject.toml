@@ -34,7 +34,6 @@ click = "*"
 pylibjpeg = "*"
 pylibjpeg-libjpeg = "*"
 pylibjpeg-openjpeg = "*"
-pylibjpeg-rle = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
