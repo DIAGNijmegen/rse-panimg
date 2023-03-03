@@ -1,6 +1,6 @@
 # History
 
-## 0.10.0 (UNRELEASED)
+## 0.10.0 (2023-03-03)
 
 * Removed support for Python 3.7
 * Added support for Python 3.11
