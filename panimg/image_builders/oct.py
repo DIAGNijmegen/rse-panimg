@@ -51,7 +51,6 @@ def _create_itk_images(
     fundus_images: Iterable[FundusImageWithMetaData],
     oct_slice_size: OctDimensions,
 ) -> Iterator[SimpleITKImage]:
-
     filepath = file[0]
     filetype = file[1]
 

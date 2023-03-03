@@ -1,7 +1,5 @@
 from pathlib import Path
-from typing import Iterator, Set, Union
-
-from typing_extensions import Protocol  # for py37 support
+from typing import Iterator, Protocol, Set, Union
 
 from panimg.models import (
     PanImgFile,

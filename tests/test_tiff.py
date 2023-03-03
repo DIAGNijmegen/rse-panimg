@@ -29,13 +29,13 @@ from tests import RESOURCE_PATH
 @pytest.mark.parametrize(
     "color_space_string, expected",
     [
-        ("TEST.GRAY", ColorSpace.GRAY),
-        ("TEST.MINISBLACK", ColorSpace.GRAY),
-        ("TEST.minisblack", ColorSpace.GRAY),
-        ("TEST.RGB", ColorSpace.RGB),
-        ("TEST.RGBA", ColorSpace.RGBA),
-        ("TEST.YCBCR", ColorSpace.YCBCR),
-        ("Not.Colour", None),
+        ("GRAY", ColorSpace.GRAY),
+        ("MINISBLACK", ColorSpace.GRAY),
+        ("minisblack", ColorSpace.GRAY),
+        ("RGB", ColorSpace.RGB),
+        ("RGBA", ColorSpace.RGBA),
+        ("YCBCR", ColorSpace.YCBCR),
+        ("Colour", None),
     ],
 )
 def test_get_color_space(color_space_string, expected):
@@ -150,7 +150,7 @@ def test_grandchallengetifffile_validation(
         (
             RESOURCE_PATH,
             "invalid_resolutions_tiff.tif",
-            "Invalid resolution unit RESUNIT.NONE in tiff file",
+            "Invalid resolution unit NONE in tiff file",
         ),
     ],
 )
@@ -221,9 +221,9 @@ def test_tiff_image_entry_creation(
         assert gc_file.image_height == tiff_tags["ImageLength"].value
         assert gc_file.resolution_levels == len(tiff_file.pages)
         assert gc_file.color_space == _get_color_space(
-            color_space_string=str(
-                tiff_tags["PhotometricInterpretation"].value
-            )
+            color_space_string=tiff_tags[
+                "PhotometricInterpretation"
+            ].value.name
         )
         assert gc_file.voxel_width_mm == approx(voxel_size[0])
         assert gc_file.voxel_height_mm == approx(voxel_size[1])
@@ -289,11 +289,12 @@ def test_handle_complex_files(tmpdir_factory):
         file_errors=defaultdict(list),
     )
 
-    mock_image.copy.assert_called()
-    assert "xres" in mock_image.copy.call_args[1]
-    assert (
-        pyvips.base.version(0) == 8 and pyvips.base.version(1) < 10
-    ), "Remove work-around calculation of xres and yres in _convert_to_tiff function."
+    if pyvips.base.version(0) == 8 and pyvips.base.version(1) < 10:
+        # work-around calculation of xres and yres in _convert_to_tiff function
+        mock_image.copy.assert_called()
+        assert "xres" in mock_image.copy.call_args[1]
+    else:
+        mock_image.copy.assert_not_called()
 
 
 @pytest.mark.xfail(

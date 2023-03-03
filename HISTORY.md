@@ -1,5 +1,10 @@
 # History
 
+## 0.10.0 (UNRELEASED)
+
+* Removed support for Python 3.7
+* Added support for Python 3.11
+
 ## 0.9.1 (2022-07-12)
 
 * Return a `frozenset` for segments

@@ -100,8 +100,8 @@ class ExtraMetaData(NamedTuple):
             return
         if not re.match(self.match_pattern, str(value)):
             raise ValidationError(
-                f"Value '{value}' for field {self.keyword} does not match "
-                f"pattern {self.match_pattern.pattern}"
+                f"Value {value!r} for field {self.keyword!r} does not match "
+                f"pattern {self.match_pattern.pattern!r}"
             )
         try:
             self.cast_func(value)
@@ -332,8 +332,8 @@ class SimpleITKImage(BaseModel):
                     # that it only fails and skips the images with corrupt
                     # metadata. This validation is done as an extra check.
                     logger.warning(
-                        f"Value for metadata field {md.keyword} is stripped "
-                        f"because it produced a ValidationError: '{e}'"
+                        f"Value for metadata field {md.keyword!r} is stripped "
+                        f"because it produced a ValidationError: {e!r}"
                     )
         return extra_metadata
 

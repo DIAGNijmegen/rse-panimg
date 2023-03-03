@@ -1,19 +1,12 @@
 import logging
+from importlib.metadata import version
 from pathlib import Path
 
 import click
 
 from panimg import convert, logger
 
-try:
-    from importlib.metadata import version
-
-    panimg_version = version("panimg")
-except ImportError:
-    # py <= py37
-    from pkg_resources import get_distribution
-
-    panimg_version = get_distribution("panimg").version
+panimg_version = version("panimg")
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
