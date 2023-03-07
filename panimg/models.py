@@ -163,19 +163,13 @@ class PanImgFile:
     image_id: UUID
     image_type: ImageType
     file: Path
-
-
-@dataclass(frozen=True)
-class PanImgFolder:
-    image_id: UUID
-    folder: Path
+    directory: Optional[Path] = None
 
 
 @dataclass
 class PanImgResult:
     new_images: Set[PanImg]
     new_image_files: Set[PanImgFile]
-    new_folders: Set[PanImgFolder]
     consumed_files: Set[Path]
     file_errors: Dict[Path, List[str]]
 
@@ -183,7 +177,6 @@ class PanImgResult:
 @dataclass
 class PostProcessorResult:
     new_image_files: Set[PanImgFile]
-    new_folders: Set[PanImgFolder]
 
 
 class SimpleITKImage(BaseModel):

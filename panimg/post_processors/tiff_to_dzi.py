@@ -1,12 +1,7 @@
 import logging
 from typing import Set
 
-from panimg.models import (
-    ImageType,
-    PanImgFile,
-    PanImgFolder,
-    PostProcessorResult,
-)
+from panimg.models import ImageType, PanImgFile, PostProcessorResult
 from panimg.settings import DZI_TILE_SIZE
 
 try:
@@ -27,7 +22,6 @@ def tiff_to_dzi(*, image_files: Set[PanImgFile]) -> PostProcessorResult:
         )
 
     new_image_files: Set[PanImgFile] = set()
-    new_folders: Set[PanImgFolder] = set()
 
     for file in image_files:
         if file.image_type == ImageType.TIFF:
@@ -38,15 +32,12 @@ def tiff_to_dzi(*, image_files: Set[PanImgFile]) -> PostProcessorResult:
                 continue
 
             new_image_files |= result.new_image_files
-            new_folders |= result.new_folders
 
-    return PostProcessorResult(
-        new_image_files=new_image_files, new_folders=new_folders
-    )
+    return PostProcessorResult(new_image_files=new_image_files)
 
 
 def _create_dzi_image(*, tiff_file: PanImgFile) -> PostProcessorResult:
-    # Creates a dzi file and corresponding tiles in folder {pk}_files
+    # Creates a dzi file and corresponding tiles in directory {pk}_files
     dzi_output = tiff_file.file.parent / str(tiff_file.image_id)
 
     image = pyvips.Image.new_from_file(
@@ -59,13 +50,7 @@ def _create_dzi_image(*, tiff_file: PanImgFile) -> PostProcessorResult:
         image_id=tiff_file.image_id,
         image_type=ImageType.DZI,
         file=(dzi_output.parent / f"{dzi_output.name}.dzi").absolute(),
+        directory=(dzi_output.parent / f"{dzi_output.name}_files").absolute(),
     )
 
-    new_folder = PanImgFolder(
-        image_id=tiff_file.image_id,
-        folder=(dzi_output.parent / f"{dzi_output.name}_files").absolute(),
-    )
-
-    return PostProcessorResult(
-        new_image_files={new_file}, new_folders={new_folder}
-    )
+    return PostProcessorResult(new_image_files={new_file})

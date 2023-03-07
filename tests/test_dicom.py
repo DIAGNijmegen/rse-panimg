@@ -191,21 +191,21 @@ def test_image_builder_dicom_4d_enhanced():
 
 
 @pytest.mark.parametrize(
-    "folder,element_type",
+    "directory,element_type",
     [
         ("dicom_4d", "MET_SHORT"),
         ("dicom_intercept", "MET_FLOAT"),
         ("dicom_slope", "MET_FLOAT"),
     ],
 )
-def test_dicom_rescaling(folder, element_type, tmpdir):
+def test_dicom_rescaling(directory, element_type, tmpdir):
     """
     2.dcm in dicom_intercept and dicom_slope has been modified to add a
     small intercept (0.01) or slope (1.001) respectively.
     """
     files = [
         Path(d[0]).joinpath(f)
-        for d in os.walk(RESOURCE_PATH / folder)
+        for d in os.walk(RESOURCE_PATH / directory)
         for f in d[2]
     ]
     result = _build_files(

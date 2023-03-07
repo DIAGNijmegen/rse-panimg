@@ -1,5 +1,9 @@
 # History
 
+## 0.11.0 (2023-03-07)
+
+* Removes `PanImgFolder` and outputs of `new_folders`, instead `directory` is added to `PanImgFile`
+
 ## 0.10.0 (2023-03-03)
 
 * Removed support for Python 3.7

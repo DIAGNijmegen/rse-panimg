@@ -6,12 +6,7 @@ from uuid import uuid4
 import pytest
 
 from panimg import convert, post_process
-from panimg.models import (
-    ImageType,
-    PanImgFile,
-    PanImgFolder,
-    PostProcessorResult,
-)
+from panimg.models import ImageType, PanImgFile, PostProcessorResult
 from tests import RESOURCE_PATH
 
 
@@ -39,10 +34,16 @@ def test_dzi_creation(tmpdir_factory, post_processors):
 
     if post_processors is None:
         assert len(result.new_image_files) == 3
-        assert len(result.new_folders) == 1
+        assert (
+            len([f for f in result.new_image_files if f.directory is None])
+            == 2
+        )
     else:
         assert len(result.new_image_files) == 2
-        assert len(result.new_folders) == 0
+        assert (
+            len([f for f in result.new_image_files if f.directory is None])
+            == 2
+        )
 
 
 def bad_post_processor(*, image_files: Set[PanImgFile]) -> PostProcessorResult:
@@ -57,17 +58,30 @@ def bad_post_processor(*, image_files: Set[PanImgFile]) -> PostProcessorResult:
         for f in image_files
     }
 
-    good_folders = {
-        PanImgFolder(image_id=f.image_id, folder=Path("foo"))
+    good_directories = {
+        PanImgFile(
+            image_id=f.image_id,
+            image_type=f.image_type,
+            file=Path("foo"),
+            directory=Path("foo_files"),
+        )
         for f in image_files
     }
-    bad_folders = {
-        PanImgFolder(image_id=uuid4(), folder=Path("foo")) for _ in image_files
+    bad_directories = {
+        PanImgFile(
+            image_id=uuid4(),
+            image_type=f.image_type,
+            file=Path("foo"),
+            directory=Path("foo_files"),
+        )
+        for f in image_files
     }
 
     return PostProcessorResult(
-        new_image_files=good_files | bad_files,
-        new_folders=good_folders | bad_folders,
+        new_image_files=good_files
+        | bad_files
+        | good_directories
+        | bad_directories,
     )
 
 
@@ -82,15 +96,13 @@ def test_post_processors_are_filtered():
 
     # The bad processor should produce twice as many outputs than inputs
     assert len(image_files) == 3
-    assert len(raw_result.new_image_files) == 6
-    assert len(raw_result.new_folders) == 6
+    assert len(raw_result.new_image_files) == 12
 
     # The bad results should be filtered out
     result = post_process(
         image_files=image_files, post_processors=[bad_post_processor]
     )
 
-    assert len(result.new_image_files) == 3
-    assert len(result.new_folders) == 3
+    assert len(result.new_image_files) == 6
+    assert len([f for f in result.new_image_files if f.directory is None]) == 3
     assert {f.image_id for f in result.new_image_files} == existing_ids
-    assert {f.image_id for f in result.new_folders} == existing_ids

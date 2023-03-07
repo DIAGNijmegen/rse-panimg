@@ -24,14 +24,14 @@ Under the hood we use:
 
 ## Usage
 
-`panimg` takes a folder and tries to convert the containing files to MHA or TIFF.
+`panimg` takes a directory and tries to convert the containing files to MHA or TIFF.
 By default, it will try to convert files from subdirectories as well.
 To only convert files in the top level directory, set `recurse_subdirectories` to `False`.
-It will try several strategies for loading the contained files, and if an image is found it will output it to the output folder.
+It will try several strategies for loading the contained files, and if an image is found it will output it to the output directory.
 It will return a structure containing information about what images were produced, what images were used to form the new images, image metadata, and any errors from any of the strategies.
 
 
-**NOTE: Alpha software, do not run this on folders you do not have a backup of.**
+**NOTE: Alpha software, do not run this on directories you do not have a backup of.**
 
 ```python
 from pathlib import Path
@@ -48,7 +48,7 @@ result = convert(
 `panimg` is also accessible from the command line.
 Install the package from pip as before, then you can use:
 
-**NOTE: Alpha software, do not run this on folders you do not have a backup of.**
+**NOTE: Alpha software, do not run this on directories you do not have a backup of.**
 
 ```shell
 panimg convert /path/to/files/ /where/files/will/go/

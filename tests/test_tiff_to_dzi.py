@@ -30,18 +30,12 @@ def test_dzi_creation(tmpdir_factory):
     assert (
         new_file.file == image_file.file.parent / f"{image_file.image_id}.dzi"
     )
-
-    assert len(result.new_folders) == 1
-
-    new_folder = result.new_folders.pop()
-
-    assert new_folder.image_id == image_file.image_id
     assert (
-        new_folder.folder
+        new_file.directory
         == image_file.file.parent / f"{image_file.image_id}_files"
     )
 
-    assert len(list((new_folder.folder).rglob("*.jpeg"))) == 9
+    assert len(list((new_file.directory).rglob("*.jpeg"))) == 9
 
 
 def test_no_exception_when_failed(tmpdir_factory, caplog):
@@ -57,7 +51,6 @@ def test_no_exception_when_failed(tmpdir_factory, caplog):
     result = tiff_to_dzi(image_files={image_file})
 
     assert len(result.new_image_files) == 0
-    assert len(result.new_folders) == 0
 
     # The last warning should be from our logger
     last_log = caplog.records[-1]
