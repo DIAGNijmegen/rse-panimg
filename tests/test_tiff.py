@@ -158,7 +158,7 @@ def test_load_with_tiff(
     source_dir, filename, expected_error_message, tmpdir_factory
 ):
     error_message = ""
-    # Copy resource file to writable temp folder
+    # Copy resource file to writable temp directory
     temp_file = Path(tmpdir_factory.mktemp("temp") / filename)
     shutil.copy(source_dir / filename, temp_file)
     gc_file = GrandChallengeTiffFile(temp_file)
@@ -178,7 +178,7 @@ def test_load_with_tiff(
     [(RESOURCE_PATH, "valid_tiff.tif"), (RESOURCE_PATH, "no_dzi.tif")],
 )
 def test_load_with_open_slide(source_dir, filename, tmpdir_factory):
-    # Copy resource file to writable temp folder
+    # Copy resource file to writable temp directory
     temp_file = Path(tmpdir_factory.mktemp("temp") / filename)
     shutil.copy(source_dir / filename, temp_file)
     gc_file = GrandChallengeTiffFile(temp_file)
@@ -231,7 +231,7 @@ def test_tiff_image_entry_creation(
 
 # Integration test of all features being accessed through the image builder
 def test_image_builder_tiff(tmpdir_factory):
-    # Copy resource files to writable temp folder
+    # Copy resource files to writable temp directory
     temp_dir = Path(tmpdir_factory.mktemp("temp") / "resources")
     output_dir = Path(tmpdir_factory.mktemp("output"))
 
@@ -263,7 +263,7 @@ def test_image_builder_tiff(tmpdir_factory):
 
 
 def test_handle_complex_files(tmpdir_factory):
-    # Copy resource files to writable temp folder
+    # Copy resource files to writable temp directory
     temp_dir = Path(tmpdir_factory.mktemp("temp") / "resources")
     shutil.copytree(RESOURCE_PATH / "complex_tiff", temp_dir)
     files = [Path(d[0]).joinpath(f) for d in os.walk(temp_dir) for f in d[2]]
@@ -327,7 +327,7 @@ def test_convert_to_tiff(resource, tmpdir_factory):
 
 
 def test_error_handling(tmpdir_factory):
-    # Copy resource files to writable temp folder
+    # Copy resource files to writable temp directory
     # The content files are dummy files and won't compile to tiff.
     # The point is to test the loading of gc_files and make sure all
     # related files are associated with the gc_file

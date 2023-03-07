@@ -5,13 +5,7 @@ from typing import DefaultDict, Dict, Iterable, List, Optional, Set
 
 from panimg.exceptions import UnconsumedFilesException
 from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
-from panimg.models import (
-    PanImg,
-    PanImgFile,
-    PanImgFolder,
-    PanImgResult,
-    PostProcessorResult,
-)
+from panimg.models import PanImg, PanImgFile, PanImgResult, PostProcessorResult
 from panimg.post_processors import DEFAULT_POST_PROCESSORS
 from panimg.types import ImageBuilder, PostProcessor
 
@@ -28,7 +22,6 @@ def convert(
 ) -> PanImgResult:
     new_images: Set[PanImg] = set()
     new_image_files: Set[PanImgFile] = set()
-    new_folders: Set[PanImgFolder] = set()
     consumed_files: Set[Path] = set()
     file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
 
@@ -44,7 +37,6 @@ def convert(
         consumed_files=consumed_files,
         new_images=new_images,
         new_image_files=new_image_files,
-        new_folders=new_folders,
         file_errors=file_errors,
         recurse_subdirectories=recurse_subdirectories,
     )
@@ -56,12 +48,10 @@ def convert(
         else DEFAULT_POST_PROCESSORS,
     )
     new_image_files |= result.new_image_files
-    new_folders |= result.new_folders
 
     return PanImgResult(
         new_images=new_images,
         new_image_files=new_image_files,
-        new_folders=new_folders,
         consumed_files=consumed_files,
         file_errors=file_errors,
     )
@@ -75,7 +65,6 @@ def _convert_directory(
     consumed_files: Set[Path],
     new_images: Set[PanImg],
     new_image_files: Set[PanImgFile],
-    new_folders: Set[PanImgFolder],
     file_errors: DefaultDict[Path, List[str]],
     recurse_subdirectories: bool = True,
 ):
@@ -96,7 +85,6 @@ def _convert_directory(
                 consumed_files=consumed_files,
                 new_images=new_images,
                 new_image_files=new_image_files,
-                new_folders=new_folders,
                 file_errors=file_errors,
                 recurse_subdirectories=recurse_subdirectories,
             )
@@ -121,7 +109,6 @@ def _convert_directory(
 
         new_images |= builder_result.new_images
         new_image_files |= builder_result.new_image_files
-        new_folders |= builder_result.new_folders
         consumed_files |= builder_result.consumed_files
 
         if builder_result.consumed_files:
@@ -160,7 +147,6 @@ def _build_files(
     return PanImgResult(
         new_images=new_images,
         new_image_files=new_image_files,
-        new_folders=set(),
         consumed_files=consumed_files,
         file_errors=file_errors,
     )
@@ -172,12 +158,11 @@ def post_process(
     """
     Run a set of post processors on a set of image files
 
-    Post processors add new files and folders to existing images,
+    Post processors add new files and directories to existing images,
     such as DZI creation for TIFF images, or thumbnail generation.
     They do not produce new image entities.
     """
     new_image_files: Set[PanImgFile] = set()
-    new_folders: Set[PanImgFolder] = set()
 
     logger.info(f"Post processing {len(image_files)} image(s)")
 
@@ -190,19 +175,12 @@ def post_process(
         filtered_files = {
             f for f in result.new_image_files if f.image_id in existing_ids
         }
-        filtered_folders = {
-            f for f in result.new_folders if f.image_id in existing_ids
-        }
 
         excluded_files = result.new_image_files - filtered_files
-        excluded_folders = result.new_folders - filtered_folders
 
-        if excluded_files or excluded_folders:
-            logger.warning(f"Ignoring: {excluded_files} {excluded_folders}")
+        if excluded_files:
+            logger.warning(f"Ignoring: {excluded_files}")
 
         new_image_files |= filtered_files
-        new_folders |= filtered_folders
 
-    return PostProcessorResult(
-        new_image_files=new_image_files, new_folders=new_folders
-    )
+    return PostProcessorResult(new_image_files=new_image_files)

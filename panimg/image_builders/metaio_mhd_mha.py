@@ -49,7 +49,7 @@ def image_builder_mhd(  # noqa: C901
         if path not in data_file_path.parents:
             raise ValueError(
                 f"{element_data_file_key} references a file which is not in "
-                f"the uploaded data folder"
+                f"the uploaded data directory"
             )
         if not data_file_path.is_file():
             raise ValueError("Data container of mhd file is missing")
