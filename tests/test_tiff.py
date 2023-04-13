@@ -195,7 +195,7 @@ def test_load_with_open_slide(source_dir, filename, tmpdir_factory):
 
     output_dir = Path(tmpdir_factory.mktemp("output"))
     (output_dir / filename).mkdir()
-
+    gc_file = _load_with_tiff(gc_file=gc_file)
     gc_file = _load_with_openslide(gc_file=gc_file)
 
     assert gc_file.validate() is None
@@ -203,7 +203,7 @@ def test_load_with_open_slide(source_dir, filename, tmpdir_factory):
 
 @pytest.mark.parametrize(
     "resource, expected_error_message, voxel_size",
-    [(RESOURCE_PATH / "valid_tiff.tif", "", [1, 1])],
+    [(RESOURCE_PATH / "valid_tiff.tif", "", [0.0009723706173180534, 0.0009723706173180534])],
 )
 def test_tiff_image_entry_creation(
     resource, expected_error_message, voxel_size
@@ -212,7 +212,7 @@ def test_tiff_image_entry_creation(
     gc_file = GrandChallengeTiffFile(resource)
     try:
         tiff_file = tifffile.TiffFile(str(gc_file.path.absolute()))
-        gc_file = _extract_tags(gc_file=gc_file, pages=tiff_file.pages)
+        gc_file = _extract_tags(gc_file=gc_file, pages=tiff_file.pages, byteorder=tiff_file.byteorder)
     except ValidationError as e:
         error_message = str(e)
 
