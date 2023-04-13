@@ -34,6 +34,8 @@ class GrandChallengeTiffFile:
     voxel_width_mm: float = 0
     voxel_height_mm: float = 0
     associated_files: List[Path] = field(default_factory=list)
+    min_voxel_value: Optional[int] = None
+    max_voxel_value: Optional[int] = None
 
     def validate(self) -> None:
         if not self.image_width:
@@ -147,7 +149,10 @@ def _extract_openslide_properties(
 
 
 def _extract_tags(
-    *, gc_file: GrandChallengeTiffFile, pages: tifffile.tifffile.TiffPages
+    *,
+    gc_file: GrandChallengeTiffFile,
+    pages: tifffile.tifffile.TiffPages,
+    byteorder: str,
 ) -> GrandChallengeTiffFile:
     """
     Extracts tags form a tiff file loaded with tifffile for use in grand challenge
@@ -175,6 +180,8 @@ def _extract_tags(
         gc_file.voxel_width_mm = _get_voxel_spacing_mm(tags, "XResolution")
         gc_file.voxel_height_mm = _get_voxel_spacing_mm(tags, "YResolution")
 
+    get_min_max_sample_value(tags=tags, gc_file=gc_file, byteorder=byteorder)
+
     return gc_file
 
 
@@ -192,11 +199,46 @@ def _get_color_space(*, color_space_string) -> Optional[ColorSpace]:
     return color_space
 
 
+def get_min_max_sample_value(*, tags, gc_file, byteorder):
+    # Only for binary masks
+    samples_per_pixel = _get_tag_value(tags, "SamplesPerPixel")
+    sample_format = _get_tag_value(tags, "SampleFormat")
+    if samples_per_pixel != 1 or sample_format not in (None, 1, 2):
+        return
+
+    def get_voxel_value(first_tag, second_tag):
+        voxel_value = _get_tag_value(tags, first_tag) or _get_tag_value(
+            tags, second_tag
+        )
+        return voxel_value
+
+    min_sample_value = get_voxel_value("MinSampleValue", "SMinSampleValue")
+    max_sample_value = get_voxel_value("MaxSampleValue", "SMaxSampleValue")
+    signed = sample_format == 2
+    byteorder = {"<": "little", ">": "big"}.get(byteorder, "big")
+
+    if isinstance(min_sample_value, bytes):
+        gc_file.min_voxel_value = int.from_bytes(
+            min_sample_value, byteorder=byteorder, signed=signed
+        )
+    elif isinstance(min_sample_value, int):
+        gc_file.min_voxel_value = min_sample_value
+
+    if isinstance(max_sample_value, bytes):
+        gc_file.max_voxel_value = int.from_bytes(
+            max_sample_value, byteorder=byteorder, signed=signed
+        )
+    elif isinstance(max_sample_value, int):
+        gc_file.max_voxel_value = max_sample_value
+
+
 def _load_with_tiff(
     *, gc_file: GrandChallengeTiffFile
 ) -> GrandChallengeTiffFile:
     tiff_file = tifffile.TiffFile(str(gc_file.path.absolute()))
-    gc_file = _extract_tags(gc_file=gc_file, pages=tiff_file.pages)
+    gc_file = _extract_tags(
+        gc_file=gc_file, pages=tiff_file.pages, byteorder=tiff_file.byteorder
+    )
     return gc_file
 
 
@@ -444,6 +486,8 @@ def image_builder_tiff(  # noqa: C901
                 voxel_height_mm=gc_file.voxel_height_mm,
                 resolution_levels=gc_file.resolution_levels,
                 color_space=gc_file.color_space,
+                min_voxel_value=gc_file.min_voxel_value,
+                max_voxel_value=gc_file.max_voxel_value,
             )
 
     if file_errors:

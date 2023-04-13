@@ -19,6 +19,7 @@ from panimg.image_builders.tiff import (
     _get_color_space,
     _get_mrxs_files,
     _load_with_tiff,
+    _load_with_openslide,
     image_builder_tiff,
 )
 from panimg.models import ColorSpace
@@ -144,18 +145,25 @@ def test_grandchallengetifffile_validation(
 
 
 @pytest.mark.parametrize(
-    "source_dir, filename, expected_error_message",
+    "source_dir, filename, expected_error_message, expected_min, expected_max",
     [
-        (RESOURCE_PATH, "valid_tiff.tif", ""),
+        (RESOURCE_PATH, "valid_tiff.tif", "", 0, 4),
         (
             RESOURCE_PATH,
             "invalid_resolutions_tiff.tif",
             "Invalid resolution unit NONE in tiff file",
+            None,
+            None,
         ),
     ],
 )
 def test_load_with_tiff(
-    source_dir, filename, expected_error_message, tmpdir_factory
+    source_dir,
+    filename,
+    expected_error_message,
+    expected_min,
+    expected_max,
+    tmpdir_factory,
 ):
     error_message = ""
     # Copy resource file to writable temp directory
@@ -164,7 +172,9 @@ def test_load_with_tiff(
     gc_file = GrandChallengeTiffFile(temp_file)
     gc_file.pk = uuid4()
     try:
-        _load_with_tiff(gc_file=gc_file)
+        gc_file = _load_with_tiff(gc_file=gc_file)
+        assert gc_file.min_voxel_value == expected_min
+        assert gc_file.max_voxel_value == expected_max
     except ValidationError as e:
         error_message = str(e)
 
@@ -186,7 +196,7 @@ def test_load_with_open_slide(source_dir, filename, tmpdir_factory):
     output_dir = Path(tmpdir_factory.mktemp("output"))
     (output_dir / filename).mkdir()
 
-    gc_file = _load_with_tiff(gc_file=gc_file)
+    gc_file = _load_with_openslide(gc_file=gc_file)
 
     assert gc_file.validate() is None
 
