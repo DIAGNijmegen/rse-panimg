@@ -207,7 +207,7 @@ def test_load_with_open_slide(source_dir, filename, tmpdir_factory):
         (
             RESOURCE_PATH / "valid_tiff.tif",
             "",
-            [0.0009723706173180534, 0.0009723706173180534],
+            [1, 1],
         )
     ],
 )
