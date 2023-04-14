@@ -18,8 +18,8 @@ from panimg.image_builders.tiff import (
     _extract_tags,
     _get_color_space,
     _get_mrxs_files,
-    _load_with_tiff,
     _load_with_openslide,
+    _load_with_tiff,
     image_builder_tiff,
 )
 from panimg.models import ColorSpace
