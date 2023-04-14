@@ -266,7 +266,11 @@ def test_image_builder_tiff(tmpdir_factory):
         builder=image_builder_tiff, files=files, output_directory=output_dir
     )
 
-    expected_files = [temp_dir / "valid_tiff.tif", temp_dir / "no_dzi.tif", temp_dir / "test_min_max.tif"]
+    expected_files = [
+        temp_dir / "valid_tiff.tif",
+        temp_dir / "no_dzi.tif",
+        temp_dir / "test_min_max.tif",
+    ]
 
     assert sorted(image_builder_result.consumed_files) == sorted(
         expected_files
