@@ -147,7 +147,7 @@ def test_grandchallengetifffile_validation(
 @pytest.mark.parametrize(
     "source_dir, filename, expected_error_message, expected_min, expected_max",
     [
-        (RESOURCE_PATH, "valid_tiff.tif", "", 0, 4),
+        (RESOURCE_PATH, "test_min_max.tif", "", 0, 4),
         (
             RESOURCE_PATH,
             "invalid_resolutions_tiff.tif",
@@ -266,7 +266,7 @@ def test_image_builder_tiff(tmpdir_factory):
         builder=image_builder_tiff, files=files, output_directory=output_dir
     )
 
-    expected_files = [temp_dir / "valid_tiff.tif", temp_dir / "no_dzi.tif"]
+    expected_files = [temp_dir / "valid_tiff.tif", temp_dir / "no_dzi.tif", temp_dir / "test_min_max.tif"]
 
     assert sorted(image_builder_result.consumed_files) == sorted(
         expected_files
@@ -279,7 +279,7 @@ def test_image_builder_tiff(tmpdir_factory):
         assert os.path.isfile(output_dir / file.name / f"{pk}.tif")
 
     # Assert that both tiff images are imported
-    assert len(image_builder_result.new_image_files) == 2
+    assert len(image_builder_result.new_image_files) == 3
 
 
 def test_handle_complex_files(tmpdir_factory):
