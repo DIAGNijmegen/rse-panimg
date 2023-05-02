@@ -205,8 +205,8 @@
 
 import math
 from pathlib import Path
-import numpy as np
 
+import numpy as np
 from tifffile import TiffWriter
 from wsidicom import WsiDicom
 
@@ -242,18 +242,19 @@ def dcm_to_tiff(input_dir, output_path):
             test_tile = np.array(image.read_tile(0, (0, 0)))
             dtype = test_tile.dtype
             shape = (
-            image.levels[level].size.height, image.levels[level].size.width, 3)
+                image.levels[level].size.height,
+                image.levels[level].size.width,
+                3,
+            )
 
             level_tiler = tiler(image.read_tile, level, cols, rows)
 
-            extratags = [
-                (274, 3, 1, 1, False)  # Orientation TOPLEFT
-            ]
+            extratags = [(274, 3, 1, 1, False)]  # Orientation TOPLEFT
 
             resolution = (
                 int(10 / image.levels[level].pixel_spacing.width),
                 int(10 / image.levels[level].pixel_spacing.height),
-                'CENTIMETER'
+                "CENTIMETER",
             )
 
             subfiletype = 1 if level != 0 else 0
