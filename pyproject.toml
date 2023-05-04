@@ -17,6 +17,8 @@ classifiers = [
 panimg = "panimg.cli:cli"
 
 [tool.poetry.dependencies]
+# Change back to "^3.8" after https://github.com/imi-bigpicture/wsidicom/pull/96
+# is merged and released
 python = ">=3.8,<3.12"
 pydantic = "*"
 numpy = ">=1.22"
