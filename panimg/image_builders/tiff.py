@@ -200,36 +200,30 @@ def _get_color_space(*, color_space_string) -> Optional[ColorSpace]:
 
 
 def get_min_max_sample_value(*, tags, gc_file, byteorder):
-    # Only for binary masks
     samples_per_pixel = _get_tag_value(tags, "SamplesPerPixel")
     sample_format = _get_tag_value(tags, "SampleFormat")
     if samples_per_pixel != 1 or sample_format not in (None, 1, 2):
         return
 
+    signed = sample_format == 2
+    byteorder = {"<": "little", ">": "big"}.get(byteorder, "big")
+
     def get_voxel_value(first_tag, second_tag):
         voxel_value = _get_tag_value(tags, first_tag) or _get_tag_value(
             tags, second_tag
         )
+        if isinstance(voxel_value, bytes):
+            return int.from_bytes(
+                voxel_value, byteorder=byteorder, signed=signed
+            )
         return voxel_value
 
-    min_sample_value = get_voxel_value("MinSampleValue", "SMinSampleValue")
-    max_sample_value = get_voxel_value("MaxSampleValue", "SMaxSampleValue")
-    signed = sample_format == 2
-    byteorder = {"<": "little", ">": "big"}.get(byteorder, "big")
-
-    if isinstance(min_sample_value, bytes):
-        gc_file.min_voxel_value = int.from_bytes(
-            min_sample_value, byteorder=byteorder, signed=signed
-        )
-    elif isinstance(min_sample_value, int):
-        gc_file.min_voxel_value = min_sample_value
-
-    if isinstance(max_sample_value, bytes):
-        gc_file.max_voxel_value = int.from_bytes(
-            max_sample_value, byteorder=byteorder, signed=signed
-        )
-    elif isinstance(max_sample_value, int):
-        gc_file.max_voxel_value = max_sample_value
+    gc_file.min_voxel_value = get_voxel_value(
+        "MinSampleValue", "SMinSampleValue"
+    )
+    gc_file.max_voxel_value = get_voxel_value(
+        "MaxSampleValue", "SMaxSampleValue"
+    )
 
 
 def _load_with_tiff(
