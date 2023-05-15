@@ -247,6 +247,8 @@ def test_tiff_image_entry_creation(
         )
         assert gc_file.voxel_width_mm == approx(voxel_size[0])
         assert gc_file.voxel_height_mm == approx(voxel_size[1])
+        assert gc_file.min_voxel_value is None
+        assert gc_file.max_voxel_value is None
 
 
 # Integration test of all features being accessed through the image builder
