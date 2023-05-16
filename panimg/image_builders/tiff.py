@@ -77,9 +77,7 @@ class GrandChallengeTiffFile:
         if self.min_voxel_value is None or self.max_voxel_value is None:
             return None
 
-        return frozenset(
-            range(self.min_voxel_value, self.max_voxel_value + 1)
-        )
+        return frozenset(range(self.min_voxel_value, self.max_voxel_value + 1))
 
 
 def _get_tag_value(tags, tag):
