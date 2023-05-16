@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import pytest
 
-from panimg.image_builders import image_builder_tiff
+from panimg.image_builders import image_builder_dicom, image_builder_tiff
 from panimg.models import ColorSpace, EyeChoice, PatientSex
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
@@ -80,3 +80,14 @@ def test_image_builder_wsi(
         for res in result.new_images:
             for k, v in expected_image.items():
                 assert getattr(res, k) == v
+
+
+def test_dicom_wsi_fails_for_dicom_builder(tmpdir):
+    src = RESOURCE_PATH / "dicom_wsi/sparse_with_bot"
+    files = {f for f in src.rglob("*") if f.is_file()}
+    result = _build_files(
+        builder=image_builder_dicom, files=files, output_directory=tmpdir
+    )
+
+    assert len(result.new_image_files) == 0
+    assert len(result.file_errors) == 1
