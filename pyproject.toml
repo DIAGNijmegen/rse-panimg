@@ -36,8 +36,8 @@ click = "*"
 pylibjpeg = "*"
 pylibjpeg-libjpeg = "*"
 pylibjpeg-openjpeg = "*"
-wsidicom = "^0.9.0"
-imagecodecs = "^2023.3.16"
+wsidicom = ">=0.9.0"
+imagecodecs = ">=2023.3.16"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
