@@ -156,8 +156,6 @@ class PanImg:
     study_description: str = ""
     series_description: str = ""
     segments: Optional[FrozenSet[int]] = None
-    min_voxel_value: Optional[int] = None
-    max_voxel_value: Optional[int] = None
 
 
 @dataclass(frozen=True)
