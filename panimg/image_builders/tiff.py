@@ -78,8 +78,7 @@ class GrandChallengeTiffFile:
             return None
 
         return frozenset(
-            list(range(self.min_voxel_value, self.max_voxel_value))
-            + [self.max_voxel_value]
+            range(self.min_voxel_value, self.max_voxel_value + 1)
         )
 
 
