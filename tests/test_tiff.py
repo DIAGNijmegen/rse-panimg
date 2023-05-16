@@ -145,27 +145,29 @@ def test_grandchallengetifffile_validation(
 
 
 @pytest.mark.parametrize(
-    "source_dir, filename, expected_error_message, expected_min, expected_max",
+    "source_dir, filename, error_message, min, max, segments",
     [
-        (RESOURCE_PATH, "test_min_max.tif", "", 0, 4),
+        (RESOURCE_PATH, "test_min_max.tif", "", 0, 4, {0, 1, 2, 3, 4}),
         (
             RESOURCE_PATH,
             "invalid_resolutions_tiff.tif",
             "Invalid resolution unit NONE in tiff file",
             None,
             None,
+            {},
         ),
     ],
 )
 def test_load_with_tiff(
     source_dir,
     filename,
-    expected_error_message,
-    expected_min,
-    expected_max,
+    error_message,
+    min,
+    max,
+    segments,
     tmpdir_factory,
 ):
-    error_message = ""
+    error = ""
     # Copy resource file to writable temp directory
     temp_file = Path(tmpdir_factory.mktemp("temp") / filename)
     shutil.copy(source_dir / filename, temp_file)
@@ -173,14 +175,15 @@ def test_load_with_tiff(
     gc_file.pk = uuid4()
     try:
         gc_file = _load_with_tiff(gc_file=gc_file)
-        assert gc_file.min_voxel_value == expected_min
-        assert gc_file.max_voxel_value == expected_max
+        assert gc_file.min_voxel_value == min
+        assert gc_file.max_voxel_value == max
+        assert gc_file.segments == segments
     except ValidationError as e:
-        error_message = str(e)
+        error = str(e)
 
-    assert expected_error_message in error_message
-    if not expected_error_message:
-        assert not error_message
+    assert error_message in error
+    if not error_message:
+        assert not error
 
 
 @pytest.mark.parametrize(
@@ -249,6 +252,7 @@ def test_tiff_image_entry_creation(
         assert gc_file.voxel_height_mm == approx(voxel_size[1])
         assert gc_file.min_voxel_value is None
         assert gc_file.max_voxel_value is None
+        assert gc_file.segments is None
 
 
 # Integration test of all features being accessed through the image builder

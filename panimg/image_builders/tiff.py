@@ -4,7 +4,16 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Callable, DefaultDict, Dict, Iterator, List, Optional, Set
+from typing import (
+    Callable,
+    DefaultDict,
+    Dict,
+    FrozenSet,
+    Iterator,
+    List,
+    Optional,
+    Set,
+)
 from uuid import UUID, uuid4
 
 import tifffile
@@ -62,6 +71,20 @@ class GrandChallengeTiffFile:
             raise ValidationError(
                 "Not a valid tif: Color space could not be determined"
             )
+
+    @property
+    def segments(self) -> Optional[FrozenSet[int]]:
+        if None in (self.min_voxel_value, self.max_voxel_value):
+            return None
+        if self.min_voxel_value is None:
+            return None
+        if self.max_voxel_value is None:
+            return None
+
+        return frozenset(
+            list(range(int(self.min_voxel_value), int(self.max_voxel_value)))
+            + [int(self.max_voxel_value)]
+        )
 
 
 def _get_tag_value(tags, tag):
@@ -480,8 +503,7 @@ def image_builder_tiff(  # noqa: C901
                 voxel_height_mm=gc_file.voxel_height_mm,
                 resolution_levels=gc_file.resolution_levels,
                 color_space=gc_file.color_space,
-                min_voxel_value=gc_file.min_voxel_value,
-                max_voxel_value=gc_file.max_voxel_value,
+                segments=gc_file.segments,
             )
 
     if file_errors:

@@ -386,8 +386,7 @@ class TIFFImage(BaseModel):
     resolution_levels: int
     color_space: ColorSpace
     eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
-    min_voxel_value: Optional[int]
-    max_voxel_value: Optional[int]
+    segments: Optional[FrozenSet[int]]
 
     class Config:
         allow_mutation = False
@@ -413,9 +412,7 @@ class TIFFImage(BaseModel):
             window_center=None,
             window_width=None,
             eye_choice=self.eye_choice,
-            segments=None,
-            min_voxel_value=self.min_voxel_value,
-            max_voxel_value=self.max_voxel_value,
+            segments=self.segments,
             **{md.field_name: md.default_value for md in EXTRA_METADATA},
         )
 
