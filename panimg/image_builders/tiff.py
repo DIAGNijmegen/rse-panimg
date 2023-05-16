@@ -74,16 +74,12 @@ class GrandChallengeTiffFile:
 
     @property
     def segments(self) -> Optional[FrozenSet[int]]:
-        if None in (self.min_voxel_value, self.max_voxel_value):
-            return None
-        if self.min_voxel_value is None:
-            return None
-        if self.max_voxel_value is None:
+        if self.min_voxel_value is None or self.max_voxel_value is None:
             return None
 
         return frozenset(
-            list(range(int(self.min_voxel_value), int(self.max_voxel_value)))
-            + [int(self.max_voxel_value)]
+            list(range(self.min_voxel_value, self.max_voxel_value))
+            + [self.max_voxel_value]
         )
 
 
