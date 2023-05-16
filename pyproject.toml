@@ -17,9 +17,7 @@ classifiers = [
 panimg = "panimg.cli:cli"
 
 [tool.poetry.dependencies]
-# Change back to "^3.8" after https://github.com/imi-bigpicture/wsidicom/pull/96
-# is merged and released
-python = ">=3.8,<3.12"
+python = "^3.8"
 pydantic = "*"
 numpy = ">=1.22"
 # Exclude 2.1.1.1 due to
@@ -36,7 +34,10 @@ click = "*"
 pylibjpeg = "*"
 pylibjpeg-libjpeg = "*"
 pylibjpeg-openjpeg = "*"
-wsidicom = ">=0.9.0"
+# wsidicom pinned due to issue in
+# https://github.com/imi-bigpicture/wsidicom/pull/96#issuecomment-1532502694
+# can be unpinned after new version is released.
+wsidicom = { git = "https://github.com/imi-bigpicture/wsidicom.git", rev ="6901d307f3f26e5490685124315fe84338b92f1f"}
 imagecodecs = ">=2023.3.16"
 
 [tool.poetry.dev-dependencies]
