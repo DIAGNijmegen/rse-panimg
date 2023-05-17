@@ -1,6 +1,6 @@
 # History
 
-## 0.12.0 (UNRELEASED)
+## 0.12.0 (2023-05-17)
 
 * Add support for conversion of DICOM-WSI files to TIFF
 * Add support for setting segments for some TIFF files
