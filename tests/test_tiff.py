@@ -18,10 +18,11 @@ from panimg.image_builders.tiff import (
     _extract_tags,
     _get_color_space,
     _get_mrxs_files,
+    _load_with_openslide,
     _load_with_tiff,
     image_builder_tiff,
 )
-from panimg.models import ColorSpace
+from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
@@ -144,33 +145,55 @@ def test_grandchallengetifffile_validation(
 
 
 @pytest.mark.parametrize(
-    "source_dir, filename, expected_error_message",
+    "source_dir, filename, error_message, min, max, segments",
     [
-        (RESOURCE_PATH, "valid_tiff.tif", ""),
+        (RESOURCE_PATH, "test_min_max.tif", "", 0, 4, {0, 1, 2, 3, 4}),
         (
             RESOURCE_PATH,
             "invalid_resolutions_tiff.tif",
             "Invalid resolution unit NONE in tiff file",
+            None,
+            None,
+            {},
         ),
     ],
 )
 def test_load_with_tiff(
-    source_dir, filename, expected_error_message, tmpdir_factory
+    source_dir,
+    filename,
+    error_message,
+    min,
+    max,
+    segments,
+    tmpdir_factory,
 ):
-    error_message = ""
+    error = ""
     # Copy resource file to writable temp directory
     temp_file = Path(tmpdir_factory.mktemp("temp") / filename)
     shutil.copy(source_dir / filename, temp_file)
     gc_file = GrandChallengeTiffFile(temp_file)
     gc_file.pk = uuid4()
     try:
-        _load_with_tiff(gc_file=gc_file)
+        gc_file = _load_with_tiff(gc_file=gc_file)
+        assert gc_file.min_voxel_value == min
+        assert gc_file.max_voxel_value == max
+        assert gc_file.segments == segments
     except ValidationError as e:
-        error_message = str(e)
+        error = str(e)
 
-    assert expected_error_message in error_message
-    if not expected_error_message:
-        assert not error_message
+    assert error_message in error
+    if not error_message:
+        assert not error
+
+
+def test_segments_computed_property():
+    gc_file = GrandChallengeTiffFile(RESOURCE_PATH / "test_min_max.tif")
+    assert gc_file.segments is None
+    gc_file.min_voxel_value = 0
+    gc_file.max_voxel_value = MAXIMUM_SEGMENTS_LENGTH
+    assert gc_file.segments is None
+    gc_file.max_voxel_value = 4
+    assert gc_file.segments == frozenset({0, 1, 2, 3, 4})
 
 
 @pytest.mark.parametrize(
@@ -185,15 +208,21 @@ def test_load_with_open_slide(source_dir, filename, tmpdir_factory):
 
     output_dir = Path(tmpdir_factory.mktemp("output"))
     (output_dir / filename).mkdir()
-
     gc_file = _load_with_tiff(gc_file=gc_file)
+    gc_file = _load_with_openslide(gc_file=gc_file)
 
     assert gc_file.validate() is None
 
 
 @pytest.mark.parametrize(
     "resource, expected_error_message, voxel_size",
-    [(RESOURCE_PATH / "valid_tiff.tif", "", [1, 1])],
+    [
+        (
+            RESOURCE_PATH / "valid_tiff.tif",
+            "",
+            [1, 1],
+        )
+    ],
 )
 def test_tiff_image_entry_creation(
     resource, expected_error_message, voxel_size
@@ -202,7 +231,11 @@ def test_tiff_image_entry_creation(
     gc_file = GrandChallengeTiffFile(resource)
     try:
         tiff_file = tifffile.TiffFile(str(gc_file.path.absolute()))
-        gc_file = _extract_tags(gc_file=gc_file, pages=tiff_file.pages)
+        gc_file = _extract_tags(
+            gc_file=gc_file,
+            pages=tiff_file.pages,
+            byteorder=tiff_file.byteorder,
+        )
     except ValidationError as e:
         error_message = str(e)
 
@@ -227,6 +260,9 @@ def test_tiff_image_entry_creation(
         )
         assert gc_file.voxel_width_mm == approx(voxel_size[0])
         assert gc_file.voxel_height_mm == approx(voxel_size[1])
+        assert gc_file.min_voxel_value is None
+        assert gc_file.max_voxel_value is None
+        assert gc_file.segments is None
 
 
 # Integration test of all features being accessed through the image builder
@@ -246,7 +282,11 @@ def test_image_builder_tiff(tmpdir_factory):
         builder=image_builder_tiff, files=files, output_directory=output_dir
     )
 
-    expected_files = [temp_dir / "valid_tiff.tif", temp_dir / "no_dzi.tif"]
+    expected_files = [
+        temp_dir / "valid_tiff.tif",
+        temp_dir / "no_dzi.tif",
+        temp_dir / "test_min_max.tif",
+    ]
 
     assert sorted(image_builder_result.consumed_files) == sorted(
         expected_files
@@ -259,7 +299,7 @@ def test_image_builder_tiff(tmpdir_factory):
         assert os.path.isfile(output_dir / file.name / f"{pk}.tif")
 
     # Assert that both tiff images are imported
-    assert len(image_builder_result.new_image_files) == 2
+    assert len(image_builder_result.new_image_files) == 3
 
 
 def test_handle_complex_files(tmpdir_factory):

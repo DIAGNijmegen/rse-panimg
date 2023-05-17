@@ -4,13 +4,22 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Callable, DefaultDict, Dict, Iterator, List, Optional, Set
+from typing import (
+    Callable,
+    DefaultDict,
+    Dict,
+    FrozenSet,
+    Iterator,
+    List,
+    Optional,
+    Set,
+)
 from uuid import UUID, uuid4
 
 import tifffile
 
 from panimg.exceptions import UnconsumedFilesException, ValidationError
-from panimg.models import ColorSpace, TIFFImage
+from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace, TIFFImage
 
 try:
     import openslide
@@ -34,6 +43,8 @@ class GrandChallengeTiffFile:
     voxel_width_mm: float = 0
     voxel_height_mm: float = 0
     associated_files: List[Path] = field(default_factory=list)
+    min_voxel_value: Optional[int] = None
+    max_voxel_value: Optional[int] = None
 
     def validate(self) -> None:
         if not self.image_width:
@@ -60,6 +71,18 @@ class GrandChallengeTiffFile:
             raise ValidationError(
                 "Not a valid tif: Color space could not be determined"
             )
+
+    @property
+    def segments(self) -> Optional[FrozenSet[int]]:
+        if self.min_voxel_value is None or self.max_voxel_value is None:
+            return None
+        if (
+            self.max_voxel_value - self.min_voxel_value
+            >= MAXIMUM_SEGMENTS_LENGTH
+        ):
+            return None
+
+        return frozenset(range(self.min_voxel_value, self.max_voxel_value + 1))
 
 
 def _get_tag_value(tags, tag):
@@ -147,7 +170,10 @@ def _extract_openslide_properties(
 
 
 def _extract_tags(
-    *, gc_file: GrandChallengeTiffFile, pages: tifffile.tifffile.TiffPages
+    *,
+    gc_file: GrandChallengeTiffFile,
+    pages: tifffile.tifffile.TiffPages,
+    byteorder: str,
 ) -> GrandChallengeTiffFile:
     """
     Extracts tags form a tiff file loaded with tifffile for use in grand challenge
@@ -175,6 +201,8 @@ def _extract_tags(
         gc_file.voxel_width_mm = _get_voxel_spacing_mm(tags, "XResolution")
         gc_file.voxel_height_mm = _get_voxel_spacing_mm(tags, "YResolution")
 
+    get_min_max_sample_value(tags=tags, gc_file=gc_file, byteorder=byteorder)
+
     return gc_file
 
 
@@ -192,11 +220,40 @@ def _get_color_space(*, color_space_string) -> Optional[ColorSpace]:
     return color_space
 
 
+def get_min_max_sample_value(*, tags, gc_file, byteorder):
+    samples_per_pixel = _get_tag_value(tags, "SamplesPerPixel")
+    sample_format = _get_tag_value(tags, "SampleFormat")
+    if samples_per_pixel != 1 or sample_format not in (None, 1, 2):
+        return
+
+    signed = sample_format == 2
+    byteorder = {"<": "little", ">": "big"}.get(byteorder, "big")
+
+    def get_voxel_value(first_tag, second_tag):
+        voxel_value = _get_tag_value(tags, first_tag) or _get_tag_value(
+            tags, second_tag
+        )
+        if isinstance(voxel_value, bytes):
+            return int.from_bytes(
+                voxel_value, byteorder=byteorder, signed=signed
+            )
+        return voxel_value
+
+    gc_file.min_voxel_value = get_voxel_value(
+        "MinSampleValue", "SMinSampleValue"
+    )
+    gc_file.max_voxel_value = get_voxel_value(
+        "MaxSampleValue", "SMaxSampleValue"
+    )
+
+
 def _load_with_tiff(
     *, gc_file: GrandChallengeTiffFile
 ) -> GrandChallengeTiffFile:
     tiff_file = tifffile.TiffFile(str(gc_file.path.absolute()))
-    gc_file = _extract_tags(gc_file=gc_file, pages=tiff_file.pages)
+    gc_file = _extract_tags(
+        gc_file=gc_file, pages=tiff_file.pages, byteorder=tiff_file.byteorder
+    )
     return gc_file
 
 
@@ -444,6 +501,7 @@ def image_builder_tiff(  # noqa: C901
                 voxel_height_mm=gc_file.voxel_height_mm,
                 resolution_levels=gc_file.resolution_levels,
                 color_space=gc_file.color_space,
+                segments=gc_file.segments,
             )
 
     if file_errors:
