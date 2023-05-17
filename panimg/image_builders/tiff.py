@@ -19,7 +19,7 @@ from uuid import UUID, uuid4
 import tifffile
 
 from panimg.exceptions import UnconsumedFilesException, ValidationError
-from panimg.models import ColorSpace, TIFFImage
+from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace, TIFFImage
 
 try:
     import openslide
@@ -75,6 +75,11 @@ class GrandChallengeTiffFile:
     @property
     def segments(self) -> Optional[FrozenSet[int]]:
         if self.min_voxel_value is None or self.max_voxel_value is None:
+            return None
+        if (
+            self.max_voxel_value - self.min_voxel_value
+            >= MAXIMUM_SEGMENTS_LENGTH
+        ):
             return None
 
         return frozenset(range(self.min_voxel_value, self.max_voxel_value + 1))
