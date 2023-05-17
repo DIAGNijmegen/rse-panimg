@@ -2,7 +2,8 @@
 
 ## 0.12.0 (UNRELEASED)
 
-* Adds support for conversion of DICOM-WSI files to TIFF
+* Add support for conversion of DICOM-WSI files to TIFF
+* Add support for setting segments for some TIFF files
 
 ## 0.11.0 (2023-03-07)
 
