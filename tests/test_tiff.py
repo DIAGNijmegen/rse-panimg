@@ -22,7 +22,7 @@ from panimg.image_builders.tiff import (
     _load_with_tiff,
     image_builder_tiff,
 )
-from panimg.models import ColorSpace
+from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
@@ -184,6 +184,16 @@ def test_load_with_tiff(
     assert error_message in error
     if not error_message:
         assert not error
+
+
+def test_segments_computed_property():
+    gc_file = GrandChallengeTiffFile(RESOURCE_PATH / "test_min_max.tif")
+    assert gc_file.segments is None
+    gc_file.min_voxel_value = 0
+    gc_file.max_voxel_value = MAXIMUM_SEGMENTS_LENGTH
+    assert gc_file.segments is None
+    gc_file.max_voxel_value = 4
+    assert gc_file.segments == frozenset({0, 1, 2, 3, 4})
 
 
 @pytest.mark.parametrize(
