@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "panimg"
-version = "0.11.0"
+version = "0.12.0"
 description = "Conversion of medical images to MHA and TIFF."
 license = "Apache-2.0"
 authors = ["James Meakin <panimg@jmsmkn.com>"]
@@ -34,6 +34,11 @@ click = "*"
 pylibjpeg = "*"
 pylibjpeg-libjpeg = "*"
 pylibjpeg-openjpeg = "*"
+# wsidicom pinned due to issue in
+# https://github.com/imi-bigpicture/wsidicom/pull/96#issuecomment-1532502694
+# can be unpinned after new version is released.
+wsidicom = { git = "https://github.com/imi-bigpicture/wsidicom.git", rev ="6901d307f3f26e5490685124315fe84338b92f1f"}
+imagecodecs = ">=2023.3.16"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

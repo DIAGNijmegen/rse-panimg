@@ -18,6 +18,10 @@ from uuid import UUID, uuid4
 
 import tifffile
 
+from panimg.contrib.wsi_dcm_to_tiff.dcm_to_tiff import (
+    dcm_to_tiff as wsi_dcm_to_tiff,
+)
+from panimg.contrib.wsi_dcm_to_tiff.dcm_to_tiff import is_dicom as is_wsi_dicom
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace, TIFFImage
 
@@ -385,6 +389,28 @@ def _convert_to_tiff(
     return new_file_name
 
 
+def _convert_dicom_wsi_dir(
+    gc_file: GrandChallengeTiffFile,
+    file: Path,
+    output_directory: Path,
+    file_errors: Dict[Path, List[str]],
+):
+    wsidicom_dir = file.parent
+    try:
+        new_file_name = output_directory / file.name / f"{gc_file.pk}.tif"
+        new_file_name.parent.mkdir()
+
+        wsi_dcm_to_tiff(wsidicom_dir, new_file_name)
+    except Exception as e:
+        file_errors[file].append(str(e))
+    else:
+        gc_file.path = new_file_name
+        gc_file.associated_files = [
+            f for f in wsidicom_dir.iterdir() if f.is_file()
+        ]
+    return gc_file
+
+
 def _load_gc_files(
     *,
     files: Set[Path],
@@ -424,6 +450,14 @@ def _load_gc_files(
             if g.associated_files is not None
         ):
             gc_file = GrandChallengeTiffFile(file)
+            if file.suffix.lower() == ".dcm" and is_wsi_dicom(file.parent):
+                gc_file = _convert_dicom_wsi_dir(
+                    gc_file=gc_file,
+                    file=file,
+                    output_directory=output_directory,
+                    file_errors=file_errors,
+                )
+
             loaded_files.append(gc_file)
 
     return loaded_files

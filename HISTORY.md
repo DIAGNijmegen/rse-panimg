@@ -1,5 +1,9 @@
 # History
 
+## 0.12.0 (UNRELEASED)
+
+* Adds support for conversion of DICOM-WSI files to TIFF
+
 ## 0.11.0 (2023-03-07)
 
 * Removes `PanImgFolder` and outputs of `new_folders`, instead `directory` is added to `PanImgFile`

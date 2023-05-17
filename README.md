@@ -21,6 +21,7 @@ Under the hood we use:
 * `openslide-python`
 * `pyvips`
 * `oct-converter`
+* `wsidicom`
 
 ## Usage
 
@@ -59,7 +60,7 @@ To access the help test you can use `panimg -h`.
 ### Supported Formats
 
 | Input                               | Output  | Strategy   | Notes                      |
-| ----------------------------------- | --------| ---------- | -------------------------- |
+|-------------------------------------| --------| ---------- | -------------------------- |
 | `.mha`                              | `.mha`  | `metaio`   |                            |
 | `.mhd` with `.raw` or `.zraw`       | `.mha`  | `metaio`   |                            |
 | `.dcm`                              | `.mha`  | `dicom`    |                            |
@@ -77,6 +78,7 @@ To access the help test you can use `panimg -h`.
 | `.scn` (Leica)                      | `.tiff` | `tiff`     |                            |
 | `.mrxs` (MIRAX)                     | `.tiff` | `tiff`     |                            |
 | `.biff` (Ventana)                   | `.tiff` | `tiff`     |                            |
+| `.dcm` (DICOM-WSI)                  | `.tiff` | `tiff`     |                            |
 
 <a name="footnote1">1</a>: Detached headers are not supported.
 
