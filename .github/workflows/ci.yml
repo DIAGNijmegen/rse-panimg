@@ -48,8 +48,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install tox tox-gh-actions poetry 'urllib3<2'
-        # Pinned version of urllib3 mitigates the issue described here: https://github.com/ionrock/cachecontrol/issues/292
+          python -m pip install 'tox>=4.4' 'tox-gh-actions>=3.1' 'poetry>=1.4'
       - name: Test with tox
         run: |
           tox
