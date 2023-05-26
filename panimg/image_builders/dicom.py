@@ -470,6 +470,8 @@ def _find_valid_dicom_files(
         if not headers:
             continue
 
+
+
         n_files = len(headers)
         n_time = len(
             {
@@ -478,6 +480,8 @@ def _find_valid_dicom_files(
                 if "TemporalPositionIndex" in header["data"]
             }
         )
+        sop_class_uids = [header["data"].SOPClassUID
+                          for header in headers]
 
         arbitrary_header = headers[0]["data"]
         try:
@@ -490,7 +494,12 @@ def _find_valid_dicom_files(
             )
         n_slices = n_files * n_slices_per_file
 
-        if n_time < 2:
+        if '1.2.840.10008.5.1.4.1.1.77.1.6' in sop_class_uids:
+            for d in headers:
+                file_errors[d["file"]].append(
+                    format_error("WSI-DICOM not supported by DICOM builder")
+                )            
+        elif n_time < 2:
             # Not a 4d dicom file
             result.append(
                 DicomDataset(
