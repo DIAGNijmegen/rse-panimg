@@ -18,7 +18,7 @@ panimg = "panimg.cli:cli"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pydantic = "*"
+pydantic = ">=2"
 numpy = ">=1.22"
 # Exclude 2.1.1.1 due to
 # https://github.com/SimpleITK/SimpleITK/issues/1627

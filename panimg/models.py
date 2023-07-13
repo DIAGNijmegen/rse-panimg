@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 
 import numpy as np
 import SimpleITK
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.dataclasses import dataclass
 from SimpleITK import GetArrayViewFromImage, Image, WriteImage
 
@@ -188,9 +188,7 @@ class SimpleITKImage(BaseModel):
     spacing_valid: bool
     eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
 
-    class Config:
-        arbitrary_types_allowed = True
-        allow_mutation = False
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
 
     @property
     def width(self) -> int:
@@ -241,14 +239,16 @@ class SimpleITKImage(BaseModel):
         else:
             return None
 
-    @validator("image")
+    @field_validator("image")
+    @classmethod
     def check_color_space(cls, image: Image):  # noqa: B902, N805
         cs = image.GetNumberOfComponentsPerPixel()
         if cs not in ITK_COLOR_SPACE_MAP:
             raise ValueError(f"Unknown color space for MetaIO image: {cs}")
         return image
 
-    @validator("image")
+    @field_validator("image")
+    @classmethod
     def add_value_range_meta_data(cls, image: Image):  # noqa: B902, N805
         smallest_tag = "SmallestImagePixelValue"
         largest_tag = "LargestImagePixelValue"
@@ -384,10 +384,9 @@ class TIFFImage(BaseModel):
     resolution_levels: int
     color_space: ColorSpace
     eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
-    segments: Optional[FrozenSet[int]]
+    segments: Optional[FrozenSet[int]] = None
 
-    class Config:
-        allow_mutation = False
+    model_config = ConfigDict(frozen=True)
 
     def save(self, output_directory: Path) -> Tuple[PanImg, Set[PanImgFile]]:
         pk = uuid4()
