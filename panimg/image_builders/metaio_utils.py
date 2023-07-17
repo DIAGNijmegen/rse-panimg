@@ -278,6 +278,12 @@ def load_sitk_image(
 
     headers = validate_and_clean_additional_mh_headers(reader=reader)
 
+    if reader.GetNumberOfComponents() > 4:
+        raise ValidationError(
+            "Images with more than 4 channels not supported. "
+            "For 4D data please use the 4th dimension instead."
+        )
+
     # Header has been validated, read the pixel data
     if reader.GetDimension() in (2, 3, 4):
         sitk_image = reader.Execute()

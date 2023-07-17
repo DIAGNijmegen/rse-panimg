@@ -1,5 +1,11 @@
 # History
 
+## 0.13.0 (2023-07-17)
+
+* Increased maximum number of segments to 64
+* Required segmentations to be of type Int8 or UInt8
+* Reduced memory usage
+
 ## 0.12.0 (2023-06-02)
 
 * Add support for conversion of DICOM-WSI files to TIFF
