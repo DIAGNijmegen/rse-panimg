@@ -19,13 +19,7 @@ logger = logging.getLogger(__name__)
 
 MASK_TYPE_PIXEL_IDS = [
     SimpleITK.sitkInt8,
-    SimpleITK.sitkInt16,
-    SimpleITK.sitkInt32,
-    SimpleITK.sitkInt64,
     SimpleITK.sitkUInt8,
-    SimpleITK.sitkUInt16,
-    SimpleITK.sitkUInt32,
-    SimpleITK.sitkUInt64,
 ]
 
 
@@ -75,7 +69,9 @@ DICOM_VR_TO_VALUE_CAST = {
     "DA": lambda v: datetime.date(int(v[:4]), int(v[4:6]), int(v[6:8]))
 }
 
-MAXIMUM_SEGMENTS_LENGTH = 32
+# NOTE: Only int8 or uint8 data types are checked for segments
+# so the true maximum is 256
+MAXIMUM_SEGMENTS_LENGTH = 64
 
 
 class ExtraMetaData(NamedTuple):
@@ -207,6 +203,10 @@ class SimpleITKImage(BaseModel):
 
         return depth or None
 
+    @property
+    def is_4d(self):
+        return len(self.image.GetSize()) == 4
+
     @staticmethod
     def _extract_first_float(value: str) -> float:
         if value.startswith("["):
@@ -271,7 +271,26 @@ class SimpleITKImage(BaseModel):
         if self.image.GetPixelIDValue() not in MASK_TYPE_PIXEL_IDS:
             return None
 
-        segments = np.unique(GetArrayViewFromImage(self.image))
+        im_arr = GetArrayViewFromImage(self.image)
+
+        if self.is_4d:
+            segments = set()
+            n_volumes = self.image.GetSize()[3]
+
+            for volume in range(n_volumes):
+                # Calculate the segments for each volume for memory efficiency
+                volume_segments = np.unique(im_arr[volume, :, :, :])
+                segments.update({*volume_segments})
+
+                if not segments.issubset({0, 1}):
+                    # 4D Segmentations must only have values 0 and 1
+                    # as the 4th dimension encodes the overlay type
+                    return None
+
+            # Use 1-indexing for each segmentation
+            segments = {idx + 1 for idx in range(n_volumes)}
+        else:
+            segments = np.unique(im_arr)
 
         if len(segments) <= MAXIMUM_SEGMENTS_LENGTH:
             return frozenset(segments)
