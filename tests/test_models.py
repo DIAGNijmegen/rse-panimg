@@ -173,7 +173,18 @@ def test_sitk_image_value_range(
         (
             "segments/0_10_uint8.mha",
             image_builders.image_builder_mhd,
-            frozenset(range(0, 10)),
+            frozenset(range(10)),
+        ),
+        (
+            "segments/4D_1_1_1_5_uint8.mha",
+            image_builders.image_builder_mhd,
+            frozenset({1, 2, 3, 4, 5}),
+        ),
+        (
+            # Contains non-zero or ones as values
+            "segments/4D_1_1_1_5_uint8_threes.mha",
+            image_builders.image_builder_mhd,
+            None,
         ),
         (
             # Datatype is not sitkUInt8 or sitkInt8

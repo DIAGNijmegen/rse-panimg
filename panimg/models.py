@@ -69,7 +69,9 @@ DICOM_VR_TO_VALUE_CAST = {
     "DA": lambda v: datetime.date(int(v[:4]), int(v[4:6]), int(v[6:8]))
 }
 
-MAXIMUM_SEGMENTS_LENGTH = 32
+# NOTE: Only int8 or uint8 data types are checked for segments
+# so the true maximum is 256
+MAXIMUM_SEGMENTS_LENGTH = 64
 
 
 class ExtraMetaData(NamedTuple):
@@ -201,6 +203,10 @@ class SimpleITKImage(BaseModel):
 
         return depth or None
 
+    @property
+    def is_4d(self):
+        return len(self.image.GetSize()) == 4
+
     @staticmethod
     def _extract_first_float(value: str) -> float:
         if value.startswith("["):
@@ -266,6 +272,14 @@ class SimpleITKImage(BaseModel):
             return None
 
         segments = np.unique(GetArrayViewFromImage(self.image))
+
+        if self.is_4d:
+            if {*segments}.issubset({0, 1}):
+                # 4D Segmentations must only have values 0 and 1
+                # The 4th dimension encodes the overlay type
+                segments = {*range(1, self.image.GetSize()[3] + 1)}
+            else:
+                return None
 
         if len(segments) <= MAXIMUM_SEGMENTS_LENGTH:
             return frozenset(segments)
