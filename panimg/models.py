@@ -264,7 +264,12 @@ class SimpleITKImage(BaseModel):
 
     @property
     def segments(self) -> Optional[FrozenSet[int]]:
-        if self.image.GetPixelIDValue() not in MASK_TYPE_PIXEL_IDS:
+        if (
+            self.image.GetNumberOfComponentsPerPixel() != 1
+            or self.image.GetPixelIDValue() not in MASK_TYPE_PIXEL_IDS
+        ):
+            # Only single channel, 8 bit images should be checked.
+            # Everything else is not a segmentation
             return None
 
         im_arr = GetArrayViewFromImage(self.image)
