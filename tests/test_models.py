@@ -225,3 +225,23 @@ def test_segments(
 
     image = result.new_images.pop()
     assert image.segments == segments
+
+
+def test_invalid_4d(tmp_path_factory):
+    file = RESOURCE_PATH / "channels" / "5_1_1_1_invalid.mha"
+    result = _build_files(
+        builder=image_builders.image_builder_mhd,
+        files={file},
+        output_directory=tmp_path_factory.mktemp("output"),
+    )
+
+    assert result.consumed_files == set()
+    assert len(result.new_images) == 0
+    assert result.file_errors == {
+        file: [
+            (
+                "Mhd image builder: Images with more than 4 channels not supported. "
+                "For 4D data please use the 4th dimension instead."
+            )
+        ]
+    }

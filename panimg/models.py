@@ -203,10 +203,6 @@ class SimpleITKImage(BaseModel):
 
         return depth or None
 
-    @property
-    def is_4d(self):
-        return len(self.image.GetSize()) == 4
-
     @staticmethod
     def _extract_first_float(value: str) -> float:
         if value.startswith("["):
@@ -273,7 +269,7 @@ class SimpleITKImage(BaseModel):
 
         im_arr = GetArrayViewFromImage(self.image)
 
-        if self.is_4d:
+        if self.image.GetDimension() == 4:
             segments = set()
             n_volumes = self.image.GetSize()[3]
 
