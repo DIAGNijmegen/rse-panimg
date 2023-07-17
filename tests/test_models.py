@@ -166,33 +166,20 @@ def test_sitk_image_value_range(
     "src_image,builder,segments",
     [
         (
+            "segments/-10_10_int8.mha",
+            image_builders.image_builder_mhd,
+            frozenset(range(-10, 10)),
+        ),
+        (
+            "segments/0_10_uint8.mha",
+            image_builders.image_builder_mhd,
+            frozenset(range(0, 10)),
+        ),
+        (
+            # Datatype is not sitkUInt8 or sitkInt8
             "image_min10_max10.mha",
             image_builders.image_builder_mhd,
-            frozenset(
-                (
-                    -10,
-                    -9,
-                    -8,
-                    -7,
-                    -6,
-                    -5,
-                    -4,
-                    -3,
-                    -2,
-                    -1,
-                    0,
-                    1,
-                    2,
-                    3,
-                    4,
-                    5,
-                    6,
-                    7,
-                    8,
-                    9,
-                    10,
-                )
-            ),
+            None,
         ),
         (  # Too many values
             "dicom_2d/cxr.dcm",

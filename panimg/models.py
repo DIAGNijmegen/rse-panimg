@@ -19,13 +19,7 @@ logger = logging.getLogger(__name__)
 
 MASK_TYPE_PIXEL_IDS = [
     SimpleITK.sitkInt8,
-    SimpleITK.sitkInt16,
-    SimpleITK.sitkInt32,
-    SimpleITK.sitkInt64,
     SimpleITK.sitkUInt8,
-    SimpleITK.sitkUInt16,
-    SimpleITK.sitkUInt32,
-    SimpleITK.sitkUInt64,
 ]
 
 
