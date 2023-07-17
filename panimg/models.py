@@ -271,15 +271,26 @@ class SimpleITKImage(BaseModel):
         if self.image.GetPixelIDValue() not in MASK_TYPE_PIXEL_IDS:
             return None
 
-        segments = np.unique(GetArrayViewFromImage(self.image))
+        im_arr = GetArrayViewFromImage(self.image)
 
         if self.is_4d:
-            if {*segments}.issubset({0, 1}):
-                # 4D Segmentations must only have values 0 and 1
-                # The 4th dimension encodes the overlay type
-                segments = {*range(1, self.image.GetSize()[3] + 1)}
-            else:
-                return None
+            segments = set()
+            n_volumes = self.image.GetSize()[3]
+
+            for volume in range(n_volumes):
+                # Calculate the segments for each volume for memory efficiency
+                volume_segments = np.unique(im_arr[volume, :, :, :])
+                segments.update({*volume_segments})
+
+                if not segments.issubset({0, 1}):
+                    # 4D Segmentations must only have values 0 and 1
+                    # as the 4th dimension encodes the overlay type
+                    return None
+
+            # Use 1-indexing for each segmentation
+            segments = {idx + 1 for idx in range(n_volumes)}
+        else:
+            segments = np.unique(im_arr)
 
         if len(segments) <= MAXIMUM_SEGMENTS_LENGTH:
             return frozenset(segments)
