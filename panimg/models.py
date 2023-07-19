@@ -3,6 +3,7 @@ import logging
 import re
 import shutil
 from enum import Enum
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, FrozenSet, List, NamedTuple, Optional, Set, Tuple
 from uuid import UUID, uuid4
@@ -230,8 +231,9 @@ class SimpleITKImage(BaseModel):
 
     @property
     def timepoints(self) -> Optional[int]:
-        if self.image.GetDimension() == 4:
-            return int(self.image.GetSize()[-1])
+        if self.image.GetDimension() == 4 and self.segments is None:
+            # Only 4D files that are non-segmentations have timepoints
+            return int(self.image.GetSize()[3])
         else:
             return None
 
@@ -262,7 +264,7 @@ class SimpleITKImage(BaseModel):
 
         return image
 
-    @property
+    @cached_property
     def segments(self) -> Optional[FrozenSet[int]]:
         if (
             self.image.GetNumberOfComponentsPerPixel() != 1

@@ -1,5 +1,9 @@
 # History
 
+## 0.13.1 (2023-07-19)
+
+* Fix timepoints determination
+
 ## 0.13.0 (2023-07-17)
 
 * Increased maximum number of segments to 64

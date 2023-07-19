@@ -133,8 +133,8 @@ def test_built_image_extra_metadata_defaults(tmpdir, caplog):
         ),
         (  # 4D image
             "image10x11x12x13.mha",
-            0,
-            0,
+            2,
+            2,
         ),
     ],
 )
@@ -245,3 +245,16 @@ def test_invalid_4d(tmp_path_factory):
             )
         ]
     }
+
+
+def test_4d_segmentation_none_timepoints(tmp_path_factory):
+    result = _build_files(
+        builder=image_builders.image_builder_mhd,
+        files={RESOURCE_PATH / "segments" / "4D_1_1_1_5_UInt8.mha"},
+        output_directory=tmp_path_factory.mktemp("output"),
+    )
+
+    new_image = result.new_images.pop()
+
+    assert new_image.segments == frozenset({1, 2, 3, 4, 5})
+    assert new_image.timepoints is None

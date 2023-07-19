@@ -66,6 +66,7 @@ def test_staged_4d_mha_and_4d_mhd_upload(images, tmpdir_factory):
     assert len(result.new_images) == 1
 
     image = result.new_images.pop()
+
     assert image.timepoints == 13
     assert image.depth == 12
     assert image.height == 11
