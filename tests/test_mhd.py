@@ -31,7 +31,7 @@ def test_parse_header_valid_4d_mhd():
         "Offset": "-131 -99 -917 0",
         "CenterOfRotation": "0 0 0 0",
         "AnatomicalOrientation": "????",
-        "ElementSpacing": "0.429 0.429 0.5 1",
+        "ElementSpacing": "0.42899999999999999 0.42899999999999999 0.5 1",
         "DimSize": "10 11 12 13",
         "ElementType": "MET_UCHAR",
         "ElementDataFile": "image10x11x12x13.zraw",
