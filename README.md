@@ -119,7 +119,7 @@ try:
         process(sitk_image)  # etc. you can also look at result.name for the name of the file,
                              # and result.consumed_files to see what files were used for this image
 except UnconsumedFilesException as e:
-    # e.errors is keyed with a Path to a file that could not be consumed,
+    # e.file_errors is keyed with a Path to a file that could not be consumed,
     # with a list of all the errors found with loading it,
     # the user can then choose what to do with that information
     ...
