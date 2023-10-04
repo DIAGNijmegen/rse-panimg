@@ -228,6 +228,7 @@ def dcm_to_tiff(input_dir, output_path):
 
     with TiffWriter(output_path, bigtiff=True) as tif:
         tile_size = image.levels[0].default_instance.tile_size.width
+        test_tile = np.array(image.read_tile(0, (0, 0)))
 
         def tiler(getter, level, cols, rows):
             for row in range(rows):
@@ -235,29 +236,27 @@ def dcm_to_tiff(input_dir, output_path):
                     im = np.array(getter(level, (col, row)))
                     yield im
 
-        for level in range(0, len(image.levels.levels)):
-            cols = int(math.ceil(image.levels[level].size.width / tile_size))
-            rows = int(math.ceil(image.levels[level].size.height / tile_size))
+        for level in image.levels:
+            cols = int(math.ceil(level.size.width / tile_size))
+            rows = int(math.ceil(level.size.height / tile_size))
 
-            test_tile = np.array(image.read_tile(0, (0, 0)))
             dtype = test_tile.dtype
             shape = (
-                image.levels[level].size.height,
-                image.levels[level].size.width,
+                level.size.height,
+                level.size.width,
                 3,
             )
 
-            level_tiler = tiler(image.read_tile, level, cols, rows)
+            level_tiler = tiler(image.read_tile, level.level, cols, rows)
 
             extratags = [(274, 3, 1, 1, False)]  # Orientation TOPLEFT
 
             resolution = (
-                int(10 / image.levels[level].pixel_spacing.width),
-                int(10 / image.levels[level].pixel_spacing.height),
-                "CENTIMETER",
+                int(10 / level.pixel_spacing.width),
+                int(10 / level.pixel_spacing.height),
             )
 
-            subfiletype = 1 if level != 0 else 0
+            subfiletype = 1 if level.level != 0 else 0
 
             tif.write(
                 level_tiler,
@@ -268,6 +267,8 @@ def dcm_to_tiff(input_dir, output_path):
                 compression="jpeg",
                 subsampling=(1, 1),
                 resolution=resolution,
+                resolutionunit="CENTIMETER",
                 description="Converted from DICOM",
                 subfiletype=subfiletype,
+                extratags=extratags,
             )

@@ -10,8 +10,9 @@ from uuid import UUID, uuid4
 
 import numpy as np
 import SimpleITK
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict
 from pydantic.dataclasses import dataclass
+from pydantic.functional_validators import field_validator
 from SimpleITK import GetArrayViewFromImage, Image, WriteImage
 
 from panimg.exceptions import ValidationError
@@ -185,7 +186,9 @@ class SimpleITKImage(BaseModel):
     spacing_valid: bool
     eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
+    model_config: ConfigDict = ConfigDict(
+        arbitrary_types_allowed=True, frozen=True
+    )
 
     @property
     def width(self) -> int:
@@ -408,7 +411,7 @@ class TIFFImage(BaseModel):
     eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
     segments: Optional[FrozenSet[int]] = None
 
-    model_config = ConfigDict(frozen=True)
+    model_config: ConfigDict = ConfigDict(frozen=True)
 
     def save(self, output_directory: Path) -> Tuple[PanImg, Set[PanImgFile]]:
         pk = uuid4()
