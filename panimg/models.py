@@ -20,9 +20,8 @@ from uuid import UUID, uuid4
 
 import numpy as np
 import SimpleITK
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.dataclasses import dataclass
-from pydantic.functional_validators import field_validator
 from SimpleITK import GetArrayViewFromImage, Image, WriteImage
 
 from panimg.exceptions import ValidationError
