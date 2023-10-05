@@ -5,17 +5,7 @@ import shutil
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    FrozenSet,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-    Tuple,
-)
+from typing import Any, Dict, FrozenSet, List, NamedTuple, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
 import numpy as np
@@ -195,9 +185,7 @@ class SimpleITKImage(BaseModel):
     spacing_valid: bool
     eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(
-        arbitrary_types_allowed=True, frozen=True
-    )
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
 
     @property
     def width(self) -> int:
@@ -420,7 +408,7 @@ class TIFFImage(BaseModel):
     eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
     segments: Optional[FrozenSet[int]] = None
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True)
 
     def save(self, output_directory: Path) -> Tuple[PanImg, Set[PanImgFile]]:
         pk = uuid4()
