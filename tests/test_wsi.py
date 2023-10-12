@@ -1,10 +1,18 @@
+from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Dict
+from typing import Any, DefaultDict, Dict, List
+from unittest import mock
 
 import pytest
 
 from panimg.image_builders import image_builder_dicom, image_builder_tiff
+from panimg.image_builders.tiff import (
+    DICOM_WSI_STORAGE_ID,
+    _find_valid_dicom_wsi_files,
+    format_error,
+)
 from panimg.models import ColorSpace, EyeChoice, PatientSex
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
@@ -91,7 +99,80 @@ def test_dicom_wsi_fails_for_dicom_builder(tmpdir):
 
     assert len(result.new_image_files) == 0
     assert len(result.file_errors) == 1
-    assert (
-        "Dicom image builder: WSI-DICOM not supported by DICOM builder"
-        in result.file_errors[files.pop()]
+    assert result.file_errors[files.pop()] == [
+        format_error(
+            "Dicom image builder: WSI-DICOM not supported by DICOM builder"
+        )
+    ]
+
+
+@dataclass
+class TestDicomDataClass:
+    def __init__(self, sop_class_uid=DICOM_WSI_STORAGE_ID):
+        self._sop_class_uid = sop_class_uid or DICOM_WSI_STORAGE_ID
+
+    @property
+    def SOPClassUID(self):  # noqa: N802
+        return self._sop_class_uid
+
+
+@pytest.mark.parametrize(
+    "dicom_files,extra_files,ids,expected_errors",
+    (
+        ([Path("study_")], [3], [None], [None]),
+        (
+            [Path("study_a_"), Path("study_b_")],
+            [3, 5],
+            [None, None],
+            [None, None],
+        ),
+        (
+            [Path("study_a_"), Path("study_b_")],
+            [3, 5],
+            [None, "invalid_uid"],
+            [None, 1],
+        ),
+    ),
+)
+@mock.patch("panimg.image_builders.tiff.get_dicom_headers_by_study")
+def test_validate_dicom_files(
+    mock_method,
+    dicom_files: List[Path],
+    extra_files: List[int],
+    ids: List[str],
+    expected_errors: List[str],
+):
+    #  single study with multiple files
+    dicom_headers = {}
+    for index, dicom in enumerate(dicom_files):
+        dicom_headers[dicom] = {
+            "name": dicom,
+            "headers": [
+                {
+                    "file": f"{dicom}{i}.dcm",
+                    "data": TestDicomDataClass(ids[index]),
+                }
+                for i in range(extra_files[index])
+            ],
+        }
+
+    mock_method.return_value = dicom_headers
+    errors: DefaultDict[Path, List[str]] = defaultdict(list)
+
+    converted_dicom_files, associated_files = _find_valid_dicom_wsi_files(
+        set(), errors
     )
+
+    for idx, d in enumerate(dicom_files):
+        file = Path(f"{d}0.dcm")
+        if expected_errors[idx]:
+            assert errors[file] == [
+                format_error("Non-WSI-DICOM not supported by TIF builder")
+            ]
+        else:
+            assert file in converted_dicom_files
+            expected_list = [
+                Path(f"{d}{i}.dcm") for i in range(1, extra_files[idx])
+            ]
+            actual_list = associated_files(file)
+            assert actual_list == expected_list

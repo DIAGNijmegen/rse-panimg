@@ -399,7 +399,7 @@ def _convert_to_tiff(
     return new_file_name
 
 
-def _find_valid_dicom_files(
+def _find_valid_dicom_wsi_files(
     files: Set[Path], file_errors: DefaultDict[Path, List[str]]
 ):
     """
@@ -419,7 +419,13 @@ def _find_valid_dicom_files(
     any associated files belonging to that same study
 
     """
-    studies = get_dicom_headers_by_study(files=files, file_errors=file_errors)
+
+    # Get dicom studies.
+    # We ignore possible file_errors, as files could be handles by other converters
+    studies = get_dicom_headers_by_study(
+        files=files, file_errors=defaultdict()
+    )
+
     result: Dict[Path, List[Path]] = {}
 
     for key in studies:
@@ -432,7 +438,7 @@ def _find_valid_dicom_files(
             for header in headers
         ):
             for d in headers:
-                file_errors[d["file"]].append(
+                file_errors[Path(d["file"])].append(
                     format_error("Non-WSI-DICOM not supported by TIF builder")
                 )
         else:
@@ -465,7 +471,7 @@ def _load_gc_files(
         ".bif": None,
     }
 
-    dicom_files, handler = _find_valid_dicom_files(files, file_errors)
+    dicom_files, handler = _find_valid_dicom_wsi_files(files, file_errors)
     loaded_files = _convert(
         files=dicom_files,
         associated_files_getter=handler,
