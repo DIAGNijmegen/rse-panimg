@@ -91,3 +91,7 @@ def test_dicom_wsi_fails_for_dicom_builder(tmpdir):
 
     assert len(result.new_image_files) == 0
     assert len(result.file_errors) == 1
+    assert (
+        "Dicom image builder: WSI-DICOM not supported by DICOM builder"
+        in result.file_errors[files.pop()]
+    )
