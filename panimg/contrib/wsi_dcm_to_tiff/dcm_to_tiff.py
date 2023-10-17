@@ -211,11 +211,11 @@ from tifffile import TiffWriter
 from wsidicom import WsiDicom
 
 
-def is_dicom(dirpath):
+def is_dicom(dir_path):
     try:
-        path = Path(dirpath)
+        path = Path(dir_path)
         files = list(path.iterdir())
-        image = WsiDicom.open(files)
+        WsiDicom.open(files)
         return True
     except Exception as e:
         return False
@@ -228,46 +228,47 @@ def dcm_to_tiff(input_dir, output_path):
 
     with TiffWriter(output_path, bigtiff=True) as tif:
         tile_size = image.levels[0].default_instance.tile_size.width
+        test_tile = np.array(image.read_tile(0, (0, 0)))
 
-        def tiler(getter, level, cols, rows):
-            for row in range(rows):
-                for col in range(cols):
-                    im = np.array(getter(level, (col, row)))
+        def tiler(getter, lvl, c, r):
+            for row in range(r):
+                for col in range(c):
+                    im = np.array(getter(lvl, (col, row)))
                     yield im
 
-        for level in range(0, len(image.levels.levels)):
-            cols = int(math.ceil(image.levels[level].size.width / tile_size))
-            rows = int(math.ceil(image.levels[level].size.height / tile_size))
+        for level in image.levels:
+            cols = int(math.ceil(level.size.width / tile_size))
+            rows = int(math.ceil(level.size.height / tile_size))
 
-            test_tile = np.array(image.read_tile(0, (0, 0)))
-            dtype = test_tile.dtype
+            d_type = test_tile.dtype
             shape = (
-                image.levels[level].size.height,
-                image.levels[level].size.width,
+                level.size.height,
+                level.size.width,
                 3,
             )
 
-            level_tiler = tiler(image.read_tile, level, cols, rows)
+            level_tiler = tiler(image.read_tile, level.level, cols, rows)
 
-            extratags = [(274, 3, 1, 1, False)]  # Orientation TOPLEFT
+            extra_tags = [(274, 3, 1, 1, False)]  # Orientation TOP LEFT
 
             resolution = (
-                int(10 / image.levels[level].pixel_spacing.width),
-                int(10 / image.levels[level].pixel_spacing.height),
-                "CENTIMETER",
+                int(10 / level.pixel_spacing.width),
+                int(10 / level.pixel_spacing.height),
             )
 
-            subfiletype = 1 if level != 0 else 0
+            sub_filetype = 1 if level.level != 0 else 0
 
             tif.write(
                 level_tiler,
-                dtype=dtype,
+                dtype=d_type,
                 shape=shape,
                 tile=(tile_size, tile_size),
                 photometric="rgb",
                 compression="jpeg",
                 subsampling=(1, 1),
                 resolution=resolution,
+                resolutionunit="CENTIMETER",
                 description="Converted from DICOM",
-                subfiletype=subfiletype,
+                subfiletype=sub_filetype,
+                extratags=extra_tags,
             )

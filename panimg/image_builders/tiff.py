@@ -21,8 +21,8 @@ import tifffile
 from panimg.contrib.wsi_dcm_to_tiff.dcm_to_tiff import (
     dcm_to_tiff as wsi_dcm_to_tiff,
 )
-from panimg.contrib.wsi_dcm_to_tiff.dcm_to_tiff import is_dicom as is_wsi_dicom
 from panimg.exceptions import UnconsumedFilesException, ValidationError
+from panimg.image_builders.dicom import get_dicom_headers_by_study
 from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace, TIFFImage
 
 try:
@@ -34,6 +34,13 @@ try:
     import pyvips
 except OSError:
     pyvips = False
+
+
+DICOM_WSI_STORAGE_ID = "1.2.840.10008.5.1.4.1.1.77.1.6"
+
+
+def format_error(message: str) -> str:
+    return f"Tif image builder: {message}"
 
 
 @dataclass
@@ -411,12 +418,59 @@ def _convert_dicom_wsi_dir(
     return gc_file
 
 
+def _find_valid_dicom_wsi_files(
+    files: Set[Path], file_errors: DefaultDict[Path, List[str]]
+):
+    """
+    Gets the headers for all dicom files on path and validates them.
+
+    Parameters
+    ----------
+    files
+        Paths images that were uploaded during an upload session.
+
+    file_errors
+        Dictionary in which reading errors are recorded per file
+
+    Returns
+    -------
+    A dictionary with filename as key, and all other files belonging to that study
+    as value
+
+    """
+    studies = get_dicom_headers_by_study(files=files, file_errors=file_errors)
+    result: Dict[Path, List[Path]] = {}
+
+    for key in studies:
+        headers = studies[key]["headers"]
+        if not headers:
+            continue
+
+        if not all(
+            header["data"].SOPClassUID == DICOM_WSI_STORAGE_ID
+            for header in headers
+        ):
+            for d in headers:
+                file_errors[d["file"]].append(
+                    format_error("Non-WSI-DICOM not supported by TIF builder")
+                )
+        else:
+            result[Path(headers[0]["file"])] = [
+                Path(h["file"]) for h in headers[1:]
+            ]
+
+    def associated_files(file_path: Path):
+        return result[file_path]
+
+    return list(result.keys()), associated_files
+
+
 def _load_gc_files(
     *,
     files: Set[Path],
     converter,
     output_directory: Path,
-    file_errors: Dict[Path, List[str]],
+    file_errors: DefaultDict[Path, List[str]],
 ) -> List[GrandChallengeTiffFile]:
     loaded_files: List[GrandChallengeTiffFile] = []
 
@@ -429,6 +483,17 @@ def _load_gc_files(
         ".scn": None,
         ".bif": None,
     }
+
+    dicom_files, handler = _find_valid_dicom_wsi_files(files, file_errors)
+    for dicom_file in dicom_files:
+        gc_file = GrandChallengeTiffFile(dicom_file)
+        gc_file = _convert_dicom_wsi_dir(
+            gc_file=gc_file,
+            file=dicom_file,
+            output_directory=output_directory,
+            file_errors=file_errors,
+        )
+        loaded_files.append(gc_file)
 
     for ext, handler in complex_file_handlers.items():
         complex_files = [file for file in files if file.suffix.lower() == ext]
@@ -450,14 +515,6 @@ def _load_gc_files(
             if g.associated_files is not None
         ):
             gc_file = GrandChallengeTiffFile(file)
-            if file.suffix.lower() == ".dcm" and is_wsi_dicom(file.parent):
-                gc_file = _convert_dicom_wsi_dir(
-                    gc_file=gc_file,
-                    file=file,
-                    output_directory=output_directory,
-                    file_errors=file_errors,
-                )
-
             loaded_files.append(gc_file)
 
     return loaded_files
