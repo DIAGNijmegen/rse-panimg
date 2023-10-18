@@ -349,7 +349,11 @@ def _convert(
                 output_directory=output_directory,
             )
         except Exception as e:
-            file_errors[file].append(str(e))
+            file_errors[file].append(
+                format_error(
+                    f"Could not convert file to tif: {file.name}, error:{str(e)}"
+                )
+            )
             continue
         else:
             gc_file.path = tiff_file
@@ -409,7 +413,11 @@ def _convert_dicom_wsi_dir(
 
         wsi_dcm_to_tiff(wsidicom_dir, new_file_name)
     except Exception as e:
-        file_errors[file].append(str(e))
+        file_errors[file].append(
+            format_error(
+                f"Could not convert dicom-wsi to tif: {file.name}, error:{str(e)}"
+            )
+        )
     else:
         gc_file.path = new_file_name
         gc_file.associated_files = [
@@ -438,7 +446,9 @@ def _find_valid_dicom_wsi_files(
     as value
 
     """
-    studies = get_dicom_headers_by_study(files=files, file_errors=file_errors)
+    # Try and get dicom files; ignore errors
+    dicom_errors = file_errors.copy()
+    studies = get_dicom_headers_by_study(files=files, file_errors=dicom_errors)
     result: Dict[Path, List[Path]] = {}
 
     for key in studies:
@@ -553,7 +563,7 @@ def image_builder_tiff(  # noqa: C901
                 gc_file = _load_with_tiff(gc_file=gc_file)
             except Exception:
                 file_errors[gc_file.path].append(
-                    "Could not open file with tifffile."
+                    format_error("Could not open file with tifffile.")
                 )
 
             # try and load image with open slide
@@ -561,7 +571,7 @@ def image_builder_tiff(  # noqa: C901
                 gc_file = _load_with_openslide(gc_file=gc_file)
             except Exception:
                 file_errors[gc_file.path].append(
-                    "Could not open file with OpenSlide."
+                    format_error("Could not open file with OpenSlide.")
                 )
 
             # validate
@@ -572,7 +582,9 @@ def image_builder_tiff(  # noqa: C901
                     # GrandChallengeTiffFile
                     raise RuntimeError("Color space not found")
             except ValidationError as e:
-                file_errors[gc_file.path].append(f"Validation error: {e}.")
+                file_errors[gc_file.path].append(
+                    format_error(f"Validation error: {e}.")
+                )
                 continue
 
             if gc_file.associated_files:
