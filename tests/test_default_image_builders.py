@@ -24,9 +24,9 @@ EXPECTED_ERROR_MESSAGE = {
         "(supported formats: .fds,.fda,.e2e)"
     ],
     "image_builder_tiff": [
-        "Tif image builder: Could not open file with tifffile.",
-        "Tif image builder: Could not open file with OpenSlide.",
-        "Tif image builder: Validation error: Not a valid tif: "
+        "TIFF image builder: Could not open file with tifffile.",
+        "TIFF image builder: Could not open file with OpenSlide.",
+        "TIFF image builder: Validation error: Not a valid tif: "
         "Image width could not be determined.",
     ],
 }
