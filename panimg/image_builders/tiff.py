@@ -351,7 +351,7 @@ def _convert(
         except Exception as e:
             file_errors[file].append(
                 format_error(
-                    f"Could not convert file to tif: {file.name}, error:{str(e)}"
+                    f"Could not convert file to TIFF: {file.name}, error:{str(e)}"
                 )
             )
             continue
