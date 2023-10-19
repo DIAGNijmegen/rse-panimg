@@ -462,7 +462,7 @@ def _find_valid_dicom_wsi_files(
         ):
             for d in headers:
                 file_errors[d["file"]].append(
-                    format_error("Non-WSI-DICOM not supported by TIF builder")
+                    format_error("Non-WSI-DICOM not supported by TIFF builder")
                 )
         else:
             result[Path(headers[0]["file"])] = [
