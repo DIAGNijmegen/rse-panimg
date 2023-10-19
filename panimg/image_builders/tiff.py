@@ -415,7 +415,7 @@ def _convert_dicom_wsi_dir(
     except Exception as e:
         file_errors[file].append(
             format_error(
-                f"Could not convert dicom-wsi to tif: {file.name}, error:{str(e)}"
+                f"Could not convert dicom-wsi to TIFF: {file.name}, error:{str(e)}"
             )
         )
     else:
