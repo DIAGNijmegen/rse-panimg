@@ -40,7 +40,7 @@ DICOM_WSI_STORAGE_ID = "1.2.840.10008.5.1.4.1.1.77.1.6"
 
 
 def format_error(message: str) -> str:
-    return f"Tif image builder: {message}"
+    return f"TIFF image builder: {message}"
 
 
 @dataclass
