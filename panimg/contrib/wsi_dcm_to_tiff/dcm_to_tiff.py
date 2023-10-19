@@ -215,8 +215,8 @@ def is_dicom(dir_path):
     try:
         path = Path(dir_path)
         files = list(path.iterdir())
-        WsiDicom.open(files)
-        return True
+        with WsiDicom.open(files):
+            return True
     except Exception as e:
         return False
 
