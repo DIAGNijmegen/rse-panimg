@@ -11,8 +11,8 @@ import SimpleITK
 from panimg.image_builders.dicom import (
     PixelValueInverter,
     _find_valid_dicom_files,
-    _get_headers_by_study,
     format_error,
+    get_dicom_headers_by_study,
     image_builder_dicom,
 )
 from panimg.image_builders.metaio_utils import parse_mh_header
@@ -22,9 +22,9 @@ from tests import RESOURCE_PATH
 DICOM_DIR = RESOURCE_PATH / "dicom_4d"
 
 
-def test_get_headers_by_study():
+def test_get_dicom_headers_by_study():
     files = [Path(d[0]).joinpath(f) for d in os.walk(DICOM_DIR) for f in d[2]]
-    studies = _get_headers_by_study(files, defaultdict(list))
+    studies = get_dicom_headers_by_study(files, defaultdict(list))
     assert len(studies) == 1
     for key in studies:
         assert {x["file"] for x in studies[key]["headers"]} == {
@@ -35,7 +35,7 @@ def test_get_headers_by_study():
         files = [Path(root).joinpath(f) for f in files]
         break
 
-    studies = _get_headers_by_study(files, defaultdict(list))
+    studies = get_dicom_headers_by_study(files, defaultdict(list))
     assert len(studies) == 0
 
 
@@ -48,7 +48,7 @@ def test_validate_dicom_files():
         assert study.n_time == 19
         assert study.n_slices == 4
     with mock.patch(
-        "panimg.image_builders.dicom._get_headers_by_study",
+        "panimg.image_builders.dicom.get_dicom_headers_by_study",
         return_value={
             "foo": {"headers": headers[1:], "name": "StudyInstanceUID-0"}
         },

@@ -374,7 +374,7 @@ class DicomDataset:
         )
 
 
-def _get_headers_by_study(
+def get_dicom_headers_by_study(
     files: Set[Path], file_errors: DefaultDict[Path, List[str]]
 ):
     """
@@ -462,7 +462,7 @@ def _find_valid_dicom_files(
 
     Any study with an inconsistent amount of slices per time point is discarded.
     """
-    studies = _get_headers_by_study(files=files, file_errors=file_errors)
+    studies = get_dicom_headers_by_study(files=files, file_errors=file_errors)
     result = []
     for key in studies:
         headers = studies[key]["headers"]
