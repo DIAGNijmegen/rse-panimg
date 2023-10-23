@@ -230,10 +230,10 @@ def dcm_to_tiff(input_dir, output_path):
         tile_size = image.levels[0].default_instance.tile_size.width
         test_tile = np.array(image.read_tile(0, (0, 0)))
 
-        def tiler(getter, lvl, c, r):
-            for row in range(r):
-                for col in range(c):
-                    im = np.array(getter(lvl, (col, row)))
+        def tiler(getter, level, cols, rows):
+            for row in range(rows):
+                for col in range(cols):
+                    im = np.array(getter(level, (col, row)))
                     yield im
 
         for level in image.levels:
