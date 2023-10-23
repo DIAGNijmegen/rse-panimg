@@ -3,7 +3,7 @@
 ## 0.13.2 (2023-10-23)
 
 * Fix DICOM-WSI conversion issue where not all levels were converted correctly
-* Update variable name `file_errors` (was `errors`) in README.md 
+* Update variable name `file_errors` (was `errors`) in README.md
 
 ## 0.13.1 (2023-07-19)
 
