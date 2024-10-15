@@ -3,9 +3,11 @@ Image builder for MetaIO mhd/mha files.
 
 See: https://itk.org/Wiki/MetaIO/Documentation
 """
+
 from collections import defaultdict
+from collections.abc import Iterator, Mapping
 from pathlib import Path
-from typing import DefaultDict, Dict, Iterator, List, Mapping, Set, Union
+from typing import DefaultDict, Union
 
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.image_builders.metaio_utils import load_sitk_image, parse_mh_header
@@ -13,7 +15,7 @@ from panimg.models import SimpleITKImage
 
 
 def image_builder_mhd(  # noqa: C901
-    *, files: Set[Path]
+    *, files: set[Path]
 ) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects by inspecting files in a directory.
@@ -31,11 +33,11 @@ def image_builder_mhd(  # noqa: C901
      - files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
-    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+    file_errors: DefaultDict[Path, list[str]] = defaultdict(list)
 
     element_data_file_key = "ElementDataFile"
 
-    def detect_mhd_file(headers: Dict[str, str], path: Path) -> bool:
+    def detect_mhd_file(headers: dict[str, str], path: Path) -> bool:
         try:
             data_file = headers[element_data_file_key]
         except KeyError:

@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import SimpleITK
 
@@ -70,18 +70,18 @@ ADDITIONAL_HEADERS = {
     **{md.keyword: md.match_pattern for md in EXTRA_METADATA},
 }
 
-HEADERS_MATCHING_NUM_TIMEPOINTS: List[str] = ["Exposures", "ContentTimes"]
+HEADERS_MATCHING_NUM_TIMEPOINTS: list[str] = ["Exposures", "ContentTimes"]
 
-HEADERS_MATCHING_WINDOW_SETTINGS: List[str] = ["WindowCenter", "WindowWidth"]
+HEADERS_MATCHING_WINDOW_SETTINGS: list[str] = ["WindowCenter", "WindowWidth"]
 
-HEADERS_WITH_LISTING: List[str] = [
+HEADERS_WITH_LISTING: list[str] = [
     "TransformMatrix",
     "Offset",
     "CenterOfRotation",
     "ElementSpacing",
 ]
 
-EXPECTED_HEADERS: List[str] = [
+EXPECTED_HEADERS: list[str] = [
     "ObjectType",
     "NDims",
     "BinaryData",
@@ -100,7 +100,7 @@ EXPECTED_HEADERS: List[str] = [
 ]
 
 
-def parse_mh_header(file: Path) -> Dict[str, str]:
+def parse_mh_header(file: Path) -> dict[str, str]:
     """
     Attempts to parse the headers of an mhd file.
 
@@ -125,7 +125,7 @@ def parse_mh_header(file: Path) -> Dict[str, str]:
     # attempt to limit number of read headers to prevent overflow attacks
     read_line_limit = 10000
 
-    result: Dict[str, str] = {}
+    result: dict[str, str] = {}
     with file.open("rb") as f:
         lines = True
         while lines:
@@ -155,7 +155,7 @@ def parse_mh_header(file: Path) -> Dict[str, str]:
     return result
 
 
-def extract_key_value_pairs(line: str) -> Dict[str, str]:
+def extract_key_value_pairs(line: str) -> dict[str, str]:
     line = line.rstrip("\n\r")
     if line.strip() and "=" in line:
         key, value = line.split("=", 1)
@@ -165,13 +165,13 @@ def extract_key_value_pairs(line: str) -> Dict[str, str]:
 
 
 def extract_header_listing(
-    property: str, headers: Dict[str, str], dtype: type = float
-) -> List[Any]:
+    property: str, headers: dict[str, str], dtype: type = float
+) -> list[Any]:
     return [dtype(e) for e in headers[property].strip().split(" ")]
 
 
 def resolve_mh_data_file_path(
-    headers: Dict[str, str], is_mha: bool, mhd_file: Path
+    headers: dict[str, str], is_mha: bool, mhd_file: Path
 ) -> Path:
     if is_mha:
         data_file_path = mhd_file
@@ -186,7 +186,7 @@ def resolve_mh_data_file_path(
 
 def validate_and_clean_additional_mh_headers(
     reader: SimpleITK.ImageFileReader,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     cleaned_headers = {}
     for key in reader.GetMetaDataKeys():
         value = reader.GetMetaData(key)
@@ -255,7 +255,7 @@ def validate_list_data_matches_num_timepoints(
 
 
 def add_additional_mh_headers_to_sitk_image(
-    sitk_image: SimpleITK.Image, cleaned_headers: Dict[str, str]
+    sitk_image: SimpleITK.Image, cleaned_headers: dict[str, str]
 ):
     for header in ADDITIONAL_HEADERS:
         if header in cleaned_headers:

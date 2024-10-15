@@ -1,19 +1,11 @@
 import os
 import re
 from collections import defaultdict
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import (
-    Callable,
-    DefaultDict,
-    Dict,
-    FrozenSet,
-    Iterator,
-    List,
-    Optional,
-    Set,
-)
+from typing import Callable, DefaultDict, Optional
 from uuid import UUID, uuid4
 
 import tifffile
@@ -53,7 +45,7 @@ class GrandChallengeTiffFile:
     color_space: Optional[ColorSpace] = None
     voxel_width_mm: float = 0
     voxel_height_mm: float = 0
-    associated_files: List[Path] = field(default_factory=list)
+    associated_files: list[Path] = field(default_factory=list)
     min_voxel_value: Optional[int] = None
     max_voxel_value: Optional[int] = None
 
@@ -84,7 +76,7 @@ class GrandChallengeTiffFile:
             )
 
     @property
-    def segments(self) -> Optional[FrozenSet[int]]:
+    def segments(self) -> Optional[frozenset[int]]:
         if self.min_voxel_value is None or self.max_voxel_value is None:
             return None
         if (
@@ -326,14 +318,14 @@ def _get_vms_files(vms_file: Path):
 
 def _convert(
     *,
-    files: List[Path],
-    associated_files_getter: Optional[Callable[[Path], List[Path]]],
+    files: list[Path],
+    associated_files_getter: Optional[Callable[[Path], list[Path]]],
     converter,
     output_directory: Path,
-    file_errors: Dict[Path, List[str]],
-) -> List[GrandChallengeTiffFile]:
-    converted_files: List[GrandChallengeTiffFile] = []
-    associated_files: List[Path] = []
+    file_errors: dict[Path, list[str]],
+) -> list[GrandChallengeTiffFile]:
+    converted_files: list[GrandChallengeTiffFile] = []
+    associated_files: list[Path] = []
 
     for file in files:
         try:
@@ -404,7 +396,7 @@ def _convert_dicom_wsi_dir(
     gc_file: GrandChallengeTiffFile,
     file: Path,
     output_directory: Path,
-    file_errors: Dict[Path, List[str]],
+    file_errors: dict[Path, list[str]],
 ):
     wsidicom_dir = file.parent
     try:
@@ -427,7 +419,7 @@ def _convert_dicom_wsi_dir(
 
 
 def _find_valid_dicom_wsi_files(
-    files: Set[Path], file_errors: DefaultDict[Path, List[str]]
+    files: set[Path], file_errors: DefaultDict[Path, list[str]]
 ):
     """
     Gets the headers for all dicom files on path and validates them.
@@ -449,7 +441,7 @@ def _find_valid_dicom_wsi_files(
     # Try and get dicom files; ignore errors
     dicom_errors = file_errors.copy()
     studies = get_dicom_headers_by_study(files=files, file_errors=dicom_errors)
-    result: Dict[Path, List[Path]] = {}
+    result: dict[Path, list[Path]] = {}
 
     for key in studies:
         headers = studies[key]["headers"]
@@ -477,12 +469,12 @@ def _find_valid_dicom_wsi_files(
 
 def _load_gc_files(
     *,
-    files: Set[Path],
+    files: set[Path],
     converter,
     output_directory: Path,
-    file_errors: DefaultDict[Path, List[str]],
-) -> List[GrandChallengeTiffFile]:
-    loaded_files: List[GrandChallengeTiffFile] = []
+    file_errors: DefaultDict[Path, list[str]],
+) -> list[GrandChallengeTiffFile]:
+    loaded_files: list[GrandChallengeTiffFile] = []
 
     complex_file_handlers = {
         ".mrxs": _get_mrxs_files,
@@ -531,7 +523,7 @@ def _load_gc_files(
 
 
 def image_builder_tiff(  # noqa: C901
-    *, files: Set[Path]
+    *, files: set[Path]
 ) -> Iterator[TIFFImage]:
     if openslide is False:
         raise ImportError(
@@ -547,7 +539,7 @@ def image_builder_tiff(  # noqa: C901
             f"is installed or remove {__name__} from your list of builders."
         )
 
-    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+    file_errors: DefaultDict[Path, list[str]] = defaultdict(list)
 
     with TemporaryDirectory() as output_directory:
         loaded_files = _load_gc_files(

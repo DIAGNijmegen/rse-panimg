@@ -2,7 +2,6 @@ import os
 import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List
 
 import pytest
 
@@ -61,7 +60,7 @@ def test_image_builder_nrrd(tmpdir_factory, srcfile: Path):
     ),
 )
 def test_image_builder_nrrd_detached_header(
-    tmpdir_factory, srcfiles: List[Path]
+    tmpdir_factory, srcfiles: list[Path]
 ):
     dest = Path(tmpdir_factory.mktemp("input"))
 

@@ -1,6 +1,7 @@
 from collections import defaultdict
+from collections.abc import Iterator
 from pathlib import Path
-from typing import DefaultDict, Iterator, List, Set
+from typing import DefaultDict
 
 import numpy as np
 import SimpleITK
@@ -15,7 +16,7 @@ def format_error(message: str) -> str:
     return f"Fallback image builder: {message}"
 
 
-def image_builder_fallback(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
+def image_builder_fallback(*, files: set[Path]) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects by inspecting files in a directory.
 
@@ -33,7 +34,7 @@ def image_builder_fallback(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
-    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+    file_errors: DefaultDict[Path, list[str]] = defaultdict(list)
 
     for file in files:
         try:

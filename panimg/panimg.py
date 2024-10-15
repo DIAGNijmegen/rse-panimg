@@ -1,7 +1,8 @@
 import logging
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
-from typing import DefaultDict, Dict, Iterable, List, Optional, Set
+from typing import DefaultDict, Optional
 
 from panimg.exceptions import UnconsumedFilesException
 from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
@@ -20,10 +21,10 @@ def convert(
     post_processors: Optional[Iterable[PostProcessor]] = None,
     recurse_subdirectories: bool = True,
 ) -> PanImgResult:
-    new_images: Set[PanImg] = set()
-    new_image_files: Set[PanImgFile] = set()
-    consumed_files: Set[Path] = set()
-    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+    new_images: set[PanImg] = set()
+    new_image_files: set[PanImgFile] = set()
+    consumed_files: set[Path] = set()
+    file_errors: DefaultDict[Path, list[str]] = defaultdict(list)
 
     builders = builders if builders is not None else DEFAULT_IMAGE_BUILDERS
 
@@ -43,9 +44,11 @@ def convert(
 
     result = post_process(
         image_files=new_image_files,
-        post_processors=post_processors
-        if post_processors is not None
-        else DEFAULT_POST_PROCESSORS,
+        post_processors=(
+            post_processors
+            if post_processors is not None
+            else DEFAULT_POST_PROCESSORS
+        ),
     )
     new_image_files |= result.new_image_files
 
@@ -62,10 +65,10 @@ def _convert_directory(
     input_directory: Path,
     output_directory: Path,
     builders: Iterable[ImageBuilder],
-    consumed_files: Set[Path],
-    new_images: Set[PanImg],
-    new_image_files: Set[PanImgFile],
-    file_errors: DefaultDict[Path, List[str]],
+    consumed_files: set[Path],
+    new_images: set[PanImg],
+    new_image_files: set[PanImgFile],
+    file_errors: DefaultDict[Path, list[str]],
     recurse_subdirectories: bool = True,
 ):
     input_directory = Path(input_directory).resolve()
@@ -124,12 +127,12 @@ def _convert_directory(
 
 
 def _build_files(
-    *, builder: ImageBuilder, files: Set[Path], output_directory: Path
+    *, builder: ImageBuilder, files: set[Path], output_directory: Path
 ) -> PanImgResult:
     new_images = set()
-    new_image_files: Set[PanImgFile] = set()
-    consumed_files: Set[Path] = set()
-    file_errors: Dict[Path, List[str]] = {}
+    new_image_files: set[PanImgFile] = set()
+    consumed_files: set[Path] = set()
+    file_errors: dict[Path, list[str]] = {}
 
     try:
         for result in builder(files=files):
@@ -153,7 +156,7 @@ def _build_files(
 
 
 def post_process(
-    *, image_files: Set[PanImgFile], post_processors: Iterable[PostProcessor]
+    *, image_files: set[PanImgFile], post_processors: Iterable[PostProcessor]
 ) -> PostProcessorResult:
     """
     Run a set of post processors on a set of image files
@@ -162,7 +165,7 @@ def post_process(
     such as DZI creation for TIFF images, or thumbnail generation.
     They do not produce new image entities.
     """
-    new_image_files: Set[PanImgFile] = set()
+    new_image_files: set[PanImgFile] = set()
 
     logger.info(f"Post processing {len(image_files)} image(s)")
 

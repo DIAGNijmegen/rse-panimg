@@ -1,5 +1,4 @@
 import logging
-from typing import Set
 
 from panimg.models import ImageType, PanImgFile, PostProcessorResult
 from panimg.settings import DZI_TILE_SIZE
@@ -12,7 +11,7 @@ except OSError:
 logger = logging.getLogger(__name__)
 
 
-def tiff_to_dzi(*, image_files: Set[PanImgFile]) -> PostProcessorResult:
+def tiff_to_dzi(*, image_files: set[PanImgFile]) -> PostProcessorResult:
     if pyvips is False:
         raise ImportError(
             f"Could not import pyvips, which is required for the "
@@ -21,7 +20,7 @@ def tiff_to_dzi(*, image_files: Set[PanImgFile]) -> PostProcessorResult:
             f"processors."
         )
 
-    new_image_files: Set[PanImgFile] = set()
+    new_image_files: set[PanImgFile] = set()
 
     for file in image_files:
         if file.image_type == ImageType.TIFF:
