@@ -1,8 +1,9 @@
 import logging
 from collections import defaultdict
+from collections.abc import Iterator
 from math import isclose
 from pathlib import Path
-from typing import Any, DefaultDict, Dict, Iterator, List, Set, Tuple
+from typing import Any, DefaultDict
 
 import numpy as np
 import pydicom
@@ -248,7 +249,7 @@ class DicomDataset:
         else:
             return pixel_array
 
-    def _shape(self, samples_per_pixel: int) -> Tuple[int, ...]:
+    def _shape(self, samples_per_pixel: int) -> tuple[int, ...]:
         pixel_dims = [
             self.n_slices,
             self.ref_header.Rows,
@@ -375,7 +376,7 @@ class DicomDataset:
 
 
 def get_dicom_headers_by_study(
-    files: Set[Path], file_errors: DefaultDict[Path, List[str]]
+    files: set[Path], file_errors: DefaultDict[Path, list[str]]
 ):
     """
     Gets all headers from dicom files found in path.
@@ -393,9 +394,9 @@ def get_dicom_headers_by_study(
     A dictionary of headers for all dicom image files found within path,
     grouped by study id.
     """
-    study_key_type = Tuple[str, ...]
-    studies: Dict[study_key_type, Dict[str, Any]] = {}
-    indices: Dict[str, Dict[study_key_type, int]] = {}
+    study_key_type = tuple[str, ...]
+    studies: dict[study_key_type, dict[str, Any]] = {}
+    indices: dict[str, dict[study_key_type, int]] = {}
 
     for file in files:
         if not file.is_file():
@@ -443,8 +444,8 @@ def get_dicom_headers_by_study(
 
 
 def _find_valid_dicom_files(
-    files: Set[Path], file_errors: DefaultDict[Path, List[str]]
-) -> List[DicomDataset]:
+    files: set[Path], file_errors: DefaultDict[Path, list[str]]
+) -> list[DicomDataset]:
     """
     Gets the headers for all dicom files on path and validates them.
 
@@ -529,7 +530,7 @@ def _find_valid_dicom_files(
     return result
 
 
-def image_builder_dicom(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
+def image_builder_dicom(*, files: set[Path]) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects by inspecting files in a directory.
 
@@ -546,7 +547,7 @@ def image_builder_dicom(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
-    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+    file_errors: DefaultDict[Path, list[str]] = defaultdict(list)
 
     studies = _find_valid_dicom_files(files=files, file_errors=file_errors)
     for dicom_ds in studies:

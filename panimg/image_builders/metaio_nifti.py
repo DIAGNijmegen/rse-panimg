@@ -1,6 +1,7 @@
 from collections import defaultdict
+from collections.abc import Iterator
 from pathlib import Path
-from typing import DefaultDict, Iterator, List, Set
+from typing import DefaultDict
 
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.image_builders.metaio_utils import load_sitk_image
@@ -11,7 +12,7 @@ def format_error(message: str) -> str:
     return f"NifTI image builder: {message}"
 
 
-def image_builder_nifti(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
+def image_builder_nifti(*, files: set[Path]) -> Iterator[SimpleITKImage]:
     """
     Constructs image objects from files in NifTI format (nii/nii.gz)
 
@@ -28,7 +29,7 @@ def image_builder_nifti(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
-    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+    file_errors: DefaultDict[Path, list[str]] = defaultdict(list)
 
     for file in files:
         if not (file.name.endswith(".nii") or file.name.endswith(".nii.gz")):

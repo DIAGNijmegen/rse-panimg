@@ -1,5 +1,6 @@
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, Protocol, Set, Union
+from typing import Protocol, Union
 
 from panimg.models import (
     PanImgFile,
@@ -10,12 +11,12 @@ from panimg.models import (
 
 
 class ImageBuilder(Protocol):
-    def __call__(
-        self, *, files: Set[Path]
-    ) -> Union[Iterator[SimpleITKImage], Iterator[TIFFImage]]:
-        ...
+    def __call__(  # noqa: E704
+        self, *, files: set[Path]
+    ) -> Union[Iterator[SimpleITKImage], Iterator[TIFFImage]]: ...
 
 
 class PostProcessor(Protocol):
-    def __call__(self, *, image_files: Set[PanImgFile]) -> PostProcessorResult:
-        ...
+    def __call__(  # noqa: E704
+        self, *, image_files: set[PanImgFile]
+    ) -> PostProcessorResult: ...

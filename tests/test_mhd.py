@@ -1,7 +1,7 @@
 import shutil
 import zlib
 from pathlib import Path
-from typing import List, Union
+from typing import Union
 
 import pytest
 import SimpleITK
@@ -198,8 +198,8 @@ def test_load_sitk_image_with_additional_meta_data(tmpdir, test_img: str):
 )
 def test_load_sitk_image_with_various_window_formats(
     test_img: str,
-    center: Union[float, List[float]],
-    width: Union[float, List[float]],
+    center: Union[float, list[float]],
+    width: Union[float, list[float]],
 ):
     src = MHD_WINDOW_DIR / test_img
     sitk_image = load_sitk_image(src)

@@ -1,4 +1,4 @@
-from typing import Iterable
+from collections.abc import Iterable
 
 from panimg.image_builders.dicom import image_builder_dicom
 from panimg.image_builders.fallback import image_builder_fallback

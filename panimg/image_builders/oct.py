@@ -1,15 +1,7 @@
 from collections import defaultdict
+from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import (
-    Any,
-    DefaultDict,
-    Iterable,
-    Iterator,
-    List,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import Any, DefaultDict, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -46,7 +38,7 @@ class OctDimensions(BaseModel):
 
 def _create_itk_images(
     *,
-    file: Tuple[Path, str],
+    file: tuple[Path, str],
     oct_volumes: Iterable[OCTVolumeWithMetaData],
     fundus_images: Iterable[FundusImageWithMetaData],
     oct_slice_size: OctDimensions,
@@ -85,7 +77,7 @@ def _create_itk_images(
 def _create_itk_oct_volume(
     *,
     file: Path,
-    volume: List[npt.NDArray[Any]],
+    volume: list[npt.NDArray[Any]],
     oct_slice_size: OctDimensions,
     eye_choice: EyeChoice,
 ) -> SimpleITKImage:
@@ -148,13 +140,11 @@ def _extract_slice_size(*, img: Union[FDS, FDA]) -> OctDimensions:
         )
 
 
-def _get_image(
-    *, file: Path
-) -> Tuple[
+def _get_image(*, file: Path) -> tuple[
     Iterable[OCTVolumeWithMetaData],
     Iterable[FundusImageWithMetaData],
     OctDimensions,
-    Tuple[Path, str],
+    tuple[Path, str],
 ]:
     with open(file, "rb") as f:
         header = f.read(7)
@@ -200,7 +190,7 @@ def _get_image(
             raise ValueError
 
 
-def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
+def image_builder_oct(*, files: set[Path]) -> Iterator[SimpleITKImage]:
     """
     Constructs OCT image objects by inspecting files in a directory by using
     OCT-converter PyPI library.
@@ -219,7 +209,7 @@ def image_builder_oct(*, files: Set[Path]) -> Iterator[SimpleITKImage]:
      - a list files associated with the detected images
      - path->error message map describing what is wrong with a given file
     """
-    file_errors: DefaultDict[Path, List[str]] = defaultdict(list)
+    file_errors: DefaultDict[Path, list[str]] = defaultdict(list)
 
     for file in files:
         try:

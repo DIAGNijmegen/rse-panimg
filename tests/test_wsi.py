@@ -1,6 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 
@@ -63,7 +63,7 @@ DEFAULT_EXPECTED_IMAGE_PROPERTIES = {
     ),
 )
 def test_image_builder_wsi(
-    src: Path, expected_image: Dict[str, Any], errors: int
+    src: Path, expected_image: dict[str, Any], errors: int
 ):
     files = {f for f in src.rglob("*") if f.is_file()}
     with TemporaryDirectory() as output:

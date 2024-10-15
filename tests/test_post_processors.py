@@ -1,6 +1,5 @@
 import shutil
 from pathlib import Path
-from typing import Set
 from uuid import uuid4
 
 import pytest
@@ -46,7 +45,7 @@ def test_dzi_creation(tmpdir_factory, post_processors):
         )
 
 
-def bad_post_processor(*, image_files: Set[PanImgFile]) -> PostProcessorResult:
+def bad_post_processor(*, image_files: set[PanImgFile]) -> PostProcessorResult:
     good_files = {
         PanImgFile(
             image_id=f.image_id, image_type=f.image_type, file=Path("foo")

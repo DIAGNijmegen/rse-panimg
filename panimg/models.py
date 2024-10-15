@@ -5,7 +5,7 @@ import shutil
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, FrozenSet, List, NamedTuple, Optional, Set, Tuple
+from typing import Any, NamedTuple, Optional
 from uuid import UUID, uuid4
 
 import numpy as np
@@ -152,7 +152,7 @@ class PanImg:
     series_instance_uid: str = ""
     study_description: str = ""
     series_description: str = ""
-    segments: Optional[FrozenSet[int]] = None
+    segments: Optional[frozenset[int]] = None
 
 
 @dataclass(frozen=True)
@@ -165,22 +165,22 @@ class PanImgFile:
 
 @dataclass
 class PanImgResult:
-    new_images: Set[PanImg]
-    new_image_files: Set[PanImgFile]
-    consumed_files: Set[Path]
-    file_errors: Dict[Path, List[str]]
+    new_images: set[PanImg]
+    new_image_files: set[PanImgFile]
+    consumed_files: set[Path]
+    file_errors: dict[Path, list[str]]
 
 
 @dataclass
 class PostProcessorResult:
-    new_image_files: Set[PanImgFile]
+    new_image_files: set[PanImgFile]
 
 
 class SimpleITKImage(BaseModel):
     image: Image
 
     name: str
-    consumed_files: Set[Path]
+    consumed_files: set[Path]
 
     spacing_valid: bool
     eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
@@ -265,7 +265,7 @@ class SimpleITKImage(BaseModel):
         return image
 
     @cached_property
-    def segments(self) -> Optional[FrozenSet[int]]:
+    def segments(self) -> Optional[frozenset[int]]:
         if (
             self.image.GetNumberOfComponentsPerPixel() != 1
             or self.image.GetPixelIDValue() not in MASK_TYPE_PIXEL_IDS
@@ -328,7 +328,7 @@ class SimpleITKImage(BaseModel):
         else:
             return None
 
-    def generate_extra_metadata(self) -> Dict[str, Any]:
+    def generate_extra_metadata(self) -> dict[str, Any]:
         extra_metadata = {
             md.field_name: md.default_value for md in EXTRA_METADATA
         }
@@ -352,7 +352,7 @@ class SimpleITKImage(BaseModel):
                     )
         return extra_metadata
 
-    def save(self, output_directory: Path) -> Tuple[PanImg, Set[PanImgFile]]:
+    def save(self, output_directory: Path) -> tuple[PanImg, set[PanImgFile]]:
         pk = uuid4()
 
         work_dir = Path(output_directory) / self.name
@@ -397,7 +397,7 @@ class TIFFImage(BaseModel):
     file: Path
 
     name: str
-    consumed_files: Set[Path]
+    consumed_files: set[Path]
 
     width: int
     height: int
@@ -406,11 +406,11 @@ class TIFFImage(BaseModel):
     resolution_levels: int
     color_space: ColorSpace
     eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
-    segments: Optional[FrozenSet[int]] = None
+    segments: Optional[frozenset[int]] = None
 
     model_config = ConfigDict(frozen=True)
 
-    def save(self, output_directory: Path) -> Tuple[PanImg, Set[PanImgFile]]:
+    def save(self, output_directory: Path) -> tuple[PanImg, set[PanImgFile]]:
         pk = uuid4()
 
         output_file = output_directory / self.name / f"{pk}{self.file.suffix}"

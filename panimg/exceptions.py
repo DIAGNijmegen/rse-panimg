@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Dict, List
 
 
 class ValidationError(Exception):
@@ -13,6 +12,6 @@ class UnconsumedFilesException(Exception):  # noqa: N818
     the unconsumed file.
     """
 
-    def __init__(self, *args, file_errors: Dict[Path, List[str]]):
+    def __init__(self, *args, file_errors: dict[Path, list[str]]):
         super().__init__(*args)
         self.file_errors = file_errors
