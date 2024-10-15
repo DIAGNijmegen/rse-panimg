@@ -1,5 +1,10 @@
 # History
 
+## 0.14.0 (2024-10-15)
+
+* Removed support for Python 3.8
+* Added support for Python 3.12 and 3.13
+
 ## 0.13.2 (2023-10-23)
 
 * Fix DICOM-WSI conversion issue where not all levels were converted correctly
