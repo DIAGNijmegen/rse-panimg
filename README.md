@@ -72,13 +72,14 @@ To access the help test you can use `panimg -h`.
 | `.fda`                              | `.mha`  | `oct`      | <sup>[2](#footnote2)</sup> |
 | `.png`                              | `.mha`  | `fallback` | <sup>[3](#footnote3)</sup> |
 | `.jpeg`                             | `.mha`  | `fallback` | <sup>[3](#footnote3)</sup> |
-| `.tiff`                             | `.tiff` | `tiff`     |                            |
-| `.svs` (Aperio)                     | `.tiff` | `tiff`     |                            |
-| `.vms`, `.vmu`, `.ndpi` (Hamamatsu) | `.tiff` | `tiff`     |                            |
-| `.scn` (Leica)                      | `.tiff` | `tiff`     |                            |
-| `.mrxs` (MIRAX)                     | `.tiff` | `tiff`     |                            |
-| `.biff` (Ventana)                   | `.tiff` | `tiff`     |                            |
-| `.dcm` (DICOM-WSI)                  | `.tiff` | `tiff`     |                            |
+| `.tiff`                             | `.tif`  | `tiff`     |                            |
+| `.tif`                              | `.tif`  | `tiff`     |                            |
+| `.svs` (Aperio)                     | `.tif`  | `tiff`     |                            |
+| `.vms`, `.vmu`, `.ndpi` (Hamamatsu) | `.tif`  | `tiff`     |                            |
+| `.scn` (Leica)                      | `.tif`  | `tiff`     |                            |
+| `.mrxs` (MIRAX)                     | `.tif`  | `tiff`     |                            |
+| `.biff` (Ventana)                   | `.tif`  | `tiff`     |                            |
+| `.dcm` (DICOM-WSI)                  | `.tif`  | `tiff`     |                            |
 
 <a name="footnote1">1</a>: Detached headers are not supported.
 
