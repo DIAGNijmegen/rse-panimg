@@ -1,5 +1,9 @@
 # History
 
+## 0.15.0 (2024-01-06)
+
+* Removed support for Python 3.9
+
 ## 0.14.0 (2024-10-15)
 
 * Removed support for Python 3.8
