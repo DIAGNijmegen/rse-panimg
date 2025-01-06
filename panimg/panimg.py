@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 from collections.abc import Iterable
 from pathlib import Path
-from typing import DefaultDict, Optional
+from typing import DefaultDict
 
 from panimg.exceptions import UnconsumedFilesException
 from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
@@ -17,8 +17,8 @@ def convert(
     *,
     input_directory: Path,
     output_directory: Path,
-    builders: Optional[Iterable[ImageBuilder]] = None,
-    post_processors: Optional[Iterable[PostProcessor]] = None,
+    builders: Iterable[ImageBuilder] | None = None,
+    post_processors: Iterable[PostProcessor] | None = None,
     recurse_subdirectories: bool = True,
 ) -> PanImgResult:
     new_images: set[PanImg] = set()

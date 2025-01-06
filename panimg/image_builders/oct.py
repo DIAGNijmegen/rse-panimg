@@ -118,7 +118,7 @@ def _create_itk_fundus_image(
     )
 
 
-def _extract_slice_size(*, img: Union[FDS, FDA]) -> OctDimensions:
+def _extract_slice_size(*, img: FDS | FDA) -> OctDimensions:
     slice_size_meta_data = Struct(
         "unknown" / PaddedString(12, "utf16"),
         "xmm" / Float64l,

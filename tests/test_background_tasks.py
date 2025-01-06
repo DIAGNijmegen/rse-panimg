@@ -119,6 +119,7 @@ def test_staged_mhd_upload_with_additional_headers(
             for original, new in zip(
                 extract_header_listing(key, original_headers),
                 extract_header_listing(key, headers),
+                strict=True,
             ):
                 assert original == new, key
         else:

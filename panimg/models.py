@@ -5,7 +5,7 @@ import shutil
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
-from typing import Any, NamedTuple, Optional
+from typing import Any, NamedTuple
 from uuid import UUID, uuid4
 
 import numpy as np
@@ -132,27 +132,27 @@ class PanImg:
     name: str
     width: int
     height: int
-    depth: Optional[int]
-    voxel_width_mm: Optional[float]
-    voxel_height_mm: Optional[float]
-    voxel_depth_mm: Optional[float]
-    timepoints: Optional[int]
-    resolution_levels: Optional[int]
-    window_center: Optional[float]
-    window_width: Optional[float]
+    depth: int | None
+    voxel_width_mm: float | None
+    voxel_height_mm: float | None
+    voxel_depth_mm: float | None
+    timepoints: int | None
+    resolution_levels: int | None
+    window_center: float | None
+    window_width: float | None
     color_space: ColorSpace
     eye_choice: EyeChoice
     patient_id: str = ""
     patient_name: str = ""
-    patient_birth_date: Optional[datetime.date] = None
+    patient_birth_date: datetime.date | None = None
     patient_age: str = ""
     patient_sex: PatientSex = PatientSex.EMPTY
-    study_date: Optional[datetime.date] = None
+    study_date: datetime.date | None = None
     study_instance_uid: str = ""
     series_instance_uid: str = ""
     study_description: str = ""
     series_description: str = ""
-    segments: Optional[frozenset[int]] = None
+    segments: frozenset[int] | None = None
 
 
 @dataclass(frozen=True)
@@ -160,7 +160,7 @@ class PanImgFile:
     image_id: UUID
     image_type: ImageType
     file: Path
-    directory: Optional[Path] = None
+    directory: Path | None = None
 
 
 @dataclass
@@ -196,7 +196,7 @@ class SimpleITKImage(BaseModel):
         return int(self.image.GetHeight())
 
     @property
-    def depth(self) -> Optional[int]:
+    def depth(self) -> int | None:
         try:
             depth = int(self.image.GetDepth())
         except (RuntimeError, ValueError):
@@ -212,7 +212,7 @@ class SimpleITKImage(BaseModel):
             return float(value)
 
     @property
-    def window_center(self) -> Optional[float]:
+    def window_center(self) -> float | None:
         try:
             return self._extract_first_float(
                 self.image.GetMetaData("WindowCenter")
@@ -221,7 +221,7 @@ class SimpleITKImage(BaseModel):
             return None
 
     @property
-    def window_width(self) -> Optional[float]:
+    def window_width(self) -> float | None:
         try:
             return self._extract_first_float(
                 self.image.GetMetaData("WindowWidth")
@@ -230,7 +230,7 @@ class SimpleITKImage(BaseModel):
             return None
 
     @property
-    def timepoints(self) -> Optional[int]:
+    def timepoints(self) -> int | None:
         if self.image.GetDimension() == 4 and self.segments is None:
             # Only 4D files that are non-segmentations have timepoints
             return int(self.image.GetSize()[3])
@@ -265,7 +265,7 @@ class SimpleITKImage(BaseModel):
         return image
 
     @cached_property
-    def segments(self) -> Optional[frozenset[int]]:
+    def segments(self) -> frozenset[int] | None:
         if (
             self.image.GetNumberOfComponentsPerPixel() != 1
             or self.image.GetPixelIDValue() not in MASK_TYPE_PIXEL_IDS
@@ -305,21 +305,21 @@ class SimpleITKImage(BaseModel):
         return ITK_COLOR_SPACE_MAP[self.image.GetNumberOfComponentsPerPixel()]
 
     @property
-    def voxel_width_mm(self) -> Optional[float]:
+    def voxel_width_mm(self) -> float | None:
         if self.spacing_valid:
             return float(self.image.GetSpacing()[0])
         else:
             return None
 
     @property
-    def voxel_height_mm(self) -> Optional[float]:
+    def voxel_height_mm(self) -> float | None:
         if self.spacing_valid:
             return float(self.image.GetSpacing()[1])
         else:
             return None
 
     @property
-    def voxel_depth_mm(self) -> Optional[float]:
+    def voxel_depth_mm(self) -> float | None:
         if self.spacing_valid:
             try:
                 return float(self.image.GetSpacing()[2])
@@ -406,7 +406,7 @@ class TIFFImage(BaseModel):
     resolution_levels: int
     color_space: ColorSpace
     eye_choice: EyeChoice = EyeChoice.NOT_APPLICABLE
-    segments: Optional[frozenset[int]] = None
+    segments: frozenset[int] | None = None
 
     model_config = ConfigDict(frozen=True)
 

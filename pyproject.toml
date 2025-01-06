@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "panimg"
-version = "0.14.0"
+version = "0.15.0"
 description = "Conversion of medical images to MHA and TIFF."
 license = "Apache-2.0"
 authors = ["James Meakin <panimg@jmsmkn.com>"]
@@ -17,7 +17,7 @@ classifiers = [
 panimg = "panimg.cli:cli"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 pydantic = ">=2"
 numpy = ">=1.22"
 # Exclude 2.1.1.1 due to
@@ -68,11 +68,10 @@ addopts = "--strict-markers --showlocals -n auto --dist loadscope"
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = py39, py310, py311, py312, py313
+envlist = py310, py311, py312, py313
 
 [gh-actions]
 python =
-    3.9: py39
     3.10: py310
     3.11: py311
     3.12: py312
