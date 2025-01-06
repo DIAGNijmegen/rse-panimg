@@ -7,7 +7,7 @@ See: https://itk.org/Wiki/MetaIO/Documentation
 from collections import defaultdict
 from collections.abc import Iterator, Mapping
 from pathlib import Path
-from typing import DefaultDict, Union
+from typing import DefaultDict
 
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.image_builders.metaio_utils import load_sitk_image, parse_mh_header
@@ -57,7 +57,7 @@ def image_builder_mhd(  # noqa: C901
             raise ValueError("Data container of mhd file is missing")
         return True
 
-    def detect_mha_file(headers: Mapping[str, Union[str, None]]) -> bool:
+    def detect_mha_file(headers: Mapping[str, str | None]) -> bool:
         data_file = headers.get(element_data_file_key, None)
         return data_file == "LOCAL"
 

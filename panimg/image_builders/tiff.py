@@ -1,11 +1,11 @@
 import os
 import re
 from collections import defaultdict
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Callable, DefaultDict, Optional
+from typing import DefaultDict
 from uuid import UUID, uuid4
 
 import tifffile
@@ -42,12 +42,12 @@ class GrandChallengeTiffFile:
     image_width: int = 0
     image_height: int = 0
     resolution_levels: int = 0
-    color_space: Optional[ColorSpace] = None
+    color_space: ColorSpace | None = None
     voxel_width_mm: float = 0
     voxel_height_mm: float = 0
     associated_files: list[Path] = field(default_factory=list)
-    min_voxel_value: Optional[int] = None
-    max_voxel_value: Optional[int] = None
+    min_voxel_value: int | None = None
+    max_voxel_value: int | None = None
 
     def validate(self) -> None:
         if not self.image_width:
@@ -76,7 +76,7 @@ class GrandChallengeTiffFile:
             )
 
     @property
-    def segments(self) -> Optional[frozenset[int]]:
+    def segments(self) -> frozenset[int] | None:
         if self.min_voxel_value is None or self.max_voxel_value is None:
             return None
         if (
@@ -209,7 +209,7 @@ def _extract_tags(
     return gc_file
 
 
-def _get_color_space(*, color_space_string) -> Optional[ColorSpace]:
+def _get_color_space(*, color_space_string) -> ColorSpace | None:
     color_space_string = color_space_string.upper()
 
     if color_space_string == "MINISBLACK":
@@ -319,7 +319,7 @@ def _get_vms_files(vms_file: Path):
 def _convert(
     *,
     files: list[Path],
-    associated_files_getter: Optional[Callable[[Path], list[Path]]],
+    associated_files_getter: Callable[[Path], list[Path]] | None,
     converter,
     output_directory: Path,
     file_errors: dict[Path, list[str]],
