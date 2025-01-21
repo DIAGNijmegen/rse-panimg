@@ -2,12 +2,12 @@ import os
 import re
 from collections import defaultdict
 from collections.abc import Callable, Iterator
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import DefaultDict
 from uuid import UUID, uuid4
-from concurrent.futures import ProcessPoolExecutor
 
 import tifffile
 
@@ -337,9 +337,12 @@ def _convert(
 
             # If this is a globally importable value like "pyvips",
             # we ship it as string and look it up in _convert_to_tiff
-            # otherwise we pass the value directly
+            # otherwise we pass the value directly so that it can be
+            # used in the subprocess with proper resource isolation
             if converter in globals().values():
-                serialized_converter = [k for k, v in globals().items() if v == converter].pop()
+                serialized_converter = [
+                    k for k, v in globals().items() if v == converter
+                ].pop()
             else:
                 serialized_converter = converter
 
