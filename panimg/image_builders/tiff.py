@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import DefaultDict
 from uuid import UUID, uuid4
+from concurrent.futures import ProcessPoolExecutor
 
 import tifffile
 
@@ -334,12 +335,22 @@ def _convert(
             if associated_files_getter:
                 associated_files = associated_files_getter(gc_file.path)
 
-            tiff_file = _convert_to_tiff(
-                path=file,
-                pk=gc_file.pk,
-                converter=converter,
-                output_directory=output_directory,
-            )
+            # If this is a globally importable value like "pyvips",
+            # we ship it as string and look it up in _convert_to_tiff
+            # otherwise we pass the value directly
+            if converter in globals().values():
+                serialized_converter = [k for k, v in globals().items() if v == converter].pop()
+            else:
+                serialized_converter = converter
+
+            with ProcessPoolExecutor(max_workers=1) as executor:
+                tiff_file = executor.submit(
+                    _convert_to_tiff,
+                    path=file,
+                    pk=gc_file.pk,
+                    serialized_converter=serialized_converter,
+                    output_directory=output_directory,
+                ).result()
         except Exception as e:
             file_errors[file].append(
                 format_error(
@@ -357,8 +368,13 @@ def _convert(
 
 
 def _convert_to_tiff(
-    *, path: Path, pk: UUID, converter, output_directory: Path
+    *, path: Path, pk: UUID, serialized_converter, output_directory: Path
 ) -> Path:
+    if serialized_converter in globals():
+        converter = globals()[serialized_converter]
+    else:
+        converter = serialized_converter
+
     new_file_name = output_directory / path.name / f"{pk}.tif"
     new_file_name.parent.mkdir()
 
