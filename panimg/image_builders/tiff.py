@@ -137,23 +137,28 @@ def _extract_openslide_properties(
 ) -> GrandChallengeTiffFile:
     if not gc_file.voxel_width_mm and "openslide.mpp-x" in image.get_fields():
         gc_file.voxel_width_mm = float(image.get("openslide.mpp-x")) / 1000
+
     if not gc_file.voxel_height_mm and "openslide.mpp-y" in image.get_fields():
         gc_file.voxel_height_mm = float(image.get("openslide.mpp-y")) / 1000
+
     if (
         not gc_file.image_height
         and "openslide.level[0].height" in image.get_fields()
     ):
         gc_file.image_height = int(image.get("openslide.level[0].height"))
+
     if (
         not gc_file.image_width
         and "openslide.level[0].width" in image.get_fields()
     ):
         gc_file.image_width = int(image.get("openslide.level[0].width"))
+
     if (
         not gc_file.resolution_levels
         and "openslide.level-count" in image.get_fields()
     ):
         gc_file.resolution_levels = int(image.get("openslide.level-count"))
+
     return gc_file
 
 
@@ -305,7 +310,6 @@ def _convert(
     *,
     files: list[Path],
     associated_files_getter: Callable[[Path], list[Path]] | None,
-    converter,
     output_directory: Path,
     file_errors: dict[Path, list[str]],
 ) -> list[GrandChallengeTiffFile]:
@@ -322,7 +326,6 @@ def _convert(
             tiff_file = _convert_to_tiff(
                 path=file,
                 pk=gc_file.pk,
-                converter=converter,
                 output_directory=output_directory,
             )
         except Exception as e:
@@ -341,13 +344,11 @@ def _convert(
     return converted_files
 
 
-def _convert_to_tiff(
-    *, path: Path, pk: UUID, converter, output_directory: Path
-) -> Path:
+def _convert_to_tiff(*, path: Path, pk: UUID, output_directory: Path) -> Path:
     new_file_name = output_directory / path.name / f"{pk}.tif"
     new_file_name.parent.mkdir()
 
-    image = converter.Image.new_from_file(
+    image = pyvips.Image.new_from_file(
         str(path.absolute()), access="sequential"
     )
 
@@ -455,7 +456,6 @@ def _find_valid_dicom_wsi_files(
 def _load_gc_files(
     *,
     files: set[Path],
-    converter,
     output_directory: Path,
     file_errors: DefaultDict[Path, list[str]],
 ) -> list[GrandChallengeTiffFile]:
@@ -488,7 +488,6 @@ def _load_gc_files(
             converted_files = _convert(
                 files=complex_files,
                 associated_files_getter=handler,
-                converter=converter,
                 output_directory=output_directory,
                 file_errors=file_errors,
             )
@@ -523,7 +522,6 @@ def image_builder_tiff(  # noqa: C901
     with TemporaryDirectory() as output_directory:
         loaded_files = _load_gc_files(
             files=files,
-            converter=pyvips,
             output_directory=Path(output_directory),
             file_errors=file_errors,
         )
