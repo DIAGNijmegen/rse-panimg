@@ -2,6 +2,7 @@ import os
 import re
 from collections import defaultdict
 from collections.abc import Callable, Iterator
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -16,17 +17,6 @@ from panimg.contrib.wsi_dcm_to_tiff.dcm_to_tiff import (
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.image_builders.dicom import get_dicom_headers_by_study
 from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace, TIFFImage
-
-try:
-    import openslide
-except (OSError, ModuleNotFoundError):
-    openslide = False
-
-try:
-    import pyvips
-except OSError:
-    pyvips = False
-
 
 DICOM_WSI_STORAGE_ID = "1.2.840.10008.5.1.4.1.1.77.1.6"
 
@@ -263,6 +253,8 @@ def _load_with_tiff(
 def _load_with_openslide(
     *, gc_file: GrandChallengeTiffFile
 ) -> GrandChallengeTiffFile:
+    import openslide
+
     open_slide_file = openslide.open_slide(str(gc_file.path.absolute()))
     gc_file = _extract_openslide_properties(
         gc_file=gc_file, image=open_slide_file
@@ -320,7 +312,6 @@ def _convert(
     *,
     files: list[Path],
     associated_files_getter: Callable[[Path], list[Path]] | None,
-    converter,
     output_directory: Path,
     file_errors: dict[Path, list[str]],
 ) -> list[GrandChallengeTiffFile]:
@@ -334,12 +325,13 @@ def _convert(
             if associated_files_getter:
                 associated_files = associated_files_getter(gc_file.path)
 
-            tiff_file = _convert_to_tiff(
-                path=file,
-                pk=gc_file.pk,
-                converter=converter,
-                output_directory=output_directory,
-            )
+            with ProcessPoolExecutor(max_workers=1) as executor:
+                tiff_file = executor.submit(
+                    _convert_to_tiff,
+                    path=file,
+                    pk=gc_file.pk,
+                    output_directory=output_directory,
+                ).result()
         except Exception as e:
             file_errors[file].append(
                 format_error(
@@ -356,29 +348,23 @@ def _convert(
     return converted_files
 
 
-def _convert_to_tiff(
-    *, path: Path, pk: UUID, converter, output_directory: Path
-) -> Path:
+def _convert_to_tiff(*, path: Path, pk: UUID, output_directory: Path) -> Path:
+    import pyvips
+
+    major = pyvips.base.version(0)
+    minor = pyvips.base.version(1)
+
+    if not (major > 8 or (major == 8 and minor >= 10)):
+        raise RuntimeError(
+            f"libvips {major}.{minor} is too old - requires >= 8.10"
+        )
+
     new_file_name = output_directory / path.name / f"{pk}.tif"
     new_file_name.parent.mkdir()
 
-    image = converter.Image.new_from_file(
+    image = pyvips.Image.new_from_file(
         str(path.absolute()), access="sequential"
     )
-
-    using_old_vips = (
-        pyvips.base.version(0) == 8 and pyvips.base.version(1) < 10
-    )
-    if (
-        using_old_vips
-        and image.get("xres") == 1
-        and "openslide.mpp-x" in image.get_fields()
-    ):
-        # correct xres and yres if they have default value of 1
-        # due to a bug that is resolved in pyvips 8.10
-        x_res = 1000.0 / float(image.get("openslide.mpp-x"))
-        y_res = 1000.0 / float(image.get("openslide.mpp-y"))
-        image = image.copy(xres=x_res, yres=y_res)
 
     image.write_to_file(
         str(new_file_name.absolute()),
@@ -470,7 +456,6 @@ def _find_valid_dicom_wsi_files(
 def _load_gc_files(
     *,
     files: set[Path],
-    converter,
     output_directory: Path,
     file_errors: DefaultDict[Path, list[str]],
 ) -> list[GrandChallengeTiffFile]:
@@ -503,7 +488,6 @@ def _load_gc_files(
             converted_files = _convert(
                 files=complex_files,
                 associated_files_getter=handler,
-                converter=converter,
                 output_directory=output_directory,
                 file_errors=file_errors,
             )
@@ -525,26 +509,11 @@ def _load_gc_files(
 def image_builder_tiff(  # noqa: C901
     *, files: set[Path]
 ) -> Iterator[TIFFImage]:
-    if openslide is False:
-        raise ImportError(
-            f"Could not import openslide, which is required for the "
-            f"{__name__} image builder. Either ensure that libopenslide-dev "
-            f"is installed or remove {__name__} from your list of builders."
-        )
-
-    if pyvips is False:
-        raise ImportError(
-            f"Could not import pyvips, which is required for the "
-            f"{__name__} image builder. Either ensure that libvips-dev "
-            f"is installed or remove {__name__} from your list of builders."
-        )
-
     file_errors: DefaultDict[Path, list[str]] = defaultdict(list)
 
     with TemporaryDirectory() as output_directory:
         loaded_files = _load_gc_files(
             files=files,
-            converter=pyvips,
             output_directory=Path(output_directory),
             file_errors=file_errors,
         )

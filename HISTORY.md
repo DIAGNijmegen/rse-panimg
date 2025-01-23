@@ -1,6 +1,10 @@
 # History
 
-## 0.15.0 (2024-01-06)
+## 0.15.1 (2025-01-23)
+
+* Fix potential memory leaks by confining use of `pyvips` to subprocesses
+
+## 0.15.0 (2025-01-06)
 
 * Removed support for Python 3.9
 

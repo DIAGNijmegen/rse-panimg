@@ -1,12 +1,9 @@
 import os
 import shutil
-from collections import defaultdict
 from pathlib import Path
-from unittest.mock import MagicMock, Mock
 from uuid import uuid4
 
 import pytest
-import pyvips
 import tifffile as tiff_lib
 from pytest import approx
 from tifffile import tifffile
@@ -14,10 +11,8 @@ from tifffile import tifffile
 from panimg.exceptions import ValidationError
 from panimg.image_builders.tiff import (
     GrandChallengeTiffFile,
-    _convert,
     _extract_tags,
     _get_color_space,
-    _get_mrxs_files,
     _load_with_openslide,
     _load_with_tiff,
     image_builder_tiff,
@@ -302,41 +297,6 @@ def test_image_builder_tiff(tmpdir_factory):
     assert len(image_builder_result.new_image_files) == 3
 
 
-def test_handle_complex_files(tmpdir_factory):
-    # Copy resource files to writable temp directory
-    temp_dir = Path(tmpdir_factory.mktemp("temp") / "resources")
-    shutil.copytree(RESOURCE_PATH / "complex_tiff", temp_dir)
-    files = [Path(d[0]).joinpath(f) for d in os.walk(temp_dir) for f in d[2]]
-
-    # set up mock object to mock pyvips
-    properties = {
-        "xres": 1,
-        "yres": 1,
-        "openslide.mpp-x": 0.2525,
-        "openslide.mpp-y": 0.2525,
-    }
-
-    mock_converter = MagicMock(pyvips)
-    mock_image = mock_converter.Image.new_from_file.return_value
-    mock_image.get = Mock(return_value=1)
-    mock_image.get_fields = Mock(return_value=properties)
-
-    _convert(
-        files=files,
-        associated_files_getter=_get_mrxs_files,
-        converter=mock_converter,
-        output_directory=Path(tmpdir_factory.mktemp("output")),
-        file_errors=defaultdict(list),
-    )
-
-    if pyvips.base.version(0) == 8 and pyvips.base.version(1) < 10:
-        # work-around calculation of xres and yres in _convert_to_tiff function
-        mock_image.copy.assert_called()
-        assert "xres" in mock_image.copy.call_args[1]
-    else:
-        mock_image.copy.assert_not_called()
-
-
 @pytest.mark.xfail(
     reason="skip for now as we don't want to upload a large testset"
 )
@@ -381,4 +341,94 @@ def test_error_handling(tmpdir_factory):
         output_directory=Path(tmpdir_factory.mktemp("output")),
     )
 
-    assert len(image_builder_result.file_errors) == 14
+    output = {k.name: v for k, v in image_builder_result.file_errors.items()}
+
+    assert output == {
+        "Mirax2-Fluorescence-1.mrxs": [
+            "TIFF image builder: Could not convert file to TIFF: "
+            "Mirax2-Fluorescence-1.mrxs, "
+            "error:unable to call VipsForeignLoadOpenslideFile\n  "
+            "openslide2vips: opening slide: "
+            "Index.dat doesn't have expected version\n",
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Could not open file with OpenSlide.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "CMU-1-40x - 2010-01-12 13.24.05.vms": [
+            "TIFF image builder: Could not convert file to TIFF: "
+            "CMU-1-40x - 2010-01-12 13.24.05.vms, "
+            "error:unable to call VipsForeignLoadOpenslideFile\n  "
+            "openslide2vips: opening slide: Can't validate JPEG 0: "
+            "No restart markers\n",
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Could not open file with OpenSlide.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "Data0001.dat": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Could not open file with OpenSlide.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "Index.dat": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Could not open file with OpenSlide.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "CMU-1-40x - 2010-01-12 13.24.05(0,1).jpg": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "CMU-1-40x - 2010-01-12 13.24.05_map2.jpg": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "Slidedat.ini": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Could not open file with OpenSlide.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "CMU-1-40x - 2010-01-12 13.24.05_macro.jpg": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "CMU-1-40x - 2010-01-12 13.24.05.opt": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "CMU-1-40x - 2010-01-12 13.24.05(1,0).jpg": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "Data0000.dat": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Could not open file with OpenSlide.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "CMU-1-40x - 2010-01-12 13.24.05.jpg": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "CMU-1-40x - 2010-01-12 13.24.05(1,1).jpg": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+        "Data0002.dat": [
+            "TIFF image builder: Could not open file with tifffile.",
+            "TIFF image builder: Could not open file with OpenSlide.",
+            "TIFF image builder: Validation error: "
+            "Not a valid tif: Image width could not be determined.",
+        ],
+    }
