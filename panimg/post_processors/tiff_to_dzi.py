@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ProcessPoolExecutor
 
 from panimg.models import ImageType, PanImgFile, PostProcessorResult
 from panimg.settings import DZI_TILE_SIZE
@@ -12,7 +13,10 @@ def tiff_to_dzi(*, image_files: set[PanImgFile]) -> PostProcessorResult:
     for file in image_files:
         if file.image_type == ImageType.TIFF:
             try:
-                result = _create_dzi_image(tiff_file=file)
+                with ProcessPoolExecutor(max_workers=1) as executor:
+                    result = executor.submit(
+                        _create_dzi_image, tiff_file=file
+                    ).result()
             except Exception as e:
                 logger.warning(f"Could not create DZI for {file}: {e}")
                 continue

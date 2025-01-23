@@ -2,6 +2,7 @@ import os
 import re
 from collections import defaultdict
 from collections.abc import Callable, Iterator
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -320,11 +321,13 @@ def _convert(
             if associated_files_getter:
                 associated_files = associated_files_getter(gc_file.path)
 
-            tiff_file = _convert_to_tiff(
-                path=file,
-                pk=gc_file.pk,
-                output_directory=output_directory,
-            )
+            with ProcessPoolExecutor(max_workers=1) as executor:
+                tiff_file = executor.submit(
+                    _convert_to_tiff,
+                    path=file,
+                    pk=gc_file.pk,
+                    output_directory=output_directory,
+                ).result()
         except Exception as e:
             file_errors[file].append(
                 format_error(
@@ -529,7 +532,10 @@ def image_builder_tiff(  # noqa: C901
 
             # try and load image with open slide
             try:
-                gc_file = _load_with_openslide(gc_file=gc_file)
+                with ProcessPoolExecutor(max_workers=1) as executor:
+                    gc_file = executor.submit(
+                        _load_with_openslide, gc_file=gc_file
+                    ).result()
             except Exception:
                 file_errors[gc_file.path].append(
                     format_error("Could not open file with OpenSlide.")
