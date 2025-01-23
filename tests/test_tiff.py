@@ -324,7 +324,6 @@ def test_handle_complex_files(tmpdir_factory):
     _convert(
         files=files,
         associated_files_getter=_get_mrxs_files,
-        converter=mock_converter,
         output_directory=Path(tmpdir_factory.mktemp("output")),
         file_errors=defaultdict(list),
     )

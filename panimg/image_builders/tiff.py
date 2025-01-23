@@ -18,17 +18,6 @@ from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.image_builders.dicom import get_dicom_headers_by_study
 from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace, TIFFImage
 
-try:
-    import openslide
-except (OSError, ModuleNotFoundError):
-    openslide = False
-
-try:
-    import pyvips
-except OSError:
-    pyvips = False
-
-
 DICOM_WSI_STORAGE_ID = "1.2.840.10008.5.1.4.1.1.77.1.6"
 
 
@@ -264,6 +253,8 @@ def _load_with_tiff(
 def _load_with_openslide(
     *, gc_file: GrandChallengeTiffFile
 ) -> GrandChallengeTiffFile:
+    import openslide
+
     open_slide_file = openslide.open_slide(str(gc_file.path.absolute()))
     gc_file = _extract_openslide_properties(
         gc_file=gc_file, image=open_slide_file
@@ -321,7 +312,6 @@ def _convert(
     *,
     files: list[Path],
     associated_files_getter: Callable[[Path], list[Path]] | None,
-    converter,
     output_directory: Path,
     file_errors: dict[Path, list[str]],
 ) -> list[GrandChallengeTiffFile]:
@@ -335,23 +325,11 @@ def _convert(
             if associated_files_getter:
                 associated_files = associated_files_getter(gc_file.path)
 
-            # If this is a globally importable value like "pyvips",
-            # we ship it as string and look it up in _convert_to_tiff
-            # otherwise we pass the value directly so that it can be
-            # used in the subprocess with proper resource isolation
-            if converter in globals().values():
-                serialized_converter = [
-                    k for k, v in globals().items() if v == converter
-                ].pop()
-            else:
-                serialized_converter = converter
-
             with ProcessPoolExecutor(max_workers=1) as executor:
                 tiff_file = executor.submit(
                     _convert_to_tiff,
                     path=file,
                     pk=gc_file.pk,
-                    serialized_converter=serialized_converter,
                     output_directory=output_directory,
                 ).result()
         except Exception as e:
@@ -370,18 +348,13 @@ def _convert(
     return converted_files
 
 
-def _convert_to_tiff(
-    *, path: Path, pk: UUID, serialized_converter, output_directory: Path
-) -> Path:
-    if serialized_converter in globals():
-        converter = globals()[serialized_converter]
-    else:
-        converter = serialized_converter
+def _convert_to_tiff(*, path: Path, pk: UUID, output_directory: Path) -> Path:
+    import pyvips
 
     new_file_name = output_directory / path.name / f"{pk}.tif"
     new_file_name.parent.mkdir()
 
-    image = converter.Image.new_from_file(
+    image = pyvips.Image.new_from_file(
         str(path.absolute()), access="sequential"
     )
 
@@ -489,7 +462,6 @@ def _find_valid_dicom_wsi_files(
 def _load_gc_files(
     *,
     files: set[Path],
-    converter,
     output_directory: Path,
     file_errors: DefaultDict[Path, list[str]],
 ) -> list[GrandChallengeTiffFile]:
@@ -522,7 +494,6 @@ def _load_gc_files(
             converted_files = _convert(
                 files=complex_files,
                 associated_files_getter=handler,
-                converter=converter,
                 output_directory=output_directory,
                 file_errors=file_errors,
             )
@@ -544,26 +515,11 @@ def _load_gc_files(
 def image_builder_tiff(  # noqa: C901
     *, files: set[Path]
 ) -> Iterator[TIFFImage]:
-    if openslide is False:
-        raise ImportError(
-            f"Could not import openslide, which is required for the "
-            f"{__name__} image builder. Either ensure that libopenslide-dev "
-            f"is installed or remove {__name__} from your list of builders."
-        )
-
-    if pyvips is False:
-        raise ImportError(
-            f"Could not import pyvips, which is required for the "
-            f"{__name__} image builder. Either ensure that libvips-dev "
-            f"is installed or remove {__name__} from your list of builders."
-        )
-
     file_errors: DefaultDict[Path, list[str]] = defaultdict(list)
 
     with TemporaryDirectory() as output_directory:
         loaded_files = _load_gc_files(
             files=files,
-            converter=pyvips,
             output_directory=Path(output_directory),
             file_errors=file_errors,
         )
