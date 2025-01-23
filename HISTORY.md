@@ -1,5 +1,9 @@
 # History
 
+## 0.15.2 (2025-01-23)
+
+* Removes running in a ProcessPoolExecutor
+
 ## 0.15.1 (2025-01-23)
 
 * Fix potential memory leaks by confining use of `pyvips` to subprocesses
