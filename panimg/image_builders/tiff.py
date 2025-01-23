@@ -18,11 +18,6 @@ from panimg.image_builders.dicom import get_dicom_headers_by_study
 from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace, TIFFImage
 
 try:
-    import openslide
-except (OSError, ModuleNotFoundError):
-    openslide = False
-
-try:
     import pyvips
 except OSError:
     pyvips = False
@@ -140,35 +135,25 @@ def _get_voxel_spacing_mm(tags, tag):
 def _extract_openslide_properties(
     *, gc_file: GrandChallengeTiffFile, image
 ) -> GrandChallengeTiffFile:
-    if not gc_file.voxel_width_mm and "openslide.mpp-x" in image.properties:
-        gc_file.voxel_width_mm = (
-            float(image.properties["openslide.mpp-x"]) / 1000
-        )
-    if not gc_file.voxel_height_mm and "openslide.mpp-y" in image.properties:
-        gc_file.voxel_height_mm = (
-            float(image.properties["openslide.mpp-y"]) / 1000
-        )
+    if not gc_file.voxel_width_mm and "openslide.mpp-x" in image.get_fields():
+        gc_file.voxel_width_mm = float(image.get("openslide.mpp-x")) / 1000
+    if not gc_file.voxel_height_mm and "openslide.mpp-y" in image.get_fields():
+        gc_file.voxel_height_mm = float(image.get("openslide.mpp-y")) / 1000
     if (
         not gc_file.image_height
-        and "openslide.level[0].height" in image.properties
+        and "openslide.level[0].height" in image.get_fields()
     ):
-        gc_file.image_height = int(
-            image.properties["openslide.level[0].height"]
-        )
-
+        gc_file.image_height = int(image.get("openslide.level[0].height"))
     if (
         not gc_file.image_width
-        and "openslide.level[0].width" in image.properties
+        and "openslide.level[0].width" in image.get_fields()
     ):
-        gc_file.image_width = int(image.properties["openslide.level[0].width"])
-
+        gc_file.image_width = int(image.get("openslide.level[0].width"))
     if (
         not gc_file.resolution_levels
-        and "openslide.level-count" in image.properties
+        and "openslide.level-count" in image.get_fields()
     ):
-        gc_file.resolution_levels = int(
-            image.properties["openslide.level-count"]
-        )
+        gc_file.resolution_levels = int(image.get("openslide.level-count"))
     return gc_file
 
 
@@ -263,7 +248,7 @@ def _load_with_tiff(
 def _load_with_openslide(
     *, gc_file: GrandChallengeTiffFile
 ) -> GrandChallengeTiffFile:
-    open_slide_file = openslide.open_slide(str(gc_file.path.absolute()))
+    open_slide_file = pyvips.Image.openslideload(str(gc_file.path.absolute()))
     gc_file = _extract_openslide_properties(
         gc_file=gc_file, image=open_slide_file
     )
@@ -525,12 +510,6 @@ def _load_gc_files(
 def image_builder_tiff(  # noqa: C901
     *, files: set[Path]
 ) -> Iterator[TIFFImage]:
-    if openslide is False:
-        raise ImportError(
-            f"Could not import openslide, which is required for the "
-            f"{__name__} image builder. Either ensure that libopenslide-dev "
-            f"is installed or remove {__name__} from your list of builders."
-        )
 
     if pyvips is False:
         raise ImportError(
