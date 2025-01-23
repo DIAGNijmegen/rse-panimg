@@ -351,26 +351,20 @@ def _convert(
 def _convert_to_tiff(*, path: Path, pk: UUID, output_directory: Path) -> Path:
     import pyvips
 
+    major = pyvips.base.version(0)
+    minor = pyvips.base.version(1)
+
+    if not (major > 8 or (major == 8 and minor >= 10)):
+        raise RuntimeError(
+            f"libvips {major}.{minor} is too old - requires >= 8.10"
+        )
+
     new_file_name = output_directory / path.name / f"{pk}.tif"
     new_file_name.parent.mkdir()
 
     image = pyvips.Image.new_from_file(
         str(path.absolute()), access="sequential"
     )
-
-    using_old_vips = (
-        pyvips.base.version(0) == 8 and pyvips.base.version(1) < 10
-    )
-    if (
-        using_old_vips
-        and image.get("xres") == 1
-        and "openslide.mpp-x" in image.get_fields()
-    ):
-        # correct xres and yres if they have default value of 1
-        # due to a bug that is resolved in pyvips 8.10
-        x_res = 1000.0 / float(image.get("openslide.mpp-x"))
-        y_res = 1000.0 / float(image.get("openslide.mpp-y"))
-        image = image.copy(xres=x_res, yres=y_res)
 
     image.write_to_file(
         str(new_file_name.absolute()),
