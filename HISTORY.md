@@ -1,6 +1,10 @@
 # History
 
-## 0.15.0 (2024-01-06)
+## 0.16.0 (2025-01-23)
+
+* Removed dependency on `openslide-python`
+
+## 0.15.0 (2024-11-06)
 
 * Removed support for Python 3.9
 
