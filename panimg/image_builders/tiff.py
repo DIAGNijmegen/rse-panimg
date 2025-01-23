@@ -17,12 +17,6 @@ from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.image_builders.dicom import get_dicom_headers_by_study
 from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace, TIFFImage
 
-try:
-    import pyvips
-except OSError:
-    pyvips = False
-
-
 DICOM_WSI_STORAGE_ID = "1.2.840.10008.5.1.4.1.1.77.1.6"
 
 
@@ -253,10 +247,13 @@ def _load_with_tiff(
 def _load_with_openslide(
     *, gc_file: GrandChallengeTiffFile
 ) -> GrandChallengeTiffFile:
+    import pyvips
+
     open_slide_file = pyvips.Image.openslideload(str(gc_file.path.absolute()))
     gc_file = _extract_openslide_properties(
         gc_file=gc_file, image=open_slide_file
     )
+
     return gc_file
 
 
@@ -345,6 +342,8 @@ def _convert(
 
 
 def _convert_to_tiff(*, path: Path, pk: UUID, output_directory: Path) -> Path:
+    import pyvips
+
     new_file_name = output_directory / path.name / f"{pk}.tif"
     new_file_name.parent.mkdir()
 
@@ -509,13 +508,6 @@ def _load_gc_files(
 def image_builder_tiff(  # noqa: C901
     *, files: set[Path]
 ) -> Iterator[TIFFImage]:
-
-    if pyvips is False:
-        raise ImportError(
-            f"Could not import pyvips, which is required for the "
-            f"{__name__} image builder. Either ensure that libvips-dev "
-            f"is installed or remove {__name__} from your list of builders."
-        )
 
     file_errors: DefaultDict[Path, list[str]] = defaultdict(list)
 
