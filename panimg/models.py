@@ -72,7 +72,8 @@ DICOM_VR_TO_VALUE_CAST = {
 
 # NOTE: Only int8 or uint8 data types are checked for segments
 # so the true maximum is 256
-MAXIMUM_SEGMENTS_LENGTH = 64
+# to avoid int8 overflow issues the value is set to 127 instead of 128
+MAXIMUM_SEGMENTS_LENGTH = 127
 
 
 class ExtraMetaData(NamedTuple):
