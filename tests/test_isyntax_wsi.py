@@ -14,6 +14,7 @@ from tests import RESOURCE_PATH
 def downloaded_isyntax_image():
     url = "https://zenodo.org/record/5037046/files/testslide.isyntax"
     image_path = RESOURCE_PATH / "isyntax_wsi" / "testslide.isyntax"
+    image_path.parent.mkdir()
 
     if not image_path.exists():
         urllib.request.urlretrieve(url, image_path)
