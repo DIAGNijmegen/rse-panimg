@@ -1,7 +1,9 @@
-
 import urllib.request
+
 import pytest
+
 from tests import RESOURCE_PATH
+
 
 @pytest.fixture(scope="session", autouse=True)
 def downloaded_isyntax_image():
