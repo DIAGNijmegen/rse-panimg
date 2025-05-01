@@ -47,7 +47,7 @@ def test_image_builder_raises_unconsumed_file_exception(tmp_path, builder):
 
 @pytest.mark.parametrize("builder", DEFAULT_IMAGE_BUILDERS)
 def test_number_of_images_consumed_by_each_builder(tmp_path, builder):
-    # Except for the oct and tiff builders, each of the builders should only consume one
+    # Except for the oct builder, each of the builders should only consume one
     # image. The other files should error out.
     files = {
         *(RESOURCE_PATH / "dicom_4d").glob("*.dcm"),

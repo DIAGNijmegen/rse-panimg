@@ -9,11 +9,11 @@ from typing import DefaultDict
 from uuid import UUID, uuid4
 
 import tifffile
+from isyntax import ISyntax
 
 from panimg.contrib.wsi_dcm_to_tiff.dcm_to_tiff import (
     dcm_to_tiff as wsi_dcm_to_tiff,
 )
-from panimg.contrib.wsi_isyntax_to_tiff.isyntax_to_tiff import ISyntax
 from panimg.contrib.wsi_isyntax_to_tiff.isyntax_to_tiff import (
     isyntax_to_tiff as wsi_isyntax_to_tiff,
 )

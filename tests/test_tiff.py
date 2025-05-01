@@ -269,7 +269,9 @@ def test_image_builder_tiff(tmpdir_factory):
     shutil.copytree(
         RESOURCE_PATH,
         temp_dir,
-        ignore=shutil.ignore_patterns("dicom*", "complex_tiff", "dzi_tiff", "isyntax_wsi"),
+        ignore=shutil.ignore_patterns(
+            "dicom*", "complex_tiff", "dzi_tiff", "isyntax_wsi"
+        ),
     )
     files = [Path(d[0]).joinpath(f) for d in os.walk(temp_dir) for f in d[2]]
 
