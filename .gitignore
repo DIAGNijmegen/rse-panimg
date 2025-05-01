@@ -133,3 +133,6 @@ dmypy.json
 
 # Ignore lock file as this is a library
 poetry.lock
+
+# Will be downloaded automatically.
+tests/resources/isyntax_wsi
