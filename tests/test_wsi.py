@@ -60,6 +60,7 @@ DEFAULT_EXPECTED_IMAGE_PROPERTIES = {
             0,
         ),
         (RESOURCE_PATH / "dicom_wsi/non_wsi_dcm", {}, 1),
+        (RESOURCE_PATH / "isyntax_wsi", {}, 0),
     ),
 )
 def test_image_builder_wsi(

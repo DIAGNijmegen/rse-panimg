@@ -80,6 +80,7 @@ To access the help test you can use `panimg -h`.
 | `.mrxs` (MIRAX)                     | `.tif`  | `tiff`     |                            |
 | `.biff` (Ventana)                   | `.tif`  | `tiff`     |                            |
 | `.dcm` (DICOM-WSI)                  | `.tif`  | `tiff`     |                            |
+| `.isyntax` (iSyntax)                | `.tif`  | `tiff`     |                            |
 
 <a name="footnote1">1</a>: Detached headers are not supported.
 

@@ -13,6 +13,10 @@ import tifffile
 from panimg.contrib.wsi_dcm_to_tiff.dcm_to_tiff import (
     dcm_to_tiff as wsi_dcm_to_tiff,
 )
+from panimg.contrib.wsi_isyntax_to_tiff.isyntax_to_tiff import ISyntax
+from panimg.contrib.wsi_isyntax_to_tiff.isyntax_to_tiff import (
+    isyntax_to_tiff as wsi_isyntax_to_tiff,
+)
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.image_builders.dicom import get_dicom_headers_by_study
 from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace, TIFFImage
@@ -401,6 +405,29 @@ def _convert_dicom_wsi_dir(
     return gc_file
 
 
+def _convert_isyntax_file(
+    gc_file: GrandChallengeTiffFile,
+    file: Path,
+    output_directory: Path,
+    file_errors: dict[Path, list[str]],
+):
+    try:
+        new_file_name = output_directory / file.name / f"{gc_file.pk}.tif"
+        new_file_name.parent.mkdir()
+
+        wsi_isyntax_to_tiff(file, new_file_name)
+    except Exception as e:
+        file_errors[file].append(
+            format_error(
+                f"Could not convert iSyntax to TIFF: {file.name}, error:{str(e)}"
+            )
+        )
+    else:
+        gc_file.path = new_file_name
+        gc_file.associated_files = [file]
+    return gc_file
+
+
 def _find_valid_dicom_wsi_files(
     files: set[Path], file_errors: DefaultDict[Path, list[str]]
 ):
@@ -450,6 +477,52 @@ def _find_valid_dicom_wsi_files(
     return list(result.keys()), associated_files
 
 
+def _find_valid_isyntax_wsi_files(
+    files: set[Path], file_errors: DefaultDict[Path, list[str]]
+):
+    """
+    Gets the headers for all isyntax files on path and validates them.
+
+    Parameters
+    ----------
+    files
+        Paths images that were uploaded during an upload session.
+
+    file_errors
+        Dictionary in which reading errors are recorded per file
+
+    Returns
+    -------
+    A dictionary with filename as key, and all other files belonging to that study
+    as value
+
+    """
+    result: dict[Path, list[Path]] = {}
+
+    isyntax_files = [
+        file for file in files if file.suffix.casefold() == ".isyntax"
+    ]
+    for isyntax_file in isyntax_files:
+        try:
+            with ISyntax.open(isyntax_file) as image:
+                wsi = image.wsi
+                if not wsi.level_count:
+                    file_errors[isyntax_file].append(
+                        format_error("No levels found in iSyntax file")
+                    )
+                else:
+                    result[isyntax_file] = [isyntax_file]
+        except Exception as e:
+            file_errors[isyntax_file].append(
+                format_error(f"Could not open iSyntax file: {str(e)}")
+            )
+
+    def associated_files(file_path: Path):
+        return result[file_path]
+
+    return list(result.keys()), associated_files
+
+
 def _load_gc_files(
     *,
     files: set[Path],
@@ -474,6 +547,17 @@ def _load_gc_files(
         gc_file = _convert_dicom_wsi_dir(
             gc_file=gc_file,
             file=dicom_file,
+            output_directory=output_directory,
+            file_errors=file_errors,
+        )
+        loaded_files.append(gc_file)
+
+    isyntax_files, handler = _find_valid_isyntax_wsi_files(files, file_errors)
+    for isyntax_file in isyntax_files:
+        gc_file = GrandChallengeTiffFile(isyntax_file)
+        gc_file = _convert_isyntax_file(
+            gc_file=gc_file,
+            file=isyntax_file,
             output_directory=output_directory,
             file_errors=file_errors,
         )
