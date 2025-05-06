@@ -22,6 +22,7 @@ Under the hood we use:
 * `pyvips`
 * `oct-converter`
 * `wsidicom`
+* `libisyntax`
 
 ## Usage
 
