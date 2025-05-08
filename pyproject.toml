@@ -36,7 +36,10 @@ pylibjpeg-libjpeg = "*"
 pylibjpeg-openjpeg = "*"
 wsidicom = ">=0.10.0"
 imagecodecs = ">=2023.3.16"
-pyisyntax = "^0.1.5"
+pyisyntax = {version = ">=0.1.5", optional = true}
+
+[tool.poetry.extras]
+isyntax = ["pyisyntax"]
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
@@ -82,5 +85,5 @@ python =
 allowlist_externals = poetry
 commands =
     poetry install -v
-    poetry run pytest --cov-branch --cov-report term-missing --cov=tests/ --cov=panimg/ {posargs}
+    poetry run pytest -r x --cov-branch --cov-report term-missing --cov=tests/ --cov=panimg/ {posargs}
 """

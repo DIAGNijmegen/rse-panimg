@@ -1,14 +1,23 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from isyntax import ISyntax
 from tifffile import TiffFile
 
 from panimg.contrib.wsi_isyntax_to_tiff.isyntax_to_tiff import isyntax_to_tiff
 
+try:
+    from isyntax import ISyntax
+except ImportError:
+    _has_isyntax = False
+else:
+    _has_isyntax = True
+
 
 def test_isyntax_to_tiff(downloaded_isyntax_image):
-    assert downloaded_isyntax_image.exists()
+    if not _has_isyntax:
+        raise ImportError(
+            "Install pyisyntax to convert isyntax files: pip install pyisyntax."
+        )
     with TemporaryDirectory() as output_directory:
         converted_tiff = Path(output_directory) / "output.tiff"
         isyntax_to_tiff(downloaded_isyntax_image, converted_tiff)

@@ -2,8 +2,14 @@ import math
 from pathlib import Path
 
 import numpy as np
-from isyntax import ISyntax
 from tifffile import TiffWriter
+
+try:
+    from isyntax import ISyntax
+except ImportError:
+    _has_isyntax = False
+else:
+    _has_isyntax = True
 
 
 def is_isyntax(dir_path):
@@ -28,6 +34,10 @@ def isyntax_to_tiff(input_path, output_path):
         Path to the iSyntax WSI file.
     output_path: str
         Path to the output TIFF file."""
+    if not _has_isyntax:
+        raise ImportError(
+            "Install pyisyntax to convert isyntax files: pip install pyisyntax."
+        )
     path = Path(input_path)
     image = ISyntax.open(path)
     wsi = image.wsi

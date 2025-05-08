@@ -9,7 +9,6 @@ from typing import DefaultDict
 from uuid import UUID, uuid4
 
 import tifffile
-from isyntax import ISyntax
 
 from panimg.contrib.wsi_dcm_to_tiff.dcm_to_tiff import (
     dcm_to_tiff as wsi_dcm_to_tiff,
@@ -20,6 +19,13 @@ from panimg.contrib.wsi_isyntax_to_tiff.isyntax_to_tiff import (
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.image_builders.dicom import get_dicom_headers_by_study
 from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace, TIFFImage
+
+try:
+    from isyntax import ISyntax
+except ImportError:
+    _has_isyntax = False
+else:
+    _has_isyntax = True
 
 DICOM_WSI_STORAGE_ID = "1.2.840.10008.5.1.4.1.1.77.1.6"
 
@@ -504,6 +510,10 @@ def _find_valid_isyntax_wsi_files(
     ]
     for isyntax_file in isyntax_files:
         try:
+            if not _has_isyntax:
+                raise ImportError(
+                    "Install pyisyntax to convert isyntax files: pip install pyisyntax."
+                )
             with ISyntax.open(isyntax_file) as image:
                 wsi = image.wsi
                 if not wsi.level_count:
