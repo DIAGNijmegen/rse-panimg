@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pytest
 from tifffile import TiffFile
 
 from panimg.contrib.wsi_isyntax_to_tiff.isyntax_to_tiff import isyntax_to_tiff
@@ -14,6 +15,11 @@ else:
 
 
 def test_isyntax_to_tiff(downloaded_isyntax_image):
+    if not downloaded_isyntax_image.exists():
+        pytest.xfail(
+            reason="iSyntax resource is not available. "
+            "To run this test, download the file using --download-files."
+        )
     if not _has_isyntax:
         raise ImportError(
             "Install pyisyntax to convert isyntax files: pip install pyisyntax."

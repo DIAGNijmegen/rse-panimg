@@ -311,6 +311,7 @@ def test_image_builder_tiff(tmpdir_factory):
         RESOURCE_PATH / "convert_to_tiff" / "scn",
         RESOURCE_PATH / "convert_to_tiff" / "mrxs",
         RESOURCE_PATH / "convert_to_tiff" / "bif",
+        RESOURCE_PATH / "convert_to_tiff" / "isyntax",
     ],
 )
 def test_convert_to_tiff(resource, tmpdir_factory):
