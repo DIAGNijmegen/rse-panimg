@@ -81,13 +81,15 @@ To access the help test you can use `panimg -h`.
 | `.mrxs` (MIRAX)                     | `.tif`  | `tiff`     |                            |
 | `.biff` (Ventana)                   | `.tif`  | `tiff`     |                            |
 | `.dcm` (DICOM-WSI)                  | `.tif`  | `tiff`     |                            |
-| `.isyntax` (iSyntax)                | `.tif`  | `tiff`     |                            |
+| `.isyntax` (iSyntax)                | `.tif`  | `tiff`     | <sup>[4](#footnote4)</sup> |
 
 <a name="footnote1">1</a>: Detached headers are not supported.
 
 <a name="footnote2">2</a>: Only OCT volume(s), no fundus image(s) will be extracted.
 
 <a name="footnote3">3</a>: 2D only, unitary dimensions
+
+<a name="footnote3">4</a>: `pip install panimg[isyntax]`
 
 #### Post Processors
 
