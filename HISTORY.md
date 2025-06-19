@@ -1,5 +1,10 @@
 # History
 
+## 0.17.0 (UNRELEASED)
+
+* Added `post-process` cli
+* **Breaking Change:** `--input-dir` and `--output-dir` are now keyword arguments to the `convert` cli
+
 ## 0.16.0 (2025-12-03)
 
 * Adds support for Python 3.14
