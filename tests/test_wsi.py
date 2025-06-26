@@ -60,12 +60,18 @@ DEFAULT_EXPECTED_IMAGE_PROPERTIES = {
             0,
         ),
         (RESOURCE_PATH / "dicom_wsi/non_wsi_dcm", {}, 1),
+        (RESOURCE_PATH / "isyntax_wsi", {}, 0),
     ),
 )
 def test_image_builder_wsi(
     src: Path, expected_image: dict[str, Any], errors: int
 ):
     files = {f for f in src.rglob("*") if f.is_file()}
+    if not files and src.name == "isyntax_wsi":
+        pytest.xfail(
+            reason="iSyntax resource is not available. "
+            "To run this test, download the file using --download-files."
+        )
     with TemporaryDirectory() as output:
         result = _build_files(
             builder=image_builder_tiff,

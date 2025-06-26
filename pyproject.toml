@@ -36,6 +36,10 @@ pylibjpeg-libjpeg = "*"
 pylibjpeg-openjpeg = "*"
 wsidicom = ">=0.10.0"
 imagecodecs = ">=2023.3.16"
+pyisyntax = {version = ">=0.1.5", optional = true}
+
+[tool.poetry.extras]
+isyntax = ["pyisyntax"]
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
