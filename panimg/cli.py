@@ -128,16 +128,16 @@ def post_process_cli(input: str, output: str, verbose: int):
 
 
 def _setup_verbosity(*, level: int):
-    ch = logging.StreamHandler()
+    handler = logging.StreamHandler()
 
     if level == 0:
         logger.setLevel(logging.WARNING)
-        ch.setLevel(logging.WARNING)
+        handler.setLevel(logging.WARNING)
     elif level == 1:
         logger.setLevel(logging.INFO)
-        ch.setLevel(logging.INFO)
+        handler.setLevel(logging.INFO)
     else:
         logger.setLevel(logging.DEBUG)
-        ch.setLevel(logging.DEBUG)
+        handler.setLevel(logging.DEBUG)
 
-    logger.addHandler(ch)
+    logger.addHandler(handler)
