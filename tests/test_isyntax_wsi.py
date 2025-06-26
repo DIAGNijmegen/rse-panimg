@@ -20,10 +20,9 @@ def test_isyntax_to_tiff(downloaded_isyntax_image):
             reason="iSyntax resource is not available. "
             "To run this test, download the file using --download-files."
         )
-    if not _has_isyntax:
-        raise ImportError(
-            "Install pyisyntax to convert isyntax files: pip install pyisyntax."
-        )
+
+    from isyntax import ISyntax
+
     with TemporaryDirectory() as output_directory:
         converted_tiff = Path(output_directory) / "output.tiff"
         isyntax_to_tiff(downloaded_isyntax_image, converted_tiff)
