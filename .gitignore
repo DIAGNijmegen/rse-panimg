@@ -134,5 +134,5 @@ dmypy.json
 # Ignore lock file as this is a library
 poetry.lock
 
-# Will be downloaded automatically.
+# Will be downloaded if the --download-files option is used in pytest
 tests/resources/isyntax_wsi
