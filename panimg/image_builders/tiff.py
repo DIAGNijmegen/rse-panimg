@@ -339,11 +339,9 @@ def _convert(
                 pk=gc_file.pk,
                 output_directory=output_directory,
             )
-        except Exception as e:
+        except Exception:
             file_errors[file].append(
-                format_error(
-                    f"Could not convert file to TIFF: {file.name}, error:{str(e)}"
-                )
+                format_error(f"Could not convert file to TIFF: {file.name}")
             )
             continue
         else:
@@ -397,11 +395,9 @@ def _convert_dicom_wsi_dir(
         new_file_name.parent.mkdir()
 
         wsi_dcm_to_tiff(wsidicom_dir, new_file_name)
-    except Exception as e:
+    except Exception:
         file_errors[file].append(
-            format_error(
-                f"Could not convert dicom-wsi to TIFF: {file.name}, error:{str(e)}"
-            )
+            format_error(f"Could not convert dicom-wsi to TIFF: {file.name}")
         )
     else:
         gc_file.path = new_file_name
@@ -422,11 +418,9 @@ def _convert_isyntax_file(
         new_file_name.parent.mkdir()
 
         wsi_isyntax_to_tiff(file, new_file_name)
-    except Exception as e:
+    except Exception:
         file_errors[file].append(
-            format_error(
-                f"Could not convert iSyntax to TIFF: {file.name}, error:{str(e)}"
-            )
+            format_error(f"Could not convert iSyntax to TIFF: {file.name}")
         )
     else:
         gc_file.path = new_file_name
@@ -520,9 +514,9 @@ def _find_valid_isyntax_wsi_files(
                     )
                 else:
                     result[isyntax_file] = [isyntax_file]
-        except Exception as e:
+        except Exception:
             file_errors[isyntax_file].append(
-                format_error(f"Could not open iSyntax file: {str(e)}")
+                format_error("Could not open iSyntax file")
             )
 
     def associated_files(file_path: Path):

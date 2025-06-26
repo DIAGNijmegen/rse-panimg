@@ -349,10 +349,7 @@ def test_error_handling(tmpdir_factory):
     assert output == {
         "Mirax2-Fluorescence-1.mrxs": [
             "TIFF image builder: Could not convert file to TIFF: "
-            "Mirax2-Fluorescence-1.mrxs, "
-            "error:unable to call VipsForeignLoadOpenslideFile\n  "
-            "openslide2vips: opening slide: "
-            "Index.dat doesn't have expected version\n",
+            "Mirax2-Fluorescence-1.mrxs",
             "TIFF image builder: Could not open file with tifffile.",
             "TIFF image builder: Could not open file with OpenSlide.",
             "TIFF image builder: Validation error: "
@@ -360,10 +357,7 @@ def test_error_handling(tmpdir_factory):
         ],
         "CMU-1-40x - 2010-01-12 13.24.05.vms": [
             "TIFF image builder: Could not convert file to TIFF: "
-            "CMU-1-40x - 2010-01-12 13.24.05.vms, "
-            "error:unable to call VipsForeignLoadOpenslideFile\n  "
-            "openslide2vips: opening slide: Can't validate JPEG 0: "
-            "No restart markers\n",
+            "CMU-1-40x - 2010-01-12 13.24.05.vms",
             "TIFF image builder: Could not open file with tifffile.",
             "TIFF image builder: Could not open file with OpenSlide.",
             "TIFF image builder: Validation error: "

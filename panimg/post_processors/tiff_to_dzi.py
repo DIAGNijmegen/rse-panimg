@@ -13,8 +13,8 @@ def tiff_to_dzi(*, image_files: set[PanImgFile]) -> PostProcessorResult:
         if file.image_type == ImageType.TIFF:
             try:
                 result = _create_dzi_image(tiff_file=file)
-            except Exception as e:
-                logger.warning(f"Could not create DZI for {file}: {e}")
+            except Exception:
+                logger.warning(f"Could not create DZI for {file}")
                 continue
 
             new_image_files |= result.new_image_files

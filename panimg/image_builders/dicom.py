@@ -437,8 +437,10 @@ def get_dicom_headers_by_study(
                 # uid and a counter (index) per study
                 studies[key]["name"] = f"{ds.StudyInstanceUID}-{index}"
 
-            except Exception as e:
-                file_errors[file].append(format_error(str(e)))
+            except Exception:
+                file_errors[file].append(
+                    format_error("could not parse headers")
+                )
 
     return studies
 
@@ -553,9 +555,11 @@ def image_builder_dicom(*, files: set[Path]) -> Iterator[SimpleITKImage]:
     for dicom_ds in studies:
         try:
             yield dicom_ds.read()
-        except Exception as e:
+        except Exception:
             for d in dicom_ds.headers:
-                file_errors[d["file"]].append(format_error(str(e)))
+                file_errors[d["file"]].append(
+                    format_error("could not read file")
+                )
 
     if file_errors:
         raise UnconsumedFilesException(file_errors=file_errors)
