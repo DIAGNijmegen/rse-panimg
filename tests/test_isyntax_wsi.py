@@ -6,13 +6,6 @@ from tifffile import TiffFile
 
 from panimg.contrib.wsi_isyntax_to_tiff.isyntax_to_tiff import isyntax_to_tiff
 
-try:
-    from isyntax import ISyntax
-except ImportError:
-    _has_isyntax = False
-else:
-    _has_isyntax = True
-
 
 def test_isyntax_to_tiff(downloaded_isyntax_image):
     if not downloaded_isyntax_image.exists():
