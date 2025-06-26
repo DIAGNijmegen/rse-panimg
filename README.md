@@ -22,7 +22,7 @@ Under the hood we use:
 * `pyvips`
 * `oct-converter`
 * `wsidicom`
-* `pyisyntax` (optional: `pip install pyisyntax`)
+* `pyisyntax`
 
 ## Usage
 
