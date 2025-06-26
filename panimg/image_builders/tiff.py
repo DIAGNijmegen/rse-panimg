@@ -512,8 +512,7 @@ def _find_valid_isyntax_wsi_files(
         try:
             if not _has_isyntax:
                 raise ImportError(
-                    "Install pyisyntax to convert isyntax files: "
-                    "pip install pyisyntax."
+                    "Install pyisyntax to convert isyntax files"
                 )
             with ISyntax.open(isyntax_file) as image:
                 wsi = image.wsi
