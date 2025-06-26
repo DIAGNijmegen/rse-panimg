@@ -89,7 +89,7 @@ To access the help test you can use `panimg -h`.
 
 <a name="footnote3">3</a>: 2D only, unitary dimensions
 
-<a name="footnote3">4</a>: `pip install panimg[isyntax]`
+<a name="footnote3">4</a>: When `isyntax` is available in the python environment
 
 #### Post Processors
 
