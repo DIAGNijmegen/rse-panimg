@@ -6,13 +6,7 @@ from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
 EXPECTED_ERROR_MESSAGE = {
-    "image_builder_dicom": [
-        (
-            "Dicom image builder: File is missing DICOM File Meta "
-            "Information header or the 'DICM' prefix is missing from the "
-            "header. Use force=True to force reading."
-        )
-    ],
+    "image_builder_dicom": ["Dicom image builder: could not parse headers"],
     "image_builder_fallback": [
         "Fallback image builder: Not a valid image file"
     ],

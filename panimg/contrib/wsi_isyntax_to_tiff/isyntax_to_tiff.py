@@ -35,9 +35,7 @@ def isyntax_to_tiff(input_path, output_path):
     output_path: str
         Path to the output TIFF file."""
     if not _has_isyntax:
-        raise ImportError(
-            "Install pyisyntax to convert isyntax files: pip install pyisyntax."
-        )
+        raise ImportError("pyisyntax not installed")
     path = Path(input_path)
     image = ISyntax.open(path)
     wsi = image.wsi
