@@ -1,11 +1,30 @@
-[tool.poetry]
+[project]
+authors = [
+    {name = "James Meakin"},
+]
+license = {text = "Apache-2.0"}
+requires-python = "<4.0,>=3.10"
+dependencies = [
+    "pydantic>=2",
+    "numpy>=1.22",
+    "SimpleITK!=2.1.1.1,>=2.0",
+    "pydicom>=2.2",
+    "Pillow",
+    "openslide-python",
+    "pyvips",
+    "tifffile",
+    "construct",
+    "click",
+    "pylibjpeg",
+    "pylibjpeg-libjpeg",
+    "pylibjpeg-openjpeg",
+    "wsidicom>=0.10.0",
+    "imagecodecs>=2023.3.16",
+]
 name = "panimg"
 version = "0.15.2"
 description = "Conversion of medical images to MHA and TIFF."
-license = "Apache-2.0"
-authors = ["James Meakin"]
 readme = "README.md"
-repository = "https://github.com/DIAGNijmegen/rse-panimg"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -13,43 +32,27 @@ classifiers = [
     "Operating System :: POSIX",
 ]
 
-[tool.poetry.scripts]
+[project.urls]
+repository = "https://github.com/DIAGNijmegen/rse-panimg"
+
+[project.optional-dependencies]
+isyntax = [
+    "pyisyntax>=0.1.5",
+]
+
+[project.scripts]
 panimg = "panimg.cli:cli"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-pydantic = ">=2"
-numpy = ">=1.22"
-# Exclude 2.1.1.1 due to
-# https://github.com/SimpleITK/SimpleITK/issues/1627
-# and https://github.com/python-poetry/poetry/issues/2453
-SimpleITK = ">=2.0,!=2.1.1.1"
-pydicom = ">=2.2"
-Pillow = "*"
-openslide-python = "*"
-pyvips = "*"
-tifffile = "*"
-construct = "*"
-click = "*"
-pylibjpeg = "*"
-pylibjpeg-libjpeg = "*"
-pylibjpeg-openjpeg = "*"
-wsidicom = ">=0.10.0"
-imagecodecs = ">=2023.3.16"
-pyisyntax = {version = ">=0.1.5", optional = true}
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-xdist",
+    "pytest-randomly",
+    "pytest-cov",
+]
 
-[tool.poetry.extras]
-isyntax = ["pyisyntax"]
-
-[tool.poetry.dev-dependencies]
-pytest = "*"
-pytest-xdist = "*"
-pytest-randomly = "*"
-pytest-cov = "*"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+package = true
 
 [tool.isort]
 profile = "black"
@@ -82,8 +85,8 @@ python =
     3.13: py313
 
 [testenv]
-allowlist_externals = poetry
+dependency_groups =
+    dev
 commands =
-    poetry install -v
-    poetry run pytest --cov-branch --cov-report term-missing --cov=tests/ --cov=panimg/ {posargs}
+    {envpython} -m pytest --cov-branch --cov-report term-missing --cov=tests/ --cov=panimg/ {posargs}
 """
