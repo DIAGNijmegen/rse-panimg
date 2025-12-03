@@ -10,9 +10,7 @@ import pydicom
 import SimpleITK
 
 from panimg.exceptions import UnconsumedFilesException
-from panimg.models import (
-    SimpleITKImage
-)
+from panimg.models import SimpleITKImage
 
 logger = logging.getLogger(__name__)
 

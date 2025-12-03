@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 
 import pytest
@@ -8,7 +7,6 @@ from panimg.image_builders.metaio_utils import load_sitk_image
 from panimg.models import SimpleITKImage
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
-
 
 
 @pytest.mark.parametrize(

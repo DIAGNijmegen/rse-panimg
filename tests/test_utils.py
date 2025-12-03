@@ -55,7 +55,6 @@ def test_convert_itk_to_internal(image: Path):
         assert internal_image.voxel_width_mm == approx(img.GetSpacing()[0])
         assert internal_image.voxel_height_mm == approx(img.GetSpacing()[1])
 
-
     img_ref = load_sitk_image(image)
     internal_image = SimpleITKImage(
         name=image.name,
