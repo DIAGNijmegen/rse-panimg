@@ -5,7 +5,6 @@ from typing import Any
 import SimpleITK
 
 from panimg.exceptions import ValidationError
-from panimg.models import EXTRA_METADATA, validate_metadata_value
 
 METAIO_IMAGE_TYPES = {
     "MET_NONE": None,
@@ -67,7 +66,6 @@ ADDITIONAL_HEADERS = {
     "LargestImagePixelValue": FLOAT_MATCH_REGEXP,
     "t0": FLOAT_MATCH_REGEXP,
     "t1": FLOAT_MATCH_REGEXP,
-    **{md.keyword: md.match_pattern for md in EXTRA_METADATA},
 }
 
 HEADERS_MATCHING_NUM_TIMEPOINTS: list[str] = ["Exposures", "ContentTimes"]
@@ -193,7 +191,6 @@ def validate_and_clean_additional_mh_headers(
         if key in EXPECTED_HEADERS:
             cleaned_headers[key] = value
         elif key in ADDITIONAL_HEADERS:
-            validate_metadata_value(key=key, value=value)
             match_pattern = ADDITIONAL_HEADERS[key]
             if not re.match(match_pattern, value):
                 raise ValidationError(

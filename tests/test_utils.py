@@ -5,7 +5,7 @@ import SimpleITK
 from pytest import approx
 
 from panimg.image_builders.metaio_utils import load_sitk_image
-from panimg.models import EXTRA_METADATA, ColorSpace, SimpleITKImage
+from panimg.models import ColorSpace, SimpleITKImage
 from tests import RESOURCE_PATH
 
 
@@ -54,15 +54,6 @@ def test_convert_itk_to_internal(image: Path):
         assert internal_image.height == img.GetHeight()
         assert internal_image.voxel_width_mm == approx(img.GetSpacing()[0])
         assert internal_image.voxel_height_mm == approx(img.GetSpacing()[1])
-
-        md_keys = img.GetMetaDataKeys()
-        metadata = internal_image.generate_extra_metadata()
-        for md in EXTRA_METADATA:
-            value = metadata[md.field_name]
-            if md.keyword in md_keys:
-                assert value == md.cast_func(img.GetMetaData(md.keyword))
-            else:
-                assert value is md.default_value
 
     img_ref = load_sitk_image(image)
     internal_image = SimpleITKImage(
