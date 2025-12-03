@@ -22,7 +22,7 @@ dependencies = [
     "imagecodecs>=2023.3.16",
 ]
 name = "panimg"
-version = "0.15.2"
+version = "0.16.0"
 description = "Conversion of medical images to MHA and TIFF."
 readme = "README.md"
 classifiers = [
@@ -49,7 +49,7 @@ dev = [
     "pytest-xdist",
     "pytest-randomly",
     "pytest-cov",
-    "pre-commit>=4.5.0",
+    "pre-commit",
 ]
 
 [tool.uv]
