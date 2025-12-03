@@ -22,7 +22,7 @@ dependencies = [
     "imagecodecs>=2023.3.16",
 ]
 name = "panimg"
-version = "0.15.2"
+version = "0.16.0"
 description = "Conversion of medical images to MHA and TIFF."
 readme = "README.md"
 classifiers = [
@@ -49,6 +49,7 @@ dev = [
     "pytest-xdist",
     "pytest-randomly",
     "pytest-cov",
+    "pre-commit",
 ]
 
 [tool.uv]
@@ -70,23 +71,3 @@ testpaths = [
 ]
 python_files = "tests.py test_*.py *_tests.py"
 addopts = "--strict-markers --showlocals -n auto --dist loadscope"
-
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-isolated_build = True
-envlist = py310, py311, py312, py313
-
-[gh-actions]
-python =
-    3.10: py310
-    3.11: py311
-    3.12: py312
-    3.13: py313
-
-[testenv]
-dependency_groups =
-    dev
-commands =
-    {envpython} -m pytest --cov-branch --cov-report term-missing --cov=tests/ --cov=panimg/ {posargs}
-"""
