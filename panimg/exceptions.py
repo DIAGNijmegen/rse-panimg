@@ -13,5 +13,5 @@ class UnconsumedFilesException(Exception):  # noqa: N818
     """
 
     def __init__(self, *args, file_errors: dict[Path, list[str]]):
-        super().__init__(*args)
+        super().__init__(*args, file_errors)
         self.file_errors = file_errors

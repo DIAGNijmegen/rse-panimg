@@ -1,5 +1,10 @@
 # History
 
+## 0.16.0 (2025-12-03)
+
+* Adds support for Python 3.14
+* Removed EXTRA_METADATA
+
 ## 0.15.2 (2025-01-23)
 
 * Removes running in a ProcessPoolExecutor
