@@ -9,7 +9,7 @@
 **NOT FOR CLINICAL USE**
 
 Conversion of medical images to MHA and TIFF.
-Requires Python 3.10, 3.11, 3.12 or 3.13.
+Requires Python 3.10, 3.11, 3.12, 3.13 or 3.14.
 `libvips-dev` and `libopenslide-dev` must be installed on your system.
 
 Under the hood we use:
