@@ -51,13 +51,6 @@ class EyeChoice(str, Enum):
     NOT_APPLICABLE = "NA"
 
 
-class PatientSex(str, Enum):
-    MALE = "M"
-    FEMALE = "F"
-    OTHER = "O"
-    EMPTY = ""
-
-
 # NOTE: Only int8 or uint8 data types are checked for segments
 # so the true maximum is 256
 MAXIMUM_SEGMENTS_LENGTH = 64
@@ -79,16 +72,6 @@ class PanImg:
     window_width: float | None
     color_space: ColorSpace
     eye_choice: EyeChoice
-    patient_id: str = ""
-    patient_name: str = ""
-    patient_birth_date: datetime.date | None = None
-    patient_age: str = ""
-    patient_sex: PatientSex = PatientSex.EMPTY
-    study_date: datetime.date | None = None
-    study_instance_uid: str = ""
-    series_instance_uid: str = ""
-    study_description: str = ""
-    series_description: str = ""
     segments: frozenset[int] | None = None
 
 

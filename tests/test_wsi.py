@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from panimg.image_builders import image_builder_dicom, image_builder_tiff
-from panimg.models import ColorSpace, EyeChoice, PatientSex
+from panimg.models import ColorSpace, EyeChoice
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 
@@ -22,16 +22,6 @@ DEFAULT_EXPECTED_IMAGE_PROPERTIES = {
     "window_width": None,
     "color_space": ColorSpace.YCBCR,
     "eye_choice": EyeChoice.NOT_APPLICABLE,
-    "patient_id": "",
-    "patient_name": "",
-    "patient_birth_date": None,
-    "patient_age": "",
-    "patient_sex": PatientSex.EMPTY,
-    "study_date": None,
-    "study_instance_uid": "",
-    "series_instance_uid": "",
-    "study_description": "",
-    "series_description": "",
     "segments": None,
 }
 
