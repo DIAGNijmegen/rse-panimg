@@ -58,72 +58,9 @@ class PatientSex(str, Enum):
     EMPTY = ""
 
 
-DICOM_VR_TO_VALIDATION_REGEXP = {
-    "AS": re.compile(r"^\d{3}[DWMY]$"),
-    "CS": re.compile(r"^[A-Z\d _]{0,16}$"),
-    "DA": re.compile(r"^\d{8}$"),
-    "LO": re.compile(r"^[^\\]{0,64}$"),
-    "PN": re.compile(r"^[^\\]{0,324}$"),
-    "UI": re.compile(r"^[\d.]{0,64}$"),
-}
-DICOM_VR_TO_VALUE_CAST = {
-    "DA": lambda v: datetime.date(int(v[:4]), int(v[4:6]), int(v[6:8]))
-}
-
 # NOTE: Only int8 or uint8 data types are checked for segments
 # so the true maximum is 256
 MAXIMUM_SEGMENTS_LENGTH = 64
-
-
-class ExtraMetaData(NamedTuple):
-    keyword: str  # DICOM tag keyword (eg. 'PatientID')
-    vr: str  # DICOM Value Representation (eg. 'LO')
-    field_name: str  # Name of field on PanImg model (eg. 'patient_id')
-    default_value: Any  # Default value for field
-
-    @property
-    def match_pattern(self):
-        return DICOM_VR_TO_VALIDATION_REGEXP[self.vr]
-
-    @property
-    def cast_func(self):
-        def default_func(v):
-            return None if v == "" else v
-
-        return DICOM_VR_TO_VALUE_CAST.get(self.vr, default_func)
-
-    def validate_value(self, value):
-        if value is None or str(value) == "":
-            return
-        if not re.match(self.match_pattern, str(value)):
-            raise ValidationError(
-                f"Value {value!r} for field {self.keyword!r} does not match "
-                f"pattern {self.match_pattern.pattern!r}"
-            )
-        try:
-            self.cast_func(value)
-        except ValueError as e:
-            raise ValidationError from e
-
-
-def validate_metadata_value(*, key, value):
-    key_to_md = {md.keyword: md for md in EXTRA_METADATA}
-    if key in key_to_md:
-        key_to_md[key].validate_value(value)
-
-
-EXTRA_METADATA = (
-    ExtraMetaData("PatientID", "LO", "patient_id", ""),
-    ExtraMetaData("PatientName", "PN", "patient_name", ""),
-    ExtraMetaData("PatientBirthDate", "DA", "patient_birth_date", None),
-    ExtraMetaData("PatientAge", "AS", "patient_age", ""),
-    ExtraMetaData("PatientSex", "CS", "patient_sex", ""),
-    ExtraMetaData("StudyDate", "DA", "study_date", None),
-    ExtraMetaData("StudyInstanceUID", "UI", "study_instance_uid", ""),
-    ExtraMetaData("SeriesInstanceUID", "UI", "series_instance_uid", ""),
-    ExtraMetaData("StudyDescription", "LO", "study_description", ""),
-    ExtraMetaData("SeriesDescription", "LO", "series_description", ""),
-)
 
 
 @dataclass(frozen=True)
@@ -328,30 +265,6 @@ class SimpleITKImage(BaseModel):
         else:
             return None
 
-    def generate_extra_metadata(self) -> dict[str, Any]:
-        extra_metadata = {
-            md.field_name: md.default_value for md in EXTRA_METADATA
-        }
-        for md in EXTRA_METADATA:
-            try:
-                value = str(self.image.GetMetaData(md.keyword))
-            except (RuntimeError, ValueError):
-                pass
-            else:
-                try:
-                    md.validate_value(value)
-                    if str(value) != "":
-                        extra_metadata[md.field_name] = md.cast_func(value)
-                except ValidationError as e:
-                    # Validation of metadata is already done in the builders so
-                    # that it only fails and skips the images with corrupt
-                    # metadata. This validation is done as an extra check.
-                    logger.warning(
-                        f"Value for metadata field {md.keyword!r} is stripped "
-                        f"because it produced a ValidationError: {e!r}"
-                    )
-        return extra_metadata
-
     def save(self, output_directory: Path) -> tuple[PanImg, set[PanImgFile]]:
         pk = uuid4()
 
@@ -374,7 +287,6 @@ class SimpleITKImage(BaseModel):
             voxel_depth_mm=self.voxel_depth_mm,
             eye_choice=self.eye_choice,
             segments=self.segments,
-            **self.generate_extra_metadata(),
         )
 
         WriteImage(
@@ -432,7 +344,6 @@ class TIFFImage(BaseModel):
             window_width=None,
             eye_choice=self.eye_choice,
             segments=self.segments,
-            **{md.field_name: md.default_value for md in EXTRA_METADATA},
         )
 
         shutil.copy(src=self.file, dst=output_file)

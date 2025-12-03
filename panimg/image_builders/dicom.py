@@ -11,9 +11,7 @@ import SimpleITK
 
 from panimg.exceptions import UnconsumedFilesException
 from panimg.models import (
-    EXTRA_METADATA,
-    SimpleITKImage,
-    validate_metadata_value,
+    SimpleITKImage
 )
 
 logger = logging.getLogger(__name__)
@@ -24,7 +22,6 @@ OPTIONAL_METADATA_FIELDS = (
     "SliceThickness",
     "WindowCenter",
     "WindowWidth",
-    *[md.keyword for md in EXTRA_METADATA],
 )
 
 
@@ -320,8 +317,6 @@ class DicomDataset:
             if str_value == "":
                 continue
 
-            validate_metadata_value(key=f, value=value)
-
             # Invert value of window level
             if f == "WindowCenter" and self._pixel_value_inverter is not None:
                 centers = self._pixel_value_inverter.invert(value)
@@ -362,8 +357,8 @@ class DicomDataset:
         img.SetSpacing(spacing)
         img.SetOrigin(origin)
 
-        # Add additional metadata
         self._add_optional_metadata(img)
+
         if self.dimensions == 4:
             self._add_temporal_metadata(img, z_order)
 
