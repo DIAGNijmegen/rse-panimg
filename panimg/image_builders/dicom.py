@@ -471,7 +471,7 @@ def _find_valid_dicom_files(
             {
                 int(header["data"].TemporalPositionIndex)
                 for header in headers
-                if "TemporalPositionIndex" in header["data"]
+                if header["data"].get("TemporalPositionIndex") is not None
             }
         )
         sop_class_uids = [header["data"].SOPClassUID for header in headers]
