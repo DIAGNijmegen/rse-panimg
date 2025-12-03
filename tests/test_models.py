@@ -154,3 +154,37 @@ def test_4d_segmentation_none_timepoints(tmp_path_factory):
 
     assert new_image.segments == frozenset({1, 2, 3, 4, 5})
     assert new_image.timepoints is None
+
+
+def test_model_strips_headers(tmpdir):
+    src = RESOURCE_PATH / "image3x4-extra-stuff.mhd"
+    old_image = load_sitk_image(src)
+    old_image.SetMetaData("PatientID", "remove_me")
+
+    result = SimpleITKImage(
+        image=old_image,
+        name=src.name,
+        consumed_files={src},
+        spacing_valid=True,
+    )
+    _, new_files = result.save(output_directory=tmpdir)
+
+    new_image = load_sitk_image(new_files.pop().file)
+
+    removed_keys = {*old_image.GetMetaDataKeys()} - {
+        *new_image.GetMetaDataKeys()
+    }
+
+    assert removed_keys == {"PatientID"}
+    assert {*new_image.GetMetaDataKeys()} == {
+        "ContentTimes",
+        "Exposures",
+        "LargestImagePixelValue",
+        "Laterality",
+        "SliceThickness",
+        "SmallestImagePixelValue",
+        "WindowCenter",
+        "WindowWidth",
+        "t0",
+        "t1",
+    }
