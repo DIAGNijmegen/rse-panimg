@@ -118,34 +118,13 @@ def convert_cli(
     ),
     required=True,
 )
-@click.option(
-    "--output-dir",
-    type=click.Path(
-        exists=False,
-        file_okay=False,
-        dir_okay=True,
-        readable=True,
-        writable=True,
-        resolve_path=True,
-        path_type=Path,
-    ),
-    required=True,
-)
 def post_process_cli(
     image_id: UUID,
     image_type: ImageType,
     input_file: Path,
-    output_dir: Path,
     verbose: int,
 ):
     _setup_verbosity(level=verbose)
-
-    if output_dir.exists():
-        raise click.exceptions.UsageError(
-            f"Output directory {output_dir} already exists"
-        )
-    else:
-        output_dir.mkdir(parents=True)
 
     result = post_process(
         image_files={
