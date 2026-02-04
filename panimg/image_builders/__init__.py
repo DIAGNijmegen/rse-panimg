@@ -9,6 +9,8 @@ from panimg.image_builders.oct import image_builder_oct
 from panimg.image_builders.tiff import image_builder_tiff
 from panimg.types import ImageBuilder
 
+# DEFAULT_IMAGE_BUILDERS are used directly by Grand Challenge
+# DO NOT CHANGE THEM without considering the impact there.
 DEFAULT_IMAGE_BUILDERS: Iterable[ImageBuilder] = [
     image_builder_mhd,
     image_builder_nifti,
