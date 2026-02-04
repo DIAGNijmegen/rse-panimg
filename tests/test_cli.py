@@ -182,9 +182,7 @@ def test_convert_cli_no_post_processing_and_dicom(tmp_path):
     }
 
 
-def test_post_process_cli_no_dzi(tmp_path):
-    output_dir = tmp_path / "output"
-
+def test_post_process_cli_no_dzi():
     runner = CliRunner()
     cli_result = runner.invoke(
         post_process_cli,
@@ -195,8 +193,6 @@ def test_post_process_cli_no_dzi(tmp_path):
             "MHD",
             "--input-file",
             RESOURCE_PATH / "image10x10x10.mha",
-            "--output-dir",
-            output_dir,
         ],
     )
     assert cli_result.stdout == '{"new_image_files":[]}\n'
@@ -209,9 +205,7 @@ def test_post_process_cli_no_dzi(tmp_path):
     assert post_processor_result.new_image_files == set()
 
 
-def test_post_process_cli_dzi(tmp_path):
-    output_dir = tmp_path / "output"
-
+def test_post_process_cli_dzi():
     runner = CliRunner()
     cli_result = runner.invoke(
         post_process_cli,
@@ -222,8 +216,6 @@ def test_post_process_cli_dzi(tmp_path):
             "TIFF",
             "--input-file",
             RESOURCE_PATH / "valid_tiff.tif",
-            "--output-dir",
-            output_dir,
         ],
     )
     assert cli_result.exit_code == 0
