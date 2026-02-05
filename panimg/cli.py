@@ -19,7 +19,11 @@ from panimg.models import (
     PanImgResult,
     PostProcessorResult,
 )
-from panimg.post_processors import DEFAULT_POST_PROCESSORS
+from panimg.post_processors import (
+    DEFAULT_POST_PROCESSORS,
+    POST_PROCESSOR_OPTIONS_TO_IMPLEMENTATION,
+    PostProcessorOptions,
+)
 from panimg.types import ImageBuilder
 
 panimg_version = version("panimg")
@@ -59,15 +63,19 @@ def cli():
     ),
     required=True,
 )
+@click.option(
+    "--post-processor", type=click.Choice(PostProcessorOptions), multiple=True
+)
 @click.option("--no-post-processing", is_flag=True, default=False)
 @click.option(
     "--image-builder", type=click.Choice(ImageBuilderOptions), multiple=True
 )
 def convert_cli(
     *,
+    verbose: int,
     input_dir: Path,
     output_dir: Path,
-    verbose: int,
+    post_processor: tuple[PostProcessorOptions],
     no_post_processing: bool,
     image_builder: tuple[ImageBuilderOptions],
 ):
@@ -80,10 +88,19 @@ def convert_cli(
     else:
         output_dir.mkdir(parents=True)
 
-    if no_post_processing:
-        post_processors = []
+    if post_processor and no_post_processing:
+        raise click.ClickException(
+            "--no-post-processing and --post-processor cannot be used together"
+        )
+    elif no_post_processing:
+        processors = []
+    elif post_processor:
+        processors = [
+            POST_PROCESSOR_OPTIONS_TO_IMPLEMENTATION[processor]
+            for processor in post_processor
+        ]
     else:
-        post_processors = DEFAULT_POST_PROCESSORS
+        processors = DEFAULT_POST_PROCESSORS
 
     if image_builder:
         builders: Iterable[ImageBuilder] = [
@@ -97,7 +114,7 @@ def convert_cli(
         input_directory=input_dir,
         output_directory=output_dir,
         builders=builders,
-        post_processors=post_processors,
+        post_processors=processors,
     )
 
     print(RootModel[PanImgResult](result).model_dump_json())
@@ -120,13 +137,26 @@ def convert_cli(
     ),
     required=True,
 )
+@click.option(
+    "--post-processor", type=click.Choice(PostProcessorOptions), multiple=True
+)
 def post_process_cli(
+    *,
+    verbose: int,
     image_id: UUID,
     image_type: ImageType,
     input_file: Path,
-    verbose: int,
+    post_processor: tuple[PostProcessorOptions],
 ):
     _setup_verbosity(level=verbose)
+
+    if post_processor:
+        processors = [
+            POST_PROCESSOR_OPTIONS_TO_IMPLEMENTATION[processor]
+            for processor in post_processor
+        ]
+    else:
+        processors = DEFAULT_POST_PROCESSORS
 
     result = post_process(
         image_files={
@@ -134,7 +164,7 @@ def post_process_cli(
                 image_id=image_id, image_type=image_type, file=input_file
             )
         },
-        post_processors=DEFAULT_POST_PROCESSORS,
+        post_processors=processors,
     )
 
     print(RootModel[PostProcessorResult](result).model_dump_json())
