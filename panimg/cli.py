@@ -10,8 +10,8 @@ from pydantic import RootModel
 from panimg import convert, logger, post_process
 from panimg.image_builders import (
     DEFAULT_IMAGE_BUILDERS,
-    image_builder_mhd,
-    image_builder_tiff,
+    IMAGE_BUILDER_OPTIONS_TO_IMPLEMENTATION,
+    ImageBuilderOptions,
 )
 from panimg.models import (
     ImageType,
@@ -60,14 +60,16 @@ def cli():
     required=True,
 )
 @click.option("--no-post-processing", is_flag=True, default=False)
-@click.option("--only-metaio-tiff-builders", is_flag=True, default=False)
+@click.option(
+    "--image-builder", type=click.Choice(ImageBuilderOptions), multiple=True
+)
 def convert_cli(
     *,
     input_dir: Path,
     output_dir: Path,
     verbose: int,
     no_post_processing: bool,
-    only_metaio_tiff_builders: bool,
+    image_builder: tuple[ImageBuilderOptions],
 ):
     _setup_verbosity(level=verbose)
 
@@ -83,10 +85,10 @@ def convert_cli(
     else:
         post_processors = DEFAULT_POST_PROCESSORS
 
-    if only_metaio_tiff_builders:
+    if image_builder:
         builders: Iterable[ImageBuilder] = [
-            image_builder_mhd,
-            image_builder_tiff,
+            IMAGE_BUILDER_OPTIONS_TO_IMPLEMENTATION[builder]
+            for builder in image_builder
         ]
     else:
         builders = DEFAULT_IMAGE_BUILDERS

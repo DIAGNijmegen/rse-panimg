@@ -9,7 +9,7 @@ from panimg.models import PanImgResult, PostProcessorResult
 from tests import RESOURCE_PATH
 
 
-def test_convert_cli_no_files(tmp_path):
+def test_convert_cli_no_files(tmp_path) -> None:
     input_dir = tmp_path / "input"
     output_dir = tmp_path / "output"
 
@@ -27,7 +27,7 @@ def test_convert_cli_no_files(tmp_path):
     assert cli_result.exit_code == 0
 
 
-def test_convert_cli_with_post_processing_and_dicom(tmp_path):
+def test_convert_cli_with_post_processing_and_dicom(tmp_path) -> None:
     input_dir = tmp_path / "input"
     output_dir = tmp_path / "output"
 
@@ -62,7 +62,7 @@ def test_convert_cli_with_post_processing_and_dicom(tmp_path):
     }
 
 
-def test_convert_cli_with_post_processing_no_dicom(tmp_path):
+def test_convert_cli_with_post_processing_no_dicom(tmp_path) -> None:
     input_dir = tmp_path / "input"
     output_dir = tmp_path / "output"
 
@@ -81,7 +81,10 @@ def test_convert_cli_with_post_processing_no_dicom(tmp_path):
             str(input_dir),
             "--output-dir",
             str(output_dir),
-            "--only-metaio-tiff-builders",
+            "--image-builder",
+            "MHD",
+            "--image-builder",
+            "TIFF",
         ],
     )
     assert cli_result.exit_code == 0
@@ -102,7 +105,7 @@ def test_convert_cli_with_post_processing_no_dicom(tmp_path):
     }
 
 
-def test_convert_cli_no_post_processing_no_dicom(tmp_path):
+def test_convert_cli_no_post_processing_no_dicom(tmp_path) -> None:
     input_dir = tmp_path / "input"
     output_dir = tmp_path / "output"
 
@@ -121,8 +124,11 @@ def test_convert_cli_no_post_processing_no_dicom(tmp_path):
             str(input_dir),
             "--output-dir",
             str(output_dir),
+            "--image-builder",
+            "MHD",
+            "--image-builder",
+            "TIFF",
             "--no-post-processing",
-            "--only-metaio-tiff-builders",
         ],
     )
     assert cli_result.exit_code == 0
@@ -142,7 +148,7 @@ def test_convert_cli_no_post_processing_no_dicom(tmp_path):
     }
 
 
-def test_convert_cli_no_post_processing_and_dicom(tmp_path):
+def test_convert_cli_no_post_processing_and_dicom(tmp_path) -> None:
     input_dir = tmp_path / "input"
     output_dir = tmp_path / "output"
 
@@ -182,7 +188,7 @@ def test_convert_cli_no_post_processing_and_dicom(tmp_path):
     }
 
 
-def test_post_process_cli_no_dzi():
+def test_post_process_cli_no_dzi() -> None:
     runner = CliRunner()
     cli_result = runner.invoke(
         post_process_cli,
@@ -205,7 +211,7 @@ def test_post_process_cli_no_dzi():
     assert post_processor_result.new_image_files == set()
 
 
-def test_post_process_cli_dzi():
+def test_post_process_cli_dzi() -> None:
     runner = CliRunner()
     cli_result = runner.invoke(
         post_process_cli,
