@@ -45,7 +45,7 @@ def test_convert_cli_with_post_processing_and_dicom(tmp_path) -> None:
     )
     assert cli_result.exit_code == 0
 
-    assert len(cli_result.output.splitlines()) == 1
+    assert len(cli_result.stdout.splitlines()) == 1
 
     panimg_result: PanImgResult = TypeAdapter(PanImgResult).validate_json(
         cli_result.stdout.splitlines()[-1]
@@ -88,7 +88,7 @@ def test_convert_cli_with_verbosity(tmp_path) -> None:
     )
     assert cli_result.exit_code == 0
 
-    assert cli_result.output.splitlines()[0].startswith("Converting ")
+    assert cli_result.stdout.splitlines()[0].startswith("Converting ")
 
     # Last line should be the JSON result
     panimg_result: PanImgResult = TypeAdapter(PanImgResult).validate_json(
@@ -376,7 +376,7 @@ def test_post_process_cli_dzi_processor_set_with_verbosity(tmp_path) -> None:
     )
     assert cli_result.exit_code == 0
 
-    assert cli_result.output.splitlines()[0].startswith("Post processing ")
+    assert cli_result.stdout.splitlines()[0].startswith("Post processing ")
 
     # Last line should be the JSON result
     post_processor_result: PostProcessorResult = TypeAdapter(
