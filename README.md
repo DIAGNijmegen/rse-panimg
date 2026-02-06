@@ -53,7 +53,7 @@ Install the package from pip as before, then you can use:
 **NOTE: Alpha software, do not run this on directories you do not have a backup of.**
 
 ```shell
-panimg convert /path/to/files/ /where/files/will/go/
+panimg convert --input-dir /path/to/files/ --output-dir /where/files/will/go/
 ```
 
 To access the help test you can use `panimg -h`.

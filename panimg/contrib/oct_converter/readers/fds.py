@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -7,6 +8,8 @@ from panimg.contrib.oct_converter.image_types import (
     FundusImageWithMetaData,
     OCTVolumeWithMetaData,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class FDS:
@@ -77,9 +80,9 @@ class FDS:
                     chunk_location = f.tell()
                     f.seek(chunk_size, 1)
                     chunk_dict[chunk_name] = [chunk_location, chunk_size]
-        print(f"File {self.filepath} contains the following chunks:")
+        logger.debug(f"File {self.filepath} contains the following chunks:")
         for key in chunk_dict.keys():
-            print(key)
+            logger.debug(key)
         return chunk_dict
 
     def read_oct_volume(self):

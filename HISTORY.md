@@ -1,5 +1,11 @@
 # History
 
+## 0.17.0 (2026-02-06)
+
+* Added `post-process` cli
+* CLI calls (i.e. `post-process`, `convert`) now write a result JSON as the final line to the standard output.
+* **Breaking Change:** `--input-dir` and `--output-dir` are now keyword arguments to the `convert` cli
+
 ## 0.16.0 (2025-12-03)
 
 * Adds support for Python 3.14
