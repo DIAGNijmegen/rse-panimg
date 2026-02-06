@@ -3,6 +3,7 @@
 ## 0.17.0 (UNRELEASED)
 
 * Added `post-process` cli
+* CLI calls (i.e. `post-process`, `convert`) now write a result JSON as the final line to the standard output.
 * **Breaking Change:** `--input-dir` and `--output-dir` are now keyword arguments to the `convert` cli
 
 ## 0.16.0 (2025-12-03)
