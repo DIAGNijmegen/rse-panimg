@@ -120,7 +120,7 @@ def convert_cli(
     print(RootModel[PanImgResult](result).model_dump_json())
 
 
-@cli.command(name="post-process", short_help="Post process image files")
+@cli.command(name="post-process", short_help="Post process an image file")
 @click.option("-v", "--verbose", count=True)
 @click.option("--image-id", type=UUID, required=True)
 @click.option("--image-type", type=click.Choice(ImageType), required=True)
