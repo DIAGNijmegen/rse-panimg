@@ -1,6 +1,6 @@
 # History
 
-## 0.17.0 (UNRELEASED)
+## 0.17.0 (2026-02-06)
 
 * Added `post-process` cli
 * CLI calls (i.e. `post-process`, `convert`) now write a result JSON as the final line to the standard output.
