@@ -1,4 +1,5 @@
 import logging
+import sys
 from collections.abc import Iterable
 from importlib.metadata import version
 from pathlib import Path
@@ -7,7 +8,7 @@ from uuid import UUID
 import click
 from pydantic import RootModel
 
-from panimg import convert, logger, post_process
+from panimg import convert, post_process
 from panimg.image_builders import (
     DEFAULT_IMAGE_BUILDERS,
     IMAGE_BUILDER_OPTIONS_TO_IMPLEMENTATION,
@@ -25,6 +26,8 @@ from panimg.post_processors import (
     PostProcessorOptions,
 )
 from panimg.types import ImageBuilder
+
+logger = logging.getLogger(__name__)
 
 panimg_version = version("panimg")
 
@@ -110,6 +113,10 @@ def convert_cli(
     else:
         builders = DEFAULT_IMAGE_BUILDERS
 
+    logger.info(
+        f"Converting {input_dir} to {output_dir} using {builders} and {processors}"
+    )
+
     result = convert(
         input_directory=input_dir,
         output_directory=output_dir,
@@ -158,6 +165,10 @@ def post_process_cli(
     else:
         processors = DEFAULT_POST_PROCESSORS
 
+    logger.info(
+        f"Post processing {input_file} ({image_type}) using {processors}"
+    )
+
     result = post_process(
         image_files={
             PanImgFile(
@@ -170,17 +181,31 @@ def post_process_cli(
     click.echo(RootModel[PostProcessorResult](result).model_dump_json())
 
 
-def _setup_verbosity(*, level: int):
-    handler = logging.StreamHandler()
+class MaxLevelFilter(logging.Filter):
+    def __init__(self, max_level):
+        super().__init__()
+        self.max_level = max_level
 
+    def filter(self, record):
+        return record.levelno < self.max_level
+
+
+def _setup_verbosity(*, level: int):
     if level == 0:
         logger.setLevel(logging.WARNING)
-        handler.setLevel(logging.WARNING)
     elif level == 1:
         logger.setLevel(logging.INFO)
-        handler.setLevel(logging.INFO)
     else:
         logger.setLevel(logging.DEBUG)
-        handler.setLevel(logging.DEBUG)
 
-    logger.addHandler(handler)
+    # stdout handler: DEBUG and INFO (levels < WARNING)
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(logging.NOTSET)
+    stdout_handler.addFilter(MaxLevelFilter(logging.WARNING))
+
+    # stderr handler: WARNING and above
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler.setLevel(logging.WARNING)
+
+    logger.addHandler(stdout_handler)
+    logger.addHandler(stderr_handler)

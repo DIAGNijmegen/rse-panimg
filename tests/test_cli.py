@@ -20,7 +20,7 @@ def test_convert_cli_no_files(tmp_path) -> None:
         convert_cli,
         ["--input-dir", str(input_dir), "--output-dir", str(output_dir)],
     )
-    assert cli_result.output == (
+    assert cli_result.stdout == (
         '{"new_images":[],"new_image_files":[],'
         '"consumed_files":[],"file_errors":{}}\n'
     )
@@ -45,8 +45,10 @@ def test_convert_cli_with_post_processing_and_dicom(tmp_path) -> None:
     )
     assert cli_result.exit_code == 0
 
+    assert len(cli_result.output.splitlines()) == 1
+
     panimg_result: PanImgResult = TypeAdapter(PanImgResult).validate_json(
-        cli_result.output.splitlines()[-1]
+        cli_result.stdout.splitlines()[-1]
     )
 
     assert {im.name for im in panimg_result.new_images} == {
@@ -86,11 +88,11 @@ def test_convert_cli_with_verbosity(tmp_path) -> None:
     )
     assert cli_result.exit_code == 0
 
-    assert cli_result.output.splitlines()[0].startswith("Using builders ")
+    assert cli_result.output.splitlines()[0].startswith("Converting ")
 
     # Last line should be the JSON result
     panimg_result: PanImgResult = TypeAdapter(PanImgResult).validate_json(
-        cli_result.output.splitlines()[-1]
+        cli_result.stdout.splitlines()[-1]
     )
 
     assert {im.name for im in panimg_result.new_images} == {
@@ -130,7 +132,7 @@ def test_convert_cli_with_post_processing_no_dicom(tmp_path) -> None:
     assert cli_result.exit_code == 0
 
     panimg_result: PanImgResult = TypeAdapter(PanImgResult).validate_json(
-        cli_result.output.splitlines()[-1]
+        cli_result.stdout.splitlines()[-1]
     )
 
     assert {im.name for im in panimg_result.new_images} == {
@@ -173,7 +175,7 @@ def test_convert_cli_with_defined_post_processing_no_dicom(tmp_path) -> None:
     assert cli_result.exit_code == 0
 
     panimg_result: PanImgResult = TypeAdapter(PanImgResult).validate_json(
-        cli_result.output.splitlines()[-1]
+        cli_result.stdout.splitlines()[-1]
     )
 
     assert {im.name for im in panimg_result.new_images} == {
@@ -215,7 +217,7 @@ def test_convert_cli_no_post_processing_no_dicom(tmp_path) -> None:
     assert cli_result.exit_code == 0
 
     panimg_result: PanImgResult = TypeAdapter(PanImgResult).validate_json(
-        cli_result.output.splitlines()[-1]
+        cli_result.stdout.splitlines()[-1]
     )
 
     assert {im.name for im in panimg_result.new_images} == {
@@ -254,7 +256,7 @@ def test_convert_cli_no_post_processing_and_dicom(tmp_path) -> None:
     assert cli_result.exit_code == 0
 
     panimg_result: PanImgResult = TypeAdapter(PanImgResult).validate_json(
-        cli_result.output.splitlines()[-1]
+        cli_result.stdout.splitlines()[-1]
     )
 
     assert {im.name for im in panimg_result.new_images} == {
@@ -290,7 +292,7 @@ def test_post_process_cli_no_dzi(tmp_path) -> None:
 
     post_processor_result: PostProcessorResult = TypeAdapter(
         PostProcessorResult
-    ).validate_json(cli_result.output.splitlines()[-1])
+    ).validate_json(cli_result.stdout.splitlines()[-1])
 
     assert post_processor_result.new_image_files == set()
 
@@ -315,7 +317,7 @@ def test_post_process_cli_dzi(tmp_path) -> None:
 
     post_processor_result: PostProcessorResult = TypeAdapter(
         PostProcessorResult
-    ).validate_json(cli_result.output.splitlines()[-1])
+    ).validate_json(cli_result.stdout.splitlines()[-1])
 
     assert len(post_processor_result.new_image_files) == 1
     assert {im.image_type for im in post_processor_result.new_image_files} == {
@@ -345,7 +347,7 @@ def test_post_process_cli_dzi_processor_set(tmp_path) -> None:
 
     post_processor_result: PostProcessorResult = TypeAdapter(
         PostProcessorResult
-    ).validate_json(cli_result.output.splitlines()[-1])
+    ).validate_json(cli_result.stdout.splitlines()[-1])
 
     assert len(post_processor_result.new_image_files) == 1
     assert {im.image_type for im in post_processor_result.new_image_files} == {
@@ -374,12 +376,12 @@ def test_post_process_cli_dzi_processor_set_with_verbosity(tmp_path) -> None:
     )
     assert cli_result.exit_code == 0
 
-    assert cli_result.output.splitlines()[0] == "Post processing 1 image(s)"
+    assert cli_result.output.splitlines()[0].startswith("Post processing ")
 
     # Last line should be the JSON result
     post_processor_result: PostProcessorResult = TypeAdapter(
         PostProcessorResult
-    ).validate_json(cli_result.output.splitlines()[-1])
+    ).validate_json(cli_result.stdout.splitlines()[-1])
 
     assert len(post_processor_result.new_image_files) == 1
     assert {im.image_type for im in post_processor_result.new_image_files} == {
