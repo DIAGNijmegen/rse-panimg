@@ -62,6 +62,46 @@ def test_convert_cli_with_post_processing_and_dicom(tmp_path) -> None:
     }
 
 
+def test_convert_cli_with_verbosity(tmp_path) -> None:
+    input_dir = tmp_path / "input"
+    output_dir = tmp_path / "output"
+
+    input_dir.mkdir()
+
+    shutil.copy(str(RESOURCE_PATH / "image10x10x10.mha"), str(input_dir))
+
+    runner = CliRunner()
+    cli_result = runner.invoke(
+        convert_cli,
+        [
+            "--input-dir",
+            str(input_dir),
+            "--output-dir",
+            str(output_dir),
+            "-vvv",
+            "--image-builder",
+            "MHD",
+            "--no-post-processing",
+        ],
+    )
+    assert cli_result.exit_code == 0
+
+    assert cli_result.output.splitlines()[0].startswith("Using builders ")
+
+    # Last line should be the JSON result
+    panimg_result: PanImgResult = TypeAdapter(PanImgResult).validate_json(
+        cli_result.output.splitlines()[-1]
+    )
+
+    assert {im.name for im in panimg_result.new_images} == {
+        "image10x10x10.mha",
+    }
+    assert len(panimg_result.new_image_files) == 1
+    assert {im.image_type for im in panimg_result.new_image_files} == {
+        "MHD",
+    }
+
+
 def test_convert_cli_with_post_processing_no_dicom(tmp_path) -> None:
     input_dir = tmp_path / "input"
     output_dir = tmp_path / "output"
@@ -303,6 +343,40 @@ def test_post_process_cli_dzi_processor_set(tmp_path) -> None:
     )
     assert cli_result.exit_code == 0
 
+    post_processor_result: PostProcessorResult = TypeAdapter(
+        PostProcessorResult
+    ).validate_json(cli_result.output.splitlines()[-1])
+
+    assert len(post_processor_result.new_image_files) == 1
+    assert {im.image_type for im in post_processor_result.new_image_files} == {
+        "DZI"
+    }
+
+
+def test_post_process_cli_dzi_processor_set_with_verbosity(tmp_path) -> None:
+    target_file = tmp_path / "input.bin"
+    shutil.copy(RESOURCE_PATH / "valid_tiff.tif", target_file)
+
+    runner = CliRunner()
+    cli_result = runner.invoke(
+        post_process_cli,
+        [
+            "--image-id",
+            str(uuid4()),
+            "--image-type",
+            "TIFF",
+            "--input-file",
+            target_file,
+            "--post-processor",
+            "DZI",
+            "-vvv",
+        ],
+    )
+    assert cli_result.exit_code == 0
+
+    assert cli_result.output.splitlines()[0] == "Post processing 1 image(s)"
+
+    # Last line should be the JSON result
     post_processor_result: PostProcessorResult = TypeAdapter(
         PostProcessorResult
     ).validate_json(cli_result.output.splitlines()[-1])

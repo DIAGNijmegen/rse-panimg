@@ -117,7 +117,7 @@ def convert_cli(
         post_processors=processors,
     )
 
-    print(RootModel[PanImgResult](result).model_dump_json())
+    click.echo(RootModel[PanImgResult](result).model_dump_json())
 
 
 @cli.command(name="post-process", short_help="Post process an image file")
@@ -167,7 +167,7 @@ def post_process_cli(
         post_processors=processors,
     )
 
-    print(RootModel[PostProcessorResult](result).model_dump_json())
+    click.echo(RootModel[PostProcessorResult](result).model_dump_json())
 
 
 def _setup_verbosity(*, level: int):
