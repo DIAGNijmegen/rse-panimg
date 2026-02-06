@@ -22,7 +22,7 @@ dependencies = [
     "imagecodecs>=2023.3.16",
 ]
 name = "panimg"
-version = "0.16.1"
+version = "0.17.0"
 description = "Conversion of medical images to MHA and TIFF."
 readme = "README.md"
 classifiers = [
