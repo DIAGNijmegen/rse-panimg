@@ -3,9 +3,9 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 import pytest
+from panimg_models import ColorSpace, EyeChoice
 
 from panimg.image_builders import image_builder_dicom, image_builder_tiff
-from panimg.models import ColorSpace, EyeChoice
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 

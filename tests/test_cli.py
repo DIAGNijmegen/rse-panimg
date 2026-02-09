@@ -2,10 +2,10 @@ import shutil
 from uuid import uuid4
 
 from click.testing import CliRunner
+from panimg_models import PanImgResult, PostProcessorResult
 from pydantic import TypeAdapter
 
 from panimg.cli import convert_cli, post_process_cli
-from panimg.models import PanImgResult, PostProcessorResult
 from tests import RESOURCE_PATH
 
 

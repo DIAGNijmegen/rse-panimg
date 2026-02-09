@@ -4,9 +4,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
+from panimg_models import ColorSpace
 
 from panimg.image_builders.fallback import format_error, image_builder_fallback
-from panimg.models import ColorSpace
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 

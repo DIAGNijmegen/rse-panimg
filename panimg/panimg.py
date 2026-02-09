@@ -4,9 +4,10 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import DefaultDict
 
+from panimg_models import PanImg, PanImgFile, PanImgResult, PostProcessorResult
+
 from panimg.exceptions import UnconsumedFilesException
 from panimg.image_builders import DEFAULT_IMAGE_BUILDERS
-from panimg.models import PanImg, PanImgFile, PanImgResult, PostProcessorResult
 from panimg.post_processors import DEFAULT_POST_PROCESSORS
 from panimg.types import ImageBuilder, PostProcessor
 

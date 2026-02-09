@@ -3,9 +3,9 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from panimg_models import ImageType, PanImgFile, PostProcessorResult
 
 from panimg import convert, post_process
-from panimg.models import ImageType, PanImgFile, PostProcessorResult
 from tests import RESOURCE_PATH
 
 

@@ -9,6 +9,7 @@ from typing import DefaultDict
 from uuid import UUID, uuid4
 
 import tifffile
+from panimg_models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace
 
 from panimg.contrib.wsi_dcm_to_tiff.dcm_to_tiff import (
     dcm_to_tiff as wsi_dcm_to_tiff,
@@ -18,7 +19,7 @@ from panimg.contrib.wsi_isyntax_to_tiff.isyntax_to_tiff import (
 )
 from panimg.exceptions import UnconsumedFilesException, ValidationError
 from panimg.image_builders.dicom import get_dicom_headers_by_study
-from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace, TIFFImage
+from panimg.models import TIFFImage
 
 try:
     from isyntax import ISyntax
