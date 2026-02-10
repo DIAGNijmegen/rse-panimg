@@ -2,10 +2,11 @@ from pathlib import Path
 
 import pytest
 import SimpleITK
+from panimg_models import ColorSpace
 from pytest import approx
 
 from panimg.image_builders.metaio_utils import load_sitk_image
-from panimg.models import ColorSpace, SimpleITKImage
+from panimg.models import SimpleITKImage
 from tests import RESOURCE_PATH
 
 

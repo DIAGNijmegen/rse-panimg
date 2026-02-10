@@ -3,9 +3,7 @@ name: CI
 on:
   push:
   pull_request:
-  release:
-    types:
-      - published
+  workflow_call:
 
 env:
   MINIMUM_PYTHON_VERSION: '3.10'
@@ -43,20 +41,3 @@ jobs:
       - name: Run uv
         run: |
           uv run pytest --cov-branch --cov-report term-missing --cov=tests/ --cov=panimg/
-
-  deploy:
-    if: github.event_name == 'release'
-    needs: [precommit, build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: ${{ env.MINIMUM_PYTHON_VERSION }}
-      - name: Upload to pypi
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.POETRY_PYPI_TOKEN_PYPI }}
-        run: |
-          uv build
-          uv publish

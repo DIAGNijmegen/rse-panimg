@@ -7,6 +7,7 @@ import numpy as np
 import numpy.typing as npt
 import SimpleITK
 from construct.core import Float64l, Int8ul, PaddedString, StreamError, Struct
+from panimg_models import EyeChoice
 from pydantic import BaseModel
 
 from panimg.contrib.oct_converter.image_types import (
@@ -15,7 +16,7 @@ from panimg.contrib.oct_converter.image_types import (
 )
 from panimg.contrib.oct_converter.readers import E2E, FDA, FDS
 from panimg.exceptions import UnconsumedFilesException, ValidationError
-from panimg.models import EyeChoice, SimpleITKImage
+from panimg.models import SimpleITKImage
 
 
 def format_error(message: str) -> str:

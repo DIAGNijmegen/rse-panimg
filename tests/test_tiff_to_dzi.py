@@ -3,8 +3,8 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from panimg_models import ImageType, PanImgFile
 
-from panimg.models import ImageType, PanImgFile
 from panimg.post_processors.tiff_to_dzi import tiff_to_dzi
 from tests import RESOURCE_PATH
 

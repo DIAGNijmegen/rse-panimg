@@ -5,6 +5,7 @@ from uuid import uuid4
 
 import pytest
 import tifffile as tiff_lib
+from panimg_models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace
 from pytest import approx
 from tifffile import tifffile
 
@@ -17,7 +18,6 @@ from panimg.image_builders.tiff import (
     _load_with_tiff,
     image_builder_tiff,
 )
-from panimg.models import MAXIMUM_SEGMENTS_LENGTH, ColorSpace
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 

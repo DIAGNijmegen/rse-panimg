@@ -4,9 +4,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
+from panimg_models import ColorSpace
 
 from panimg.image_builders.metaio_nifti import image_builder_nifti
-from panimg.models import ColorSpace
 from panimg.panimg import _build_files
 from tests import RESOURCE_PATH
 

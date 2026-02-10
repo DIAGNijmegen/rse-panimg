@@ -5,6 +5,7 @@ authors = [
 license = {text = "Apache-2.0"}
 requires-python = "<4.0,>=3.10"
 dependencies = [
+    "panimg-models==1.0.0",
     "pydantic>=2",
     "numpy>=1.22",
     "SimpleITK!=2.1.1.1,>=2.0",
@@ -22,7 +23,7 @@ dependencies = [
     "imagecodecs>=2023.3.16",
 ]
 name = "panimg"
-version = "0.17.0"
+version = "0.18.0"
 description = "Conversion of medical images to MHA and TIFF."
 readme = "README.md"
 classifiers = [
@@ -62,7 +63,7 @@ line_length = 79
 
 [tool.black]
 line-length = 79
-target-version = ['py38']
+target-version = ['py310']
 
 [tool.pytest.ini_options]
 minversion = "6.0"

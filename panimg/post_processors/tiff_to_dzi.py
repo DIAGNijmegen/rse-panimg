@@ -1,6 +1,7 @@
 import logging
 
-from panimg.models import ImageType, PanImgFile, PostProcessorResult
+from panimg_models import ImageType, PanImgFile, PostProcessorResult
+
 from panimg.settings import DZI_TILE_SIZE
 
 logger = logging.getLogger(__name__)

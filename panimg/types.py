@@ -2,9 +2,9 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Protocol
 
+from panimg_models import PanImgFile, PostProcessorResult
+
 from panimg.models import (
-    PanImgFile,
-    PostProcessorResult,
     SimpleITKImage,
     TIFFImage,
 )

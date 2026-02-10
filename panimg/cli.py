@@ -6,6 +6,12 @@ from pathlib import Path
 from uuid import UUID
 
 import click
+from panimg_models import (
+    ImageType,
+    PanImgFile,
+    PanImgResult,
+    PostProcessorResult,
+)
 from pydantic import RootModel
 
 from panimg import convert, post_process
@@ -13,12 +19,6 @@ from panimg.image_builders import (
     DEFAULT_IMAGE_BUILDERS,
     IMAGE_BUILDER_OPTIONS_TO_IMPLEMENTATION,
     ImageBuilderOptions,
-)
-from panimg.models import (
-    ImageType,
-    PanImgFile,
-    PanImgResult,
-    PostProcessorResult,
 )
 from panimg.post_processors import (
     DEFAULT_POST_PROCESSORS,

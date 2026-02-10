@@ -1,6 +1,7 @@
 import shutil
 
 import pytest
+from panimg_models import ColorSpace
 
 from panimg import convert
 from panimg.image_builders.metaio_utils import (
@@ -11,7 +12,6 @@ from panimg.image_builders.metaio_utils import (
     extract_header_listing,
     parse_mh_header,
 )
-from panimg.models import ColorSpace
 from tests import RESOURCE_PATH
 
 
