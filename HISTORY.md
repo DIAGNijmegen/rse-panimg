@@ -1,5 +1,9 @@
 # History
 
+## 0.18.1 (2026-02-12)
+
+* Turned off vips caching due to memory leaks
+
 ## 0.18.0 (2026-02-10)
 
 * **Breaking Change:** Common models (`PanImg`, `PanImgFile`, `PanImgResult`, `PostProcessorResult`), enums (`ImageBuilderOptions` and `PostProcessorOptions`) and constants (`MAXIMUM_SEGMENTS_LENGTH` and `ITK_COLOR_SPACE_MAP`) have been moved to a separate package, [`panimg-models`](https://pypi.org/project/panimg-models/).
