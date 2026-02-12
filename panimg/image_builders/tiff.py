@@ -357,6 +357,9 @@ def _convert(
 def _convert_to_tiff(*, path: Path, pk: UUID, output_directory: Path) -> Path:
     import pyvips
 
+    # Disable caching operations due to memory leaks
+    pyvips.cache_set_max(0)
+
     major = pyvips.base.version(0)
     minor = pyvips.base.version(1)
 

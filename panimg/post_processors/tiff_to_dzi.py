@@ -26,6 +26,9 @@ def tiff_to_dzi(*, image_files: set[PanImgFile]) -> PostProcessorResult:
 def _create_dzi_image(*, tiff_file: PanImgFile) -> PostProcessorResult:
     import pyvips
 
+    # Disable caching operations due to memory leaks
+    pyvips.cache_set_max(0)
+
     # Creates a dzi file and corresponding tiles in directory {pk}_files
     dzi_output = tiff_file.file.parent / str(tiff_file.image_id)
 
