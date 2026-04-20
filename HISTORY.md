@@ -1,5 +1,9 @@
 # History
 
+## 0.18.2 (2026-04-20)
+
+* Increased the number of allowed segments
+
 ## 0.18.1 (2026-02-12)
 
 * Turned off vips caching due to memory leaks
