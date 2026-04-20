@@ -127,13 +127,19 @@ class SimpleITKImage(BaseModel):
         im_arr = GetArrayViewFromImage(self.image)
 
         if self.image.GetDimension() == 4:
-            image_is_boolean = np.all((im_arr == 0) | (im_arr == 1))
             n_volumes = self.image.GetSize()[3]
 
-            if image_is_boolean and len(n_volumes) <= MAXIMUM_SEGMENTS_LENGTH:
+            if n_volumes > MAXIMUM_SEGMENTS_LENGTH:
+                # Too many segments
+                return None
+
+            image_is_boolean = np.all((im_arr == 0) | (im_arr == 1))
+
+            if image_is_boolean:
                 # Use 1-indexing for each segmentation
                 return frozenset(range(1, n_volumes + 1))
             else:
+                # Segments are not valid, values are not boolean
                 return None
         else:
             return frozenset(np.unique(im_arr))
