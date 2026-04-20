@@ -127,28 +127,22 @@ class SimpleITKImage(BaseModel):
         im_arr = GetArrayViewFromImage(self.image)
 
         if self.image.GetDimension() == 4:
-            segments = set()
             n_volumes = self.image.GetSize()[3]
 
-            for volume in range(n_volumes):
-                # Calculate the segments for each volume for memory efficiency
-                volume_segments = np.unique(im_arr[volume, :, :, :])
-                segments.update({*volume_segments})
+            if n_volumes > MAXIMUM_SEGMENTS_LENGTH:
+                # Too many segments
+                return None
 
-                if not segments.issubset({0, 1}):
-                    # 4D Segmentations must only have values 0 and 1
-                    # as the 4th dimension encodes the overlay type
-                    return None
+            image_is_boolean = np.all((im_arr == 0) | (im_arr == 1))
 
-            # Use 1-indexing for each segmentation
-            segments = {idx + 1 for idx in range(n_volumes)}
+            if image_is_boolean:
+                # Use 1-indexing for each segmentation
+                return frozenset(range(1, n_volumes + 1))
+            else:
+                # Segments are not valid, values are not boolean
+                return None
         else:
-            segments = np.unique(im_arr)
-
-        if len(segments) <= MAXIMUM_SEGMENTS_LENGTH:
-            return frozenset(segments)
-        else:
-            return None
+            return frozenset(np.unique(im_arr))
 
     @property
     def color_space(self) -> ColorSpace:
