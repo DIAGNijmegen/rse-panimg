@@ -1,5 +1,10 @@
 # History
 
+## 0.19.0 (UNRELEASED)
+
+- Added support for Python 3.15
+- Removed support for Python 3.10
+
 ## 0.18.2 (2026-04-20)
 
 * Increased the number of allowed segments

@@ -3,7 +3,7 @@ authors = [
     {name = "James Meakin"},
 ]
 license = {text = "Apache-2.0"}
-requires-python = "<4.0,>=3.10"
+requires-python = "<4.0,>=3.11"
 dependencies = [
     "panimg-models==1.0.0",
     "pydantic>=2",
@@ -63,7 +63,7 @@ line_length = 79
 
 [tool.black]
 line-length = 79
-target-version = ['py310']
+target-version = ['py311']
 
 [tool.pytest.ini_options]
 minversion = "6.0"
